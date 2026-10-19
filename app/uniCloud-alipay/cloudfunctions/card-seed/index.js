@@ -40,7 +40,8 @@ const DB_CARD_TAGS = 'card_tags'
 const DB_TAGS = 'tags'
 const DB_USER_TAGS = 'user_tags'
 
-const ALLOW = true
+// 安全：一次性灌数据工具，正式环境默认关闭（上线前需 ALLOW=false）。
+const ALLOW = false
 const OTHER_SCHOOL = '__seed_other_school__'
 
 // 虚拟发布者。credit 决定能否被推荐（>= 60）；same 决定学校是否与测试者同校

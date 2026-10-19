@@ -20,7 +20,8 @@
 
 const db = uniCloud.database()
 
-const ALLOW = true
+// 安全：一次性灌数据工具，正式环境默认关闭（上线前需 ALLOW=false）。
+const ALLOW = false
 
 const DB_EX = 'fit_exercises'
 const DB_PLAN = 'fit_plans'
