@@ -295,11 +295,10 @@ export default {
     },
 
     async startFree() {
-      // 先看有没有进行中的训练，有就直接继续（云函数 start 也会自己判断，这里是双保险）
-      if (this.stats.active_session) {
-        this.resumeSession()
-        return
-      }
+      // 不再在这里偷偷续上一次训练：
+      // 那样点「自由训练」会被静默带进某个计划，用户根本没得选。
+      // 现在一律进自由训练，云函数 start 发现已有未结束的**别的**训练时会回 409，
+      // 由训练页统一弹「继续上次 / 结束旧的」——和点计划进来完全同一条路。
       uni.navigateTo({ url: '/pages/workout/workout?free=1' })
     }
   }

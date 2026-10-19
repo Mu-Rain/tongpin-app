@@ -37,12 +37,51 @@ dazi-app/
 └── prototype/          # HTML 交互原型
 ```
 
-## 本地运行
+## 10 分钟极速复现指南
 
-1. 用 **HBuilderX** 打开 `app/` 目录。
-2. 在 HBuilderX 中关联 **uniCloud 支付宝云**空间（需自行在 uniCloud 控制台创建）。
-3. 上传云函数与数据库 schema（数据库集合与索引设计见 `docs/03-database.md`、`docs/08-database-indexes.md`）。
-4. 运行到浏览器 / 小程序 / App 模拟器进行调试。
+> 本指南满足传智杯「AI 创新应用挑战赛」对 **README 复现性声明** 的硬性要求：环境配置、依赖清单、环境变量模板齐全，评委可在约 10 分钟内把项目跑起来。
+
+### 环境与依赖清单
+
+| 工具 | 版本要求 | 用途 |
+| --- | --- | --- |
+| **HBuilderX（App 开发版）** | 最新稳定版 | uni-app 开发 / 运行 / 云打包（唯一必需 IDE） |
+| **DCloud 账号** | 免费 | 关联 uniCloud 服务空间、云打包 |
+| **uniCloud 支付宝云** 免费服务空间 | — | 云函数 + 云数据库后端（在 HBuilderX 内一键开通） |
+| 安卓手机（或模拟器） | Android 9+ | 真机运行 / 调试（也可直接运行到浏览器） |
+| Node.js | ≥ 16 | 仅用于本地跑 `_verify_crypto.js` 单元测试（可选） |
+
+> 本项目**不依赖** npm 安装第三方包；uni-app 运行所需依赖由 HBuilderX 内置，无需 `npm install`。
+
+### 复现步骤
+
+1. **打开工程**：用 HBuilderX 打开本仓库的 `app/` 目录（顶层 `dazi-app/` 含 `docs/`、`prototype/`，但工程根在 `app/`）。
+2. **开通云服务**：右键 `app/uniCloud-alipay` →「创建/关联云服务空间」→ 选 **支付宝云**（免费）→ 关联。此时 `hello` 云函数即可运行。
+3. **创建数据库**：按 `docs/03-database.md` 的集合字段表与 `docs/08-database-indexes.md` 的索引清单，在 uniCloud 控制台建集合与索引（或上传 DB Schema）。
+4. **上传云函数**：右键 `app/uniCloud-alipay/cloudfunctions/` 下每个函数 →「上传部署」（一次性全选上传也可）。
+5. **灌基础数据（seed）**：运行 `tag-seed` / `card-seed` / `school-seed` / `fit-seed` 各一次，灌入标签、示例卡片、学校、健身动作（这些是「一次性工具」，正式环境默认 `ALLOW=false`，仅供本地初始化）。
+6. **运行**：`app/manifest.json` 已含 `appid`；点「运行 → 运行到手机或模拟器 / 运行到浏览器」即可看到登录页并真机注册登录。
+
+### 环境变量 / 密钥模板
+
+本项目**不含任何真实密钥**，也不强制要求环境变量即可跑通主链。若后续接入 AI 能力（如聊天机器人），按项目规范（`docs/05-plan-and-ai-workflow.md` §4）**只**把密钥写在云函数的「运行环境配置」里：
+
+```
+# 云函数运行环境配置（uniCloud 控制台填写，切勿写进代码或提交 Git）
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx   # 仅聊天机器人模块需要；本期版本未实际调用
+```
+
+仓库内 `.gitignore` 已排除 `.env` / `.env.*` / `*.key`；所有一次性运维云函数（`set-admin` / `migrate-pairkey` / `card-seed` / `fit-seed`）正式环境默认 `ALLOW=false`，不存在硬编码凭证或手机号。
+
+### AI 协同与演进记录（评审重点）
+
+本作品全程以 **Vibe Coding** 方式由「人定义问题 + AI 生成/修订代码」协作完成，演进链路完整：
+
+- **逐日开发清单与踩坑记录**：`docs/00-day0-checklist.md` … `docs/10-day9-10-checklist.md`，按里程碑 M0–M8 记录每个功能模块如何落地、与 AI 的对话目标与验收标准。
+- **AI 协作流程与提示词模板**：`docs/05-plan-and-ai-workflow.md`，内含 6 套可直接复用的提示词模板（写云函数 / 建集合 / 写页面 / 修 Bug / 造数据 / 解释代码）。
+- **Prompt 历史快照**：按赛事要求，需由参赛者在自己使用的 AI 工具中导出 ≥3 段核心功能迭代的 Prompt 链（提问 → AI 建议 → 引导修复 Bug），作为独立材料随官网提交；本仓库保留的是**代码演进与提示词模板**，供评委一键复现开发环境。
+
+> 提交状态：源码（Public 仓库）、细粒度提交历史、复现指南已就绪；**演示视频、技术文档 PDF、Prompt 历史导出** 由参赛者按官网入口补充提交。
 
 ## 安全说明
 
