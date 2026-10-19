@@ -1,0 +1,7 @@
+{
+  "name": "card-seed",
+  "version": "1.0.0",
+  "description": "Seed demo cards for tag-match testing (idempotent)",
+  "main": "index.js",
+  "dependencies": {}
+}

@@ -1,0 +1,15 @@
+/* ===========================================================
+   同频 · 设计变量（SCSS 版）
+   注意：页面里目前统一使用 App.vue 中的 CSS 变量，避免依赖 scss
+   编译插件。这份文件留给以后需要 scss 的场景，取值与 App.vue 一致。
+   =========================================================== */
+$tf-primary: #FF6B4A;
+$tf-primary-soft: #FFF1ED;
+$tf-text: #1F2329;
+$tf-text-2: #646A73;
+$tf-text-3: #8F959E;
+$tf-bg: #F5F6F8;
+$tf-card: #FFFFFF;
+$tf-line: #EFF0F2;
+$tf-success: #12B76A;
+$tf-danger: #F04438;

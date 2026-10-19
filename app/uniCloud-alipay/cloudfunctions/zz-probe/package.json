@@ -1,0 +1,6 @@
+{
+  "name": "zz-probe",
+  "version": "1.0.0",
+  "description": "Temporary diagnostic: dump the event object received by a URL-ized cloud function",
+  "main": "index.js"
+}

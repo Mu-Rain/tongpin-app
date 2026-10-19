@@ -1,0 +1,7 @@
+{
+  "name": "user-me",
+  "version": "1.0.0",
+  "description": "Read my latest profile with token",
+  "main": "index.js",
+  "dependencies": {}
+}

@@ -1,0 +1,6 @@
+{
+  "name": "user-profile",
+  "version": "1.0.0",
+  "description": "Public user profile: info, my relations with them, invite eligibility, common tags, open cards",
+  "main": "index.js"
+}

@@ -1,0 +1,4836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>同频 · HTML 原型（新粗野主义）</title>
+<style>
+/* ==========================================================================
+   同频 · HTML 原型样式
+   风格：新粗野主义（Neo-Brutalism）
+   铁律：直角(radius 0) / 3px 纯黑硬边框 / 无模糊硬阴影 / 原色只 2 种 / 反色大色块
+   ========================================================================== */
+
+:root {
+  /* 墨与纸 */
+  --ink: #000000;
+  --paper: #ffffff;
+  /* 原色点缀：只允许 2 种 */
+  --yellow: #ffde00;
+  --orange: #ff4d00;
+  /* 次级文字（只用于文字，不用于边框） */
+  --ink-2: #4d4d4d;
+
+  --border-w: 3px;
+  --border: 3px solid var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --shadow-lg: 8px 8px 0 var(--ink);
+  --radius: 0;
+
+  --font-head: "Arial Black", "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-body: "Helvetica Neue", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 160ms;
+  --dur: 240ms;
+  --dur-slow: 320ms;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--radius);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  outline: 0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+.center {
+  text-align: center;
+}
+
+/* ============================ 舞台 ============================ */
+
+.stage {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 48px;
+  padding: 40px 32px 64px;
+}
+
+/* ---------------- 桌面端设计说明 ---------------- */
+
+.spec {
+  width: 340px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.spec-block {
+  border: var(--border);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  background: var(--paper);
+}
+
+.spec-hero {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.spec-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.spec-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 46px;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.spec-title .hl {
+  background: var(--yellow);
+  color: var(--ink);
+  padding: 0 6px;
+}
+
+.spec-note {
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #d8d8d8;
+}
+
+.spec-list {
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.9;
+}
+
+.spec-list li::before {
+  content: "▚ ";
+  font-family: var(--font-mono);
+}
+
+.spec-list--tight {
+  line-height: 1.75;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: var(--border);
+  margin-bottom: 12px;
+}
+
+.swatch {
+  height: 54px;
+  display: flex;
+  align-items: flex-end;
+  padding: 4px;
+}
+
+.swatch span {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 1px 3px;
+}
+
+.swatch:nth-child(2) span,
+.swatch:nth-child(3) span {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ============================ 手机外壳 ============================ */
+
+.phone {
+  position: relative;
+  width: 430px;
+  height: 880px;
+  flex: none;
+  background: var(--paper);
+  border: var(--border);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-bar {
+  height: 34px;
+  flex: none;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+}
+
+.phone-bar-right {
+  letter-spacing: 0.1em;
+}
+
+/* ---------------- 顶栏 ---------------- */
+
+.topbar {
+  height: 58px;
+  flex: none;
+  border-bottom: var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--paper);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.topbar.is-hidden {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.topbar-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.logo-sq {
+  width: 30px;
+  height: 30px;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 15px;
+}
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  border: var(--border);
+  background: var(--paper);
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.icon-btn:hover {
+  background: var(--yellow);
+  box-shadow: var(--shadow);
+  transform: translate(-1px, -1px);
+}
+
+.icon-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.icon-btn.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================ 屏幕切换 ============================ */
+
+.viewport {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transform: translate3d(var(--enter-x, 28px), 0, 0) scale(0.985);
+  pointer-events: none;
+  will-change: transform, opacity;
+  transition: opacity var(--dur) ease, transform var(--dur-slow) var(--ease);
+}
+
+.screen.is-active {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.screen.is-leaving {
+  opacity: 0;
+  transform: translate3d(var(--leave-x, -20px), 0, 0) scale(0.985);
+}
+
+.screen-body {
+  padding: 16px 16px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 逐个进场 */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.screen.is-active .stagger {
+  animation: pop-in 420ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+/* ============================ 通用块 ============================ */
+
+.h2 {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.block-black {
+  background: var(--ink);
+  color: var(--paper);
+  border: var(--border);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.block-yellow {
+  background: var(--yellow);
+  color: var(--ink);
+  border: var(--border);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.link {
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.link:hover {
+  background: var(--yellow);
+}
+
+.link:active {
+  transform: translateY(1px);
+}
+
+.badge {
+  display: inline-block;
+  border: 2px solid var(--ink);
+  padding: 2px 6px;
+  font-weight: 700;
+  background: var(--paper);
+  white-space: nowrap;
+}
+
+.badge--yellow {
+  background: var(--yellow);
+}
+
+/* ============================ 按钮 ============================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 0 16px;
+  height: 46px;
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.btn:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translate(-2px, -2px);
+}
+
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.btn--orange {
+  background: var(--orange);
+  color: var(--paper);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--sm {
+  height: 36px;
+  font-size: 13px;
+  box-shadow: var(--shadow-sm);
+  padding: 0 12px;
+}
+
+.btn--sm:hover {
+  box-shadow: var(--shadow);
+}
+
+/* ============================ 芯片 / 分段 ============================ */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.chip:hover {
+  background: var(--yellow);
+}
+
+.chip.is-on {
+  background: var(--ink);
+  color: var(--paper);
+  animation: stamp 200ms var(--ease);
+}
+
+.chip:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.chip--mini {
+  padding: 3px 8px;
+  font-size: 11px;
+  box-shadow: none;
+}
+
+@keyframes stamp {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 分段控件：黑块在底下平滑滑动
+   列数用 --seg-count 控制（HTML 里内联写 2 或 3），否则 2 个按钮的段控件会多出一个空列 */
+.segmented {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--seg-count, 2), 1fr);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  height: 44px;
+}
+
+.seg-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% / var(--seg-count, 2));
+  height: 100%;
+  background: var(--ink);
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+.seg {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.seg.is-on {
+  color: var(--paper);
+}
+
+.seg:active {
+  transform: scale(0.96);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--ink);
+  border-left: 10px solid var(--yellow);
+  background: var(--paper);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+/* ============================ 首页 ============================ */
+
+.wiki-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: var(--border);
+  background: var(--yellow);
+  box-shadow: var(--shadow-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.wiki-entry:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow);
+}
+
+.wiki-entry:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.wiki-tag {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 3px 6px;
+  flex: none;
+}
+
+.wiki-text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wiki-arrow {
+  font-weight: 900;
+}
+
+.entry-card {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 118px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.entry--yellow {
+  background: var(--yellow);
+}
+
+.entry-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translate(-2px, -2px);
+}
+
+.entry-card:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.entry-ico {
+  font-size: 26px;
+}
+
+.entry-name {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.entry-meta {
+  color: var(--ink-2);
+}
+
+/* ============================ 搭子卡片 ============================ */
+
+.card {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translate(-2px, -2px);
+}
+
+.card:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  border-top: 2px solid var(--ink);
+  padding-top: 8px;
+  font-size: 11px;
+}
+
+.tag {
+  border: 2px solid var(--ink);
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--paper);
+}
+
+.tag--fill {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.avatar--lg {
+  width: 58px;
+  height: 58px;
+  font-size: 24px;
+}
+
+.avatar--orange {
+  background: var(--orange);
+  color: var(--paper);
+}
+
+.hit {
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 5px;
+  white-space: nowrap;
+}
+
+/* ============================ 详情 / 匹配 ============================ */
+
+.detail-head {
+  border: var(--border);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.detail-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: var(--border);
+  background: var(--paper);
+}
+
+.detail-cell {
+  padding: 10px;
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+
+.detail-cell:nth-child(2n) {
+  border-right: 0;
+}
+
+.detail-cell span {
+  display: block;
+}
+
+.detail-cell .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+
+.detail-cell .v {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.match-head {
+  gap: 4px;
+}
+
+.match-score {
+  background: var(--ink);
+  color: var(--yellow);
+  align-self: flex-start;
+  padding: 2px 6px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+
+.match-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.match-sub {
+  font-size: 12px;
+}
+
+/* ============================ 消息 / 聊天 ============================ */
+
+.ai-entry,
+.convo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  padding: 10px;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.ai-entry {
+  background: var(--yellow);
+}
+
+.ai-entry:hover,
+.convo:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow);
+}
+
+.ai-entry:active,
+.convo:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.convo-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.convo-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.convo-name {
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.convo-last {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unread {
+  min-width: 20px;
+  height: 20px;
+  background: var(--orange);
+  color: var(--paper);
+  border: 2px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+/* 聊天页 */
+
+.chat-wrap {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-bar {
+  flex: none;
+  border-bottom: var(--border);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+}
+
+.chat-buddy-tag {
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bubble-row {
+  display: flex;
+  justify-content: flex-start;
+  animation: pop-in 320ms var(--ease) both;
+}
+
+.bubble-row.is-me {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 78%;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.bubble-row.is-me .bubble {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.bubble-time {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ink-2);
+  align-self: flex-end;
+  margin: 0 4px;
+}
+
+.chat-input {
+  flex: none;
+  border-top: var(--border);
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  background: var(--paper);
+}
+
+.input--flat {
+  flex: 1;
+  border: 2px solid var(--ink);
+  height: 40px;
+  padding: 0 10px;
+}
+
+/* ============================ 我的 ============================ */
+
+.profile {
+  display: flex;
+  gap: 12px;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.profile-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-name {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.stat {
+  padding: 12px 8px;
+  text-align: center;
+  border-right: 2px solid var(--ink);
+}
+
+.stat:last-child {
+  border-right: 0;
+}
+
+.stat-num {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.titles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.title-cell {
+  border: 2px solid var(--ink);
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title-cell .t-ico {
+  font-size: 20px;
+}
+
+.title-cell.is-locked {
+  background: var(--paper);
+  color: var(--ink-2);
+  border-style: dashed;
+}
+
+.title-cell.is-owned {
+  background: var(--yellow);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.ledger {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.ledger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--ink);
+  font-size: 13px;
+}
+
+.ledger-row:last-child {
+  border-bottom: 0;
+}
+
+.ledger-row--note {
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 11px;
+}
+
+.delta {
+  font-weight: 700;
+}
+
+.delta.up {
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  padding: 1px 6px;
+}
+
+.delta.down {
+  background: var(--orange);
+  color: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 1px 6px;
+}
+
+/* ============================ 底部标签栏 ============================ */
+
+.tabbar {
+  position: relative;
+  /* 底栏必须低于遮罩/抽屉，否则 .tab 的 z-index:1 会穿透抽屉画在上面（截图里的穿模 bug） */
+  z-index: 5;
+  flex: none;
+  height: 62px;
+  border-top: var(--border);
+  background: var(--paper);
+  display: grid;
+  /* 5 列：首页 / 同频圈 / ＋ / 消息 / 我的 —— 中间的加号凸起在栏外，所以不能 clip */
+  grid-template-columns: repeat(5, 1fr);
+  overflow: visible;
+  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+
+/* 抽屉打开时，底栏整体让位（不靠 JS，纯 class 驱动） */
+body.sheet-open .tabbar {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tabbar.is-hidden {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tab-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* 5 列布局，但只有 4 个可切换的 tab；每列宽 1/5 */
+  width: calc(100% / 5);
+  height: 100%;
+  background: var(--ink);
+  transition: transform var(--dur-slow) var(--ease);
+}
+
+/* 中间的「＋」：凸出底栏之外，像抖音那样 */
+.tab-plus {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.tab-plus-core {
+  width: 52px;
+  height: 52px;
+  margin-top: -16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--orange);
+  color: var(--paper);
+  border: var(--border);
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1;
+  box-shadow: var(--shadow);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.tab-plus:hover .tab-plus-core {
+  background: var(--yellow);
+  color: var(--ink);
+  transform: translateY(-3px) rotate(90deg);
+  box-shadow: var(--shadow-lg);
+}
+
+.tab-plus:active .tab-plus-core {
+  transform: translateY(2px) rotate(90deg) scale(0.95);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.tab {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+
+.tab.is-on {
+  color: var(--paper);
+}
+
+.tab:active {
+  transform: scale(0.94);
+}
+
+.tab-ico {
+  font-size: 13px;
+}
+
+.tab-txt {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tab-dot {
+  position: absolute;
+  top: 6px;
+  right: 22%;
+  min-width: 18px;
+  height: 18px;
+  background: var(--orange);
+  color: var(--paper);
+  border: 2px solid var(--ink);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================ 悬浮发布 ============================ */
+
+.fab {
+  position: absolute;
+  right: 16px;
+  bottom: 26px;
+  z-index: 6;
+  height: 48px;
+  padding: 0 18px;
+  border: var(--border);
+  background: var(--orange);
+  color: var(--paper);
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 15px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+
+.fab:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translate(-2px, -2px);
+}
+
+.fab:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.fab.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+}
+
+/* ============================ 搭子标签（自定义 + 闪亮预设色） ============================ */
+
+/* 搭子卡片上的自定义标签：颜色由 --tag-color 决定，带反光高光 */
+.tag--buddy {
+  position: relative;
+  border-color: var(--ink);
+  color: var(--ink);
+  font-weight: 700;
+  overflow: hidden;
+  background-image: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.75) 0%,
+    rgba(255, 255, 255, 0.18) 22%,
+    rgba(255, 255, 255, 0) 46%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* 反光扫过：只在卡片悬停时才动，避免满屏闪 */
+.card:hover .tag--buddy::after,
+.buddy-tag--big::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.85) 48%,
+    rgba(255, 255, 255, 0) 66%
+  );
+  transform: translateX(-120%);
+  animation: shine 1100ms var(--ease);
+  pointer-events: none;
+}
+
+@keyframes shine {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+/* 标签编辑区（搭子关系 / 卡片详情里用） */
+.tag-editor {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tag-editor-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.tag-editor-row .input {
+  flex: 1;
+  height: 42px;
+}
+
+.tag-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 「+搭子」按钮：把关系命名成一段自定义标签 */
+.buddy-add {
+  flex: none;
+  border: var(--border);
+  background: var(--yellow);
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 13px;
+  padding: 0 12px;
+  height: 42px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.buddy-add:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow);
+}
+
+.buddy-add:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* 预设颜色：全部带反光质感的闪亮色 */
+.color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.color-dot {
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(
+    125deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 255, 255, 0.25) 26%,
+    rgba(255, 255, 255, 0) 52%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 2px 2px 0 rgba(0, 0, 0, 0.35);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.color-dot:hover {
+  transform: translate(-2px, -2px) scale(1.06);
+}
+
+.color-dot.is-on::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 15px;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* 我的搭子页里的大号标签 */
+.buddy-tag--big {
+  position: relative;
+  display: inline-block;
+  border: 2px solid var(--ink);
+  padding: 5px 10px;
+  font-weight: 800;
+  font-size: 14px;
+  overflow: hidden;
+  background-image: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.2) 24%,
+    rgba(255, 255, 255, 0) 48%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* 大厅内的发布入口 */
+.hall-publish {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: var(--border);
+  background: var(--orange);
+  color: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 17px;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.hall-publish:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.hall-publish:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.hall-publish-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  opacity: 0.92;
+}
+
+/* ============================ 抽屉 ============================ */
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.scrim.is-on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  max-height: 88%;
+  background: var(--paper);
+  border-top: var(--border);
+  box-shadow: 0 -6px 0 var(--ink);
+  transform: translate3d(0, 101%, 0);
+  transition: transform var(--dur-slow) var(--ease);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sheet.is-on {
+  transform: none;
+}
+
+.sheet-head {
+  flex: none;
+  border-bottom: var(--border);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--yellow);
+}
+
+.sheet-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.sheet-body {
+  padding: 14px 14px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ============================ 表单 ============================ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.input {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+  transition: box-shadow var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
+}
+
+.input:focus {
+  background: #fffbe0;
+  box-shadow: var(--shadow-sm);
+}
+
+.input--area {
+  height: auto;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: none;
+}
+
+.field-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ============================ 登录页 ============================ */
+
+.login {
+  min-height: 100%;
+  padding: 24px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-hero {
+  border: var(--border);
+  box-shadow: var(--shadow);
+  padding: 20px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stamp {
+  align-self: flex-start;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  padding: 3px 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.login-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 64px;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+}
+
+.login-sub {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.panel {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.login-note {
+  margin-top: auto;
+}
+
+/* ============================ 每日百科 ============================ */
+
+.wiki-card {
+  gap: 8px;
+}
+
+.wiki-h {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 19px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.wiki-p {
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.wiki-list {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+.wiki-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--ink);
+  font-size: 13px;
+}
+
+.wiki-item:last-child {
+  border-bottom: 0;
+}
+
+/* ============================ 轻提示 ============================ */
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 150px;
+  transform: translate(-50%, 10px);
+  background: var(--ink);
+  color: var(--paper);
+  border: 2px solid var(--paper);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.4);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  max-width: 84%;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  z-index: 40;
+}
+
+.toast.is-on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ============================ 菜单行 / 开关 ============================ */
+
+.menu-list {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 12px;
+  border-bottom: 2px solid var(--ink);
+  text-align: left;
+  cursor: pointer;
+  background: var(--paper);
+  transition: background-color var(--dur-fast) var(--ease), padding-left var(--dur-fast) var(--ease);
+}
+
+.menu-row:last-child {
+  border-bottom: 0;
+}
+
+.menu-row:hover {
+  background: var(--yellow);
+  padding-left: 16px;
+}
+
+.menu-row:active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.menu-label {
+  flex: 1;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.menu-arrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.switch {
+  width: 44px;
+  height: 24px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  position: relative;
+  flex: none;
+  transition: background-color var(--dur) var(--ease);
+}
+
+.switch.is-on {
+  background: var(--yellow);
+}
+
+.switch .knob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background: var(--ink);
+  transition: transform var(--dur) var(--ease);
+}
+
+.switch.is-on .knob {
+  transform: translateX(20px);
+}
+
+.state-line {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+/* ============================ 进度 ============================ */
+
+.progress-track {
+  height: 18px;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--yellow);
+  border-right: 3px solid var(--ink);
+  transition: width var(--dur-slow) var(--ease);
+}
+
+/* ============================ 学生认证 ============================ */
+
+.upload-box {
+  border: var(--border);
+  border-style: dashed;
+  background: var(--paper);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.upload-ico {
+  font-size: 30px;
+}
+
+/* 发日常：三个小上传位并排 */
+.upload-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.upload-box--sm {
+  padding: 12px 6px;
+  gap: 4px;
+}
+
+.upload-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.steps-mini {
+  display: flex;
+  flex-direction: column;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+}
+
+.step-mini {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.step-mini:last-child {
+  border-bottom: 0;
+}
+
+.step-no {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.step-mini strong {
+  display: block;
+  font-size: 13px;
+}
+
+.callout-line {
+  border-left: 10px solid var(--ink);
+  border-top: 2px solid var(--ink);
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  padding: 10px 12px;
+  background: var(--paper);
+}
+
+/* ============================ 称号库 ============================ */
+
+.titles--wide {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.title-cell .rarity {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  border: 2px solid var(--ink);
+  padding: 0 4px;
+  align-self: center;
+}
+
+.rarity--common {
+  background: var(--paper);
+}
+
+.rarity--rare {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.rarity--legend {
+  background: var(--orange);
+  color: var(--paper);
+}
+
+.title-cond {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+/* ============================ 健身打卡 ============================ */
+
+.week-card {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.week-dots {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.day-dot {
+  height: 44px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.day-dot:hover {
+  transform: translateY(-2px);
+}
+
+.day-dot.is-today {
+  background: var(--yellow);
+}
+
+.day-dot.is-on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.day-dot:active {
+  transform: translateY(2px);
+}
+
+.plan-card {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+}
+
+.plan-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow);
+}
+
+.plan-card:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* ============================ 番茄钟 ============================ */
+
+.timer-card {
+  border: var(--border);
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timer {
+  font-family: var(--font-mono);
+  font-size: 58px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--yellow);
+}
+
+.timer-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.timer-actions .btn {
+  flex: 1;
+}
+
+/* ============================ 资料共享 ============================ */
+
+.file-list {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.file-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.file-row:last-child {
+  border-bottom: 0;
+}
+
+.file-row strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.file-row.is-pending {
+  background: #fffbe0;
+}
+
+.file-ico {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* ============================ 顶部直达按钮 ============================ */
+
+.jumpbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: var(--paper);
+  border-bottom: var(--border);
+  padding: 10px 14px 8px;
+}
+
+.jumpbar-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.jumpbar-tag {
+  align-self: center;
+  background: var(--ink);
+  color: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 5px 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.jump {
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 6px 11px;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.jump:hover {
+  background: var(--yellow);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow);
+}
+
+.jump:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.jump.is-on {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 2px 2px 0 var(--orange);
+}
+
+.jumpbar-hint {
+  max-width: 1100px;
+  margin: 8px auto 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+@media (max-width: 640px) {
+  .jumpbar {
+    padding: 8px 10px 6px;
+  }
+
+  .jump {
+    padding: 5px 9px;
+    font-size: 12px;
+  }
+
+  .jumpbar-hint {
+    font-size: 10px;
+  }
+}
+
+/* ============================ 首页便当格（大小刻意不统一） ============================ */
+
+.bento {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+  padding: 16px 14px;
+  margin-bottom: 14px;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.bento:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.bento:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.bento--yellow {
+  background: var(--yellow);
+}
+
+/* 最大的一块：搭子大厅 */
+.bento--hero {
+  padding: 22px 18px 20px;
+  background: var(--yellow);
+}
+
+.bento--hero .bento-title {
+  display: block;
+  font-family: var(--font-head);
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 8px 0 10px;
+}
+
+.bento--hero .bento-desc {
+  display: block;
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 32ch;
+}
+
+.bento-kicker {
+  display: block;
+  color: var(--ink-2);
+}
+
+.bento-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 12px;
+}
+
+.bento-tags em {
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 3px 8px;
+}
+
+.bento-go {
+  display: inline-block;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 6px 12px;
+  font-weight: 800;
+}
+
+/* 并排两格：学习 = 健身，一样大 */
+.bento-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bento--half {
+  flex: 1 1 0;
+  margin-bottom: 0;
+}
+
+.bento--half .bento-ico {
+  display: block;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.bento-title-sm {
+  display: block;
+  font-family: var(--font-head);
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  margin: 8px 0 6px;
+}
+
+.bento-meta {
+  display: block;
+  color: var(--ink-2);
+}
+
+/* 心理疏导：预留板块，做成一个「能聊两句」的占位框 */
+.bento--calm {
+  border-style: dashed;
+}
+
+.bento--calm .bento-title-sm {
+  font-size: 17px;
+}
+
+.bento--calm .bento-desc {
+  display: block;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+.bento-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.bubble-mini {
+  font-style: normal;
+  display: block;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 7px 10px;
+  font-size: 12.5px;
+  max-width: 90%;
+}
+
+.bubble-mini--ai {
+  background: var(--yellow);
+  align-self: flex-start;
+}
+
+.bubble-mini:not(.bubble-mini--ai) {
+  background: var(--ink);
+  color: var(--paper);
+  align-self: flex-end;
+}
+
+/* ============================ 同频圈（日常内容流，占位） ============================ */
+
+.feed-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.post-card {
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.post-media {
+  height: 132px;
+  border-bottom: var(--border);
+  background: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.post-media--video {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.post-media--text {
+  height: 56px;
+  background: var(--paper);
+}
+
+.post-body {
+  padding: 12px 14px;
+}
+
+.post-title {
+  display: block;
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.post-text {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.post-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 14px;
+  border-top: var(--border);
+}
+
+.post-user {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.post-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.post-tag {
+  border: 2px solid var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+}
+
+.placeholder-note {
+  border: 2px dashed var(--ink);
+  padding: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+@media (max-width: 640px) {
+  .bento--hero .bento-title {
+    font-size: 28px;
+  }
+
+  .bento-row {
+    gap: 10px;
+  }
+}
+
+/* ============================ 视图切换（可点击原型 / 效果图总览） ============================ */
+
+.viewbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 0 10px;
+}
+
+.viewbar-hint {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+
+.vbtn {
+  border: var(--border);
+  background: var(--paper);
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  padding: 7px 13px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+
+.vbtn:hover {
+  background: var(--yellow);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow);
+}
+
+.vbtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.vbtn.is-on {
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 3px 3px 0 var(--orange);
+}
+
+/* ============================ 效果图总览 ============================ */
+
+.gallery {
+  display: none;
+}
+
+body.view-gallery .gallery {
+  display: block;
+}
+
+body.view-gallery .stage {
+  display: none;
+}
+
+.gallery-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 26px 24px 72px;
+}
+
+.gallery-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 26px;
+}
+
+.gallery-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.gallery-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  max-width: 52ch;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px 22px;
+  justify-items: center;
+}
+
+.gallery-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 172px;
+  cursor: pointer;
+}
+
+.shot {
+  position: relative;
+  width: 172px;
+  height: 352px;
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  background: var(--paper);
+  overflow: hidden;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.gallery-item:hover .shot {
+  transform: translate(-3px, -3px);
+  box-shadow: var(--shadow);
+}
+
+.gallery-item:active .shot {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+/* 430 × 880 的设计稿等比缩到 172 × 352（k = 0.4） */
+.shot-scale {
+  width: 430px;
+  height: 880px;
+  transform: scale(0.4);
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.shot-bar {
+  height: 34px;
+  flex: none;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.shot-topbar {
+  height: 58px;
+  border-bottom: var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--paper);
+}
+
+.shot-back {
+  width: 18px;
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 20px;
+}
+
+.shot-title {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+.shot-viewport {
+  position: relative;
+  height: 788px;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.shot-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shot-name {
+  font-family: var(--font-head);
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.shot-no {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+
+@media (max-width: 900px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================ 自适应 ============================ */
+
+@media (max-width: 1120px) {
+  .spec {
+    display: none;
+  }
+
+  .stage {
+    padding: 20px 12px 40px;
+  }
+}
+
+@media (max-width: 520px) {
+  .stage {
+    padding: 0;
+    display: block;
+  }
+
+  .phone {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .phone-bar {
+    padding-top: env(safe-area-inset-top);
+    height: calc(34px + env(safe-area-inset-top));
+  }
+
+  .tabbar {
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(62px + env(safe-area-inset-bottom));
+  }
+
+  .fab {
+    bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部直达按钮：任意一屏一键到达（手机端也保留） ===== -->
+<header class="jumpbar">
+  <div class="viewbar">
+    <button class="vbtn is-on" data-view="proto">可点击原型</button>
+    <button class="vbtn" data-view="gallery">效果图总览 · <span id="galleryCount">14</span> 屏</button>
+    <span class="viewbar-hint">手机壳里的东西都能点；「效果图总览」一页看完全部界面，点缩略图直接进去。</span>
+  </div>
+  <div class="jumpbar-inner">
+    <span class="jumpbar-tag">v2 · 直达</span>
+    <button class="jump" data-go="login">登录 / 注册</button>
+    <button class="jump" data-go="home">首页</button>
+    <button class="jump" data-go="hall">搭子大厅</button>
+    <button class="jump" data-go="feed">同频圈</button>
+    <button class="jump" data-go="post">发日常</button>
+    <button class="jump" data-sheet="publish">发布卡片</button>
+    <button class="jump" data-go="match">匹配结果</button>
+    <button class="jump" data-go="chat">聊天</button>
+    <button class="jump" data-go="messages">消息</button>
+    <button class="jump" data-go="buddy">我的搭子</button>
+    <button class="jump" data-go="me">我的</button>
+    <button class="jump" data-go="titles">称号库</button>
+    <button class="jump" data-go="verify">学生认证</button>
+    <button class="jump" data-go="fitness">健身打卡</button>
+    <button class="jump" data-go="study">学习 &amp; 番茄钟</button>
+  </div>
+  <div class="jumpbar-hint">手机壳里没有假按钮：底部 Tab 切页、搭子卡片进详情、卡片里点「我想搭」、聊天能发消息、右下角 + 号发布、左上角返回。上面的按钮可直达任意一屏。</div>
+</header>
+
+<div class="stage">
+
+  <!-- ===== 桌面端设计说明（手机上自动隐藏） ===== -->
+  <aside class="spec">
+    <div class="spec-block spec-hero">
+      <div class="spec-eyebrow">PROTOTYPE / v0.1</div>
+      <h1 class="spec-title">同频<br /><span class="hl">原型</span></h1>
+      <p class="spec-note">校园搭子 App 的高保真界面原型。左侧手机是真的可以点的：切标签、点卡片、发布、进聊天都有真实过渡动画。</p>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-eyebrow">STYLE</div>
+      <ul class="spec-list">
+        <li>新粗野主义：直角 / 硬边框 / 硬阴影</li>
+        <li>边框 3px 纯黑，阴影 4px→8px 无模糊</li>
+        <li>原色只用于强调（黄）+ CTA（橙）</li>
+        <li>反色块：黑底白字、黄底黑字</li>
+      </ul>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-eyebrow">TOKENS</div>
+      <div class="swatches">
+        <div class="swatch" style="background:#000000"><span>INK</span></div>
+        <div class="swatch" style="background:#ffffff"><span>PAPER</span></div>
+        <div class="swatch" style="background:#ffde00"><span>YELLOW</span></div>
+        <div class="swatch" style="background:#ff4d00"><span>ORANGE</span></div>
+      </div>
+      <ul class="spec-list">
+        <li>--border: 3px solid #000</li>
+        <li>--shadow: 4px 4px 0 #000</li>
+        <li>--shadow-lg: 8px 8px 0 #000</li>
+        <li>--radius: 0</li>
+        <li>过渡 180–320ms / cubic-bezier(.22,1,.36,1)</li>
+      </ul>
+    </div>
+
+    <div class="spec-block spec-foot">
+      <div class="spec-eyebrow">SCREENS</div>
+      <ul class="spec-list spec-list--tight">
+        <li>登录 / 首页 / 搭子大厅</li>
+        <li>卡片详情 / 匹配结果</li>
+        <li>消息 / 聊天 / 我的</li>
+        <li>发布抽屉 / 每日百科抽屉</li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ===== 手机 ===== -->
+  <div class="phone" id="phone">
+    <div class="phone-bar">
+      <span class="mono">9:41</span>
+      <span class="mono phone-bar-right">5G ▮▮▮</span>
+    </div>
+
+    <header class="topbar" id="topbar">
+      <button class="icon-btn" id="backBtn" aria-label="返回">←</button>
+      <div class="topbar-title" id="topbarTitle">首页</div>
+      <div class="logo-sq">同</div>
+    </header>
+
+    <main class="viewport" id="viewport">
+
+      <!-- ===== 登录 ===== -->
+      <section class="screen" data-screen="login" data-title="登录" data-chrome="off">
+        <div class="login">
+          <div class="login-hero">
+            <div class="stamp">校园搭子 · 找同频的人</div>
+            <h1 class="login-title">同频</h1>
+            <p class="login-sub">三分钟，找到一个今天能一起做事的人</p>
+          </div>
+
+          <div class="panel">
+            <label class="field">
+              <span class="field-label">手机号</span>
+              <input class="input" type="tel" maxlength="11" placeholder="11 位手机号" />
+            </label>
+            <label class="field">
+              <span class="field-label">密码</span>
+              <input class="input" type="password" placeholder="至少 6 位" />
+            </label>
+            <button class="btn btn--orange btn--block" data-toast="登录接口第 2 天接入云函数">登录</button>
+            <div class="login-row">
+              <span class="link" data-toast="注册页第 2 天做">还没有账号？去注册</span>
+              <span class="link" data-toast="找回密码第 2 天做">忘记密码</span>
+            </div>
+          </div>
+
+          <div class="block-black login-note">
+            <span class="mono">MVP · 3 秒轮询 + uni-push</span>
+            <span class="mono">未认证可用，同校频道需认证</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 首页 ===== -->
+      <section class="screen" data-screen="home" data-title="首页" data-tab="home">
+        <div class="screen-body">
+          <div class="wiki-entry stagger" data-sheet="wiki">
+            <span class="wiki-tag mono">每日百科</span>
+            <span class="wiki-text">考试周前一晚，咖啡因该在几点喝？</span>
+            <span class="wiki-arrow">→</span>
+          </div>
+
+          <h2 class="h2 stagger">今天想做什么？</h2>
+
+          <!-- 便当格：板块大小刻意不统一，搭子大厅最大 -->
+          <button class="bento bento--hero stagger" data-go="hall">
+            <span class="bento-kicker mono">主入口 · 发一张卡片，按标签算契合度</span>
+            <span class="bento-title">搭子大厅</span>
+            <span class="bento-desc">学习搭子 · 健身搭子 · 拍照 / 逛校园 · 竞赛搭子，都从这一个口进</span>
+            <span class="bento-tags">
+              <em>学习</em><em>健身</em><em>拍照</em><em>竞赛</em>
+            </span>
+            <span class="bento-go mono">进大厅 →</span>
+          </button>
+
+          <div class="bento-row stagger">
+            <button class="bento bento--half bento--yellow" data-go="study">
+              <span class="bento-ico">⏱️</span>
+              <span class="bento-title-sm">学习</span>
+              <span class="bento-meta mono">番茄钟 · 资料共享 · 自习打卡</span>
+            </button>
+            <button class="bento bento--half" data-go="fitness">
+              <span class="bento-ico">🏋️</span>
+              <span class="bento-title-sm">健身</span>
+              <span class="bento-meta mono">训练计划 · 打卡 · 器械分类</span>
+            </button>
+          </div>
+
+          <button class="bento bento--calm stagger" data-go="chat" data-convo="ai">
+            <span class="bento-kicker mono">预留板块 · 简化版</span>
+            <span class="bento-title-sm">心理疏导 · 情绪引导机器人</span>
+            <span class="bento-desc">先只做「一个能聊两句的框」：不诊断、不量表、不评价。后续再扩成完整板块。</span>
+            <span class="bento-preview">
+              <em class="bubble-mini bubble-mini--ai">今天有点累，想找个人说说话。</em>
+              <em class="bubble-mini">我在。先从最难受的那件事说起也行。</em>
+            </span>
+          </button>
+
+          <div class="row-between stagger">
+            <h2 class="h2">我的搭子</h2>
+            <span class="link" data-go="messages">全部 →</span>
+          </div>
+          <div class="stack" id="homeBuddies"></div>
+        </div>
+      </section>
+
+      <!-- ===== 搭子大厅 ===== -->
+      <section class="screen" data-screen="hall" data-title="搭子大厅" data-parent="home">
+        <div class="screen-body">
+          <div class="segmented stagger" id="rangeSeg" style="--seg-count: 3">
+            <div class="seg-thumb" id="segThumb"></div>
+            <button class="seg is-on" data-range="同校">同校</button>
+            <button class="seg" data-range="附近">附近</button>
+            <button class="seg" data-range="城市">城市</button>
+          </div>
+
+          <button class="hall-publish stagger" data-sheet="publish">
+            <span>发布搭子需求 ＋</span>
+            <span class="hall-publish-sub">每天最多 5 条</span>
+          </button>
+
+          <div class="notice stagger" id="rangeNotice">
+            <span class="badge badge--yellow mono">认证</span>
+            <span>同校频道需要学生认证，你已认证</span>
+          </div>
+
+          <div class="chips stagger" id="typeChips">
+            <button class="chip is-on" data-type="全部">全部</button>
+            <button class="chip" data-type="学习">学习</button>
+            <button class="chip" data-type="健身">健身</button>
+            <button class="chip" data-type="拍照">拍照</button>
+            <button class="chip" data-type="竞赛">竞赛</button>
+            <button class="chip" data-type="吃饭">吃饭</button>
+            <button class="chip" data-type="运动">运动</button>
+          </div>
+
+          <div class="row-between stagger">
+            <span class="mono muted" id="hallCount">6 条需求</span>
+            <button class="btn btn--sm" data-go="match">一键匹配 ⚡</button>
+          </div>
+
+          <div class="stack" id="hallList"></div>
+        </div>
+      </section>
+
+      <!-- ===== 同频圈（原底部「大厅」Tab 的位置） ===== -->
+      <section class="screen" data-screen="feed" data-title="同频圈" data-tab="feed">
+        <div class="screen-body">
+          <div class="segmented stagger" id="feedSeg" style="--seg-count: 3">
+            <div class="seg-thumb" id="feedThumb"></div>
+            <button class="seg is-on" data-feed="同校">同校</button>
+            <button class="seg" data-feed="地区">地区</button>
+            <button class="seg" data-feed="发现">发现</button>
+          </div>
+
+          <div class="chips stagger" id="postChips">
+            <button class="chip is-on" data-post="全部">全部</button>
+            <button class="chip" data-post="图文">图文</button>
+            <button class="chip" data-post="视频">视频</button>
+            <button class="chip" data-post="吐槽">吐槽</button>
+          </div>
+
+          <div class="feed-grid" id="feedList"></div>
+
+          <button class="btn btn--block stagger" data-go="post">＋ 发一条日常</button>
+          <div class="placeholder-note stagger">占位板块：同校 / 全国两栏、图文与视频流、点赞评论都排在后续迭代，这里先把结构占住。</div>
+        </div>
+      </section>
+
+      <!-- ===== 发日常（同频圈发帖，原型占位） ===== -->
+      <section class="screen" data-screen="post" data-title="发一条日常" data-parent="feed">
+        <div class="screen-body">
+          <div class="segmented stagger" id="postScopeSeg">
+            <div class="seg-thumb" id="postScopeThumb"></div>
+            <button class="seg is-on" data-scope="同校">同校可见</button>
+            <button class="seg" data-scope="全国">全国可见</button>
+          </div>
+
+          <label class="field stagger">
+            <span class="field-label">说点什么</span>
+            <textarea class="input input--area" rows="4">图书馆四楼今天人好少，来自习的可以坐一起。</textarea>
+          </label>
+
+          <div class="chips stagger">
+            <button class="chip is-on" data-media="图文">图文</button>
+            <button class="chip" data-media="视频">视频</button>
+            <button class="chip" data-media="吐槽">纯文字</button>
+          </div>
+
+          <div class="upload-row stagger">
+            <div class="upload-box upload-box--sm"><span class="mono">＋ 图片</span><span class="mono muted">最多 9 张</span></div>
+            <div class="upload-box upload-box--sm"><span class="mono">＋ 视频</span><span class="mono muted">≤ 60 秒</span></div>
+            <div class="upload-box upload-box--sm"><span class="mono">＋ 话题</span><span class="mono muted">最多 3 个</span></div>
+          </div>
+
+          <label class="field stagger">
+            <span class="field-label">话题标签</span>
+            <input class="input" value="#期末冲刺 #图书馆搭子" />
+          </label>
+
+          <button class="btn btn--orange btn--block stagger" data-toast="已发到「同校」（原型演示，不做真上传）">发布</button>
+          <div class="placeholder-note stagger">占位页：同频圈的发帖入口。真实上传 / 审核 / 点赞评论都排在后续迭代，这里先把发帖的字段与流程占住。</div>
+        </div>
+      </section>
+
+      <!-- ===== 卡片详情 ===== -->
+      <section class="screen" data-screen="detail" data-title="需求详情" data-parent="hall">
+        <div class="screen-body" id="detailBody"></div>
+      </section>
+
+      <!-- ===== 匹配结果 ===== -->
+      <section class="screen" data-screen="match" data-title="匹配结果" data-parent="hall">
+        <div class="screen-body">
+          <div class="block-yellow match-head stagger">
+            <div class="match-score mono">TOP 10</div>
+            <div class="match-title">按标签重合度排序</div>
+            <div class="match-sub">硬过滤：同类型 · 进行中 · 排除自己 · 信誉 ≥ 60</div>
+          </div>
+          <div class="stack" id="matchList"></div>
+          <button class="btn btn--block" data-toast="已放宽 2 个标签，重新匹配">匹配不到？放宽标签</button>
+        </div>
+      </section>
+
+      <!-- ===== 消息 ===== -->
+      <section class="screen" data-screen="messages" data-title="消息" data-tab="messages">
+        <div class="screen-body">
+          <div class="ai-entry stagger" data-go="chat" data-convo="ai">
+            <div class="avatar avatar--orange">AI</div>
+            <div class="convo-main">
+              <div class="convo-top">
+                <span class="convo-name">情绪引导机器人</span>
+                <span class="mono muted">刚刚</span>
+              </div>
+              <div class="convo-last">看起来你有点焦虑，要聊聊吗？（非医疗建议）</div>
+            </div>
+            <span class="badge mono">独立聊天框</span>
+          </div>
+          <div class="stack" id="convoList"></div>
+          <button class="btn btn--block stagger" data-go="buddy">我的搭子与标签 →</button>
+        </div>
+      </section>
+
+      <!-- ===== 我的搭子与标签（自定义标签 + 闪亮配色） ===== -->
+      <section class="screen" data-screen="buddy" data-title="我的搭子与标签" data-parent="messages">
+        <div class="screen-body">
+          <div class="block-black stagger">
+            <span class="mono">搭子 ≠ 好友</span>
+            <strong class="state-line">给每段搭子关系起个名字</strong>
+            <span>搭子关系不自动变好友。标签只在你们这一栏显示，可随时改。</span>
+          </div>
+
+          <div class="stack" id="buddyList"></div>
+
+          <div class="tag-editor stagger" id="tagEditor">
+            <span class="field-label">搭子标签</span>
+            <div class="tag-editor-row">
+              <input class="input" id="tagField" maxlength="8" placeholder="给这段关系起个名字" />
+              <button class="buddy-add" id="tagAdd">＋搭子</button>
+            </div>
+
+            <span class="field-label">推荐词（点一下就填）</span>
+            <div class="chips" id="tagSuggest"></div>
+
+            <span class="field-label">标签颜色 · 预设闪亮色</span>
+            <div class="color-swatches" id="tagSwatches"></div>
+
+            <span class="field-label">预览</span>
+            <div class="tag-preview" id="tagPreview"></div>
+          </div>
+
+          <div class="placeholder-note stagger">标签颜色全部带反光高光；悬停卡片的标签会有一道反光扫过（原型演示）。</div>
+        </div>
+      </section>
+
+      <!-- ===== 聊天 ===== -->
+      <section class="screen" data-screen="chat" data-title="聊天" data-parent="messages" data-chrome="chat">
+        <div class="chat-wrap">
+          <div class="chat-bar" id="chatBar"></div>
+          <div class="chat-scroll" id="chatScroll"></div>
+          <div class="chat-input">
+            <input class="input input--flat" id="chatField" placeholder="说点什么…" />
+            <button class="btn btn--orange btn--sm" id="chatSend">发送</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 我的 ===== -->
+      <section class="screen" data-screen="me" data-title="我的" data-tab="me">
+        <div class="screen-body">
+          <div class="profile stagger">
+            <div class="avatar avatar--lg">林</div>
+            <div class="profile-main">
+              <div class="profile-top">
+                <span class="profile-name">林小满</span>
+                <span class="badge badge--yellow mono">已认证</span>
+              </div>
+              <div class="mono muted">示例大学 · 大三 · U100238</div>
+              <div class="profile-tags">
+                <span class="chip chip--mini">早起</span>
+                <span class="chip chip--mini">考研</span>
+                <span class="chip chip--mini">健身新手</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats stagger">
+            <div class="stat"><span class="stat-num mono">86</span><span class="stat-label">信誉分</span></div>
+            <div class="stat"><span class="stat-num mono">12</span><span class="stat-label">搭子</span></div>
+            <div class="stat"><span class="stat-num mono">3</span><span class="stat-label">称号</span></div>
+          </div>
+
+          <div class="menu-list stagger">
+            <button class="menu-row" data-go="verify">
+              <span class="menu-label">学生认证</span>
+              <span class="badge badge--yellow mono">已认证</span>
+              <span class="menu-arrow">→</span>
+            </button>
+            <button class="menu-row" data-go="titles">
+              <span class="menu-label">称号库</span>
+              <span class="mono muted">3 / 12</span>
+              <span class="menu-arrow">→</span>
+            </button>
+            <button class="menu-row" data-go="fitness">
+              <span class="menu-label">健身与打卡</span>
+              <span class="mono muted">本周 4 / 7</span>
+              <span class="menu-arrow">→</span>
+            </button>
+            <button class="menu-row" data-go="study">
+              <span class="menu-label">学习与番茄钟</span>
+              <span class="mono muted">今日 2 个番茄</span>
+              <span class="menu-arrow">→</span>
+            </button>
+          </div>
+
+          <h2 class="h2 stagger">称号墙</h2>
+          <div class="titles stagger" id="titleWall"></div>
+
+          <h2 class="h2 stagger">信誉明细</h2>
+          <div class="ledger stagger">
+            <div class="ledger-row"><span>完成一次搭子</span><span class="delta up mono">+2</span></div>
+            <div class="ledger-row"><span>学生认证通过</span><span class="delta up mono">+5</span></div>
+            <div class="ledger-row"><span>被举报（成立）</span><span class="delta down mono">-10</span></div>
+            <div class="ledger-row ledger-row--note"><span class="mono muted">信誉分只由流水推导，低于 60 禁止发布与进同校频道</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 学生认证 ===== -->
+      <section class="screen" data-screen="verify" data-title="学生认证" data-parent="me">
+        <div class="screen-body">
+          <div class="block-black stagger" style="--i:0">
+            <span class="mono">STATUS · VERIFIED</span>
+            <strong class="state-line">已通过认证</strong>
+            <span class="mono">认证后可进同校频道 · 卡片带认证标识 · 信誉 +5</span>
+          </div>
+
+          <div class="upload-box stagger" style="--i:1">
+            <span class="upload-ico">🎓</span>
+            <span class="upload-title">学生证 / 校园卡照片</span>
+            <span class="mono muted">只用于人工审核 · 存私有空间 · 通过后 30 天删除</span>
+            <button class="btn btn--sm" data-toast="选择图片（原型演示）">重新上传</button>
+          </div>
+
+          <h2 class="h2 stagger" style="--i:2">认证流程</h2>
+          <div class="steps-mini stagger" style="--i:3">
+            <div class="step-mini">
+              <span class="step-no mono">1</span>
+              <div><strong>上传证件</strong><span class="mono muted">学号与姓名页，不遮不挡</span></div>
+            </div>
+            <div class="step-mini">
+              <span class="step-no mono">2</span>
+              <div><strong>人工审核</strong><span class="mono muted">1–2 个工作日，最多重试 2 次</span></div>
+            </div>
+            <div class="step-mini">
+              <span class="step-no mono">3</span>
+              <div><strong>信息脱敏</strong><span class="mono muted">库表只存状态与时间，不存证件图地址</span></div>
+            </div>
+          </div>
+
+          <div class="block-yellow stagger" style="--i:4">
+            <span class="mono">合规提醒</span>
+            <span>学生证是敏感个人信息：只放私有存储、只有后台管理员可读、公共目录不留原始文件。</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 称号库 ===== -->
+      <section class="screen" data-screen="titles" data-title="称号库" data-parent="me">
+        <div class="screen-body">
+          <div class="block-yellow stagger" style="--i:0">
+            <span class="mono">已获得 3 / 12</span>
+            <strong class="state-line">称号来自互动，不靠签到</strong>
+            <span>大部分称号较难获取：连续互动、被对方点赞、完成 10 次靠谱搭子等。</span>
+          </div>
+          <div class="progress-track stagger" style="--i:1">
+            <div class="progress-fill" style="width:25%"></div>
+          </div>
+          <div class="titles titles--wide stagger" style="--i:2" id="titleLibrary"></div>
+          <div class="callout-line stagger" style="--i:3">
+            <span class="mono">称号可在个人资料里选 1 个展示</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 健身 ===== -->
+      <section class="screen" data-screen="fitness" data-title="健身与打卡" data-parent="home">
+        <div class="screen-body">
+          <div class="week-card stagger" style="--i:0">
+            <div class="row-between">
+              <span class="mono">本周打卡</span>
+              <span class="mono" id="weekCount">4 / 7</span>
+            </div>
+            <div class="week-dots" id="weekDots"></div>
+            <span class="mono muted">点一下方块就能打卡（原型演示）</span>
+          </div>
+
+          <h2 class="h2 stagger" style="--i:1">训练模板</h2>
+          <div class="stack" id="fitnessPlans"></div>
+
+          <h2 class="h2 stagger" style="--i:2">器械分类</h2>
+          <div class="chips stagger" style="--i:3" id="gearChips">
+            <button class="chip is-on">自由重量</button>
+            <button class="chip">固定器械</button>
+            <button class="chip">有氧</button>
+            <button class="chip">拉伸放松</button>
+          </div>
+
+          <div class="menu-list stagger" style="--i:4">
+            <button class="menu-row" data-toast="已开启训练提醒：每天 19:30">
+              <span class="menu-label">训练提醒</span>
+              <span class="switch is-on"><span class="knob"></span></span>
+            </button>
+            <button class="menu-row" data-toast="自定义计划：自己排动作、组数、休息时间">
+              <span class="menu-label">自定义计划</span>
+              <span class="menu-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 学习 & 番茄钟 ===== -->
+      <section class="screen" data-screen="study" data-title="学习 & 番茄钟" data-parent="home">
+        <div class="screen-body">
+          <div class="timer-card stagger" style="--i:0">
+            <span class="mono">番茄钟 · 25 分钟</span>
+            <div class="timer" id="timerText">25:00</div>
+            <div class="progress-track">
+              <div class="progress-fill" id="timerFill" style="width:0%"></div>
+            </div>
+            <div class="timer-actions">
+              <button class="btn btn--orange" id="timerToggle">开始</button>
+              <button class="btn" id="timerReset">重置</button>
+            </div>
+            <span class="mono muted" id="timerHint">完成 1 个番茄 +1 学习积分</span>
+          </div>
+
+          <h2 class="h2 stagger" style="--i:1">学习搭子</h2>
+          <div class="stack" id="studyBuddies"></div>
+
+          <h2 class="h2 stagger" style="--i:2">资料共享</h2>
+          <div class="file-list stagger" style="--i:3">
+            <div class="file-row">
+              <span class="file-ico mono">PDF</span>
+              <div><strong>高数期末复习提纲（手写版）</strong>
+                <span class="mono muted">2.1MB · 已审核 · 下载 128</span></div>
+            </div>
+            <div class="file-row">
+              <span class="file-ico mono">IMG</span>
+              <div><strong>线代公式速查表</strong>
+                <span class="mono muted">860KB · 已审核 · 下载 64</span></div>
+            </div>
+            <div class="file-row is-pending">
+              <span class="file-ico mono">PDF</span>
+              <div><strong>英语六级真题 2019–2023</strong>
+                <span class="mono muted">12MB · 审核中</span></div>
+            </div>
+          </div>
+          <button class="btn btn--block stagger" style="--i:4" data-toast="只支持 PDF / 图片 / 文档，≤ 20MB，先审后发">上传资料</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ===== 底部标签栏（中间是抖音式凸起「＋」，发布同频圈内容） ===== -->
+    <nav class="tabbar" id="tabbar">
+      <div class="tab-indicator" id="tabIndicator"></div>
+      <button class="tab is-on" data-tab-go="home"><span class="tab-ico">◼</span><span class="tab-txt">首页</span></button>
+      <button class="tab" data-tab-go="feed"><span class="tab-ico">◼</span><span class="tab-txt">同频圈</span></button>
+      <button class="tab-plus" id="tabPlus" data-go="post" aria-label="发布同频圈内容">
+        <span class="tab-plus-core">＋</span>
+      </button>
+      <button class="tab" data-tab-go="messages"><span class="tab-ico">◼</span><span class="tab-txt">消息</span><span class="tab-dot" id="tabDot">3</span></button>
+      <button class="tab" data-tab-go="me"><span class="tab-ico">◼</span><span class="tab-txt">我的</span></button>
+    </nav>
+
+    <!-- 发布入口现在在搭子大厅页内（原悬浮按钮已移除，避免遮挡与穿模） -->
+
+    <!-- ===== 抽屉：发布 ===== -->
+    <div class="scrim" id="scrim"></div>
+
+    <div class="sheet" id="sheet-publish" data-sheet-id="publish">
+      <div class="sheet-head">
+        <h3 class="sheet-title">发布搭子需求</h3>
+        <button class="icon-btn" data-sheet-close="1">×</button>
+      </div>
+      <div class="sheet-body">
+        <span class="field-label">需求类型</span>
+        <div class="chips" id="publishChips">
+          <button class="chip is-on" data-ptype="学习">学习</button>
+          <button class="chip" data-ptype="健身">健身</button>
+          <button class="chip" data-ptype="拍照">拍照</button>
+          <button class="chip" data-ptype="吃饭">吃饭</button>
+        </div>
+        <label class="field">
+          <span class="field-label">一句话需求</span>
+          <input class="input" maxlength="30" value="今晚 7 点图书馆刷题搭子" />
+        </label>
+        <label class="field">
+          <span class="field-label">补充说明（限 200 字）</span>
+          <textarea class="input input--area" rows="3">目标：高数期末。想找能坐得住、不聊天的同学。</textarea>
+        </label>
+        <div class="field-pair">
+          <label class="field">
+            <span class="field-label">时间</span>
+            <input class="input" value="今天 19:00" />
+          </label>
+          <label class="field">
+            <span class="field-label">地点</span>
+            <input class="input" value="三教 402" />
+          </label>
+        </div>
+        <button class="btn btn--orange btn--block" data-toast="已发布，出现在大厅顶部（原型演示）" data-sheet-close="1">发布</button>
+        <div class="mono muted center">每天最多 5 条 · 发布后可在「我的」里下架</div>
+      </div>
+    </div>
+
+    <!-- ===== 抽屉：每日百科 ===== -->
+    <div class="sheet" id="sheet-wiki" data-sheet-id="wiki">
+      <div class="sheet-head">
+        <h3 class="sheet-title">每日百科</h3>
+        <button class="icon-btn" data-sheet-close="1">×</button>
+      </div>
+      <div class="sheet-body">
+        <div class="block-yellow wiki-card">
+          <div class="mono">2026-10-16 · 健康</div>
+          <h4 class="wiki-h">考试周前一晚，咖啡因该在几点喝？</h4>
+          <p class="wiki-p">咖啡因半衰期约 5 小时。想 23:00 入睡，最后一杯别晚于 15:00，否则入睡时间平均推迟 40 分钟以上。今晚换成 20 分钟闭眼小睡，效果比第四杯美式更好。</p>
+        </div>
+        <div class="wiki-list">
+          <div class="wiki-item"><span class="mono">10-15</span><span>图书馆座位：靠窗≠更好，光照 500lx 最提神</span></div>
+          <div class="wiki-item"><span class="mono">10-14</span><span>学生证丢了先办临时卡，别急着补办</span></div>
+          <div class="wiki-item"><span class="mono">10-13</span><span>深蹲膝盖疼，多半是脚踝活动度不够</span></div>
+        </div>
+        <button class="btn btn--block" data-toast="已收藏到「我的」">收藏这条</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 效果图总览：一页看全 14 屏 ===== -->
+<main class="gallery" id="gallery" hidden>
+  <div class="gallery-inner">
+    <div class="gallery-head">
+      <h2 class="gallery-title">效果图总览 · <span id="galleryCount2">14</span> 屏</h2>
+      <p class="gallery-note">按 430 × 880 的设计稿等比缩小（0.4×），带手机状态栏与顶栏。点任意一张，直接跳进那张的「可点击原型」。</p>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</main>
+
+<script>
+/* ==========================================================================
+   同频 · HTML 原型交互
+   - 屏幕切换（方向感知，平滑过渡 + 子元素逐个进场）
+   - 底部标签栏 / 分段控件的黑色滑块滑动
+   - 芯片筛选、抽屉、聊天发送、轻提示
+   无构建、无依赖，直接双击 index.html 即可运行。
+   ========================================================================== */
+
+(function () {
+  'use strict';
+
+  /* ---------------------------------------------------------------- 数据 */
+
+  var BUDDIES = [
+    {
+      id: 'b1',
+      type: '学习',
+      title: '今晚 7 点图书馆刷题搭子',
+      desc: '目标：高数期末。想找能坐得住、不聊天的同学，一起到 22:00。',
+      name: '陈亦航',
+      avatar: '陈',
+      school: '示例大学',
+      distance: 0,
+      verified: true,
+      credit: 88,
+      tags: ['考研', '早起', '安静型'],
+      time: '今天 19:00',
+      place: '三教 402',
+      hit: 92
+    },
+    {
+      id: 'b2',
+      type: '健身',
+      title: '晚上 8 点健身房练背',
+      desc: '新手，想把动作练标准。有引体向上辅助带，可以一起练。',
+      name: '苏航',
+      avatar: '苏',
+      school: '示例大学',
+      distance: 0,
+      verified: true,
+      credit: 81,
+      tags: ['健身新手', '夜猫', '增肌'],
+      time: '今天 20:00',
+      place: '西区健身房',
+      hit: 84
+    },
+    {
+      id: 'b3',
+      type: '拍照',
+      title: '周日下午拍银杏，找一个模特',
+      desc: '我有相机和灯，想出片。地点在南门银杏道，拍 1 小时。',
+      name: '周乐',
+      avatar: '周',
+      school: '示例大学',
+      distance: 0,
+      verified: false,
+      credit: 74,
+      tags: ['拍照', '周末', '社恐友好'],
+      time: '周日 15:00',
+      place: '南门银杏道',
+      hit: 71
+    },
+    {
+      id: 'b4',
+      type: '吃饭',
+      title: '食堂三楼拼饭搭子',
+      desc: '一个人吃有点闷，想找饭友，聊专业和实习都行。',
+      name: '吴一诺',
+      avatar: '吴',
+      school: '江城理工大学',
+      distance: 1.2,
+      verified: true,
+      credit: 90,
+      tags: ['探店', '话多', '夜宵'],
+      time: '今天 12:10',
+      place: '食堂三楼',
+      hit: 66
+    },
+    {
+      id: 'b5',
+      type: '运动',
+      title: '周末打羽毛球（业余水平）',
+      desc: '场地已订，缺一人。水平一般，主要为了出汗。',
+      name: '黄铭',
+      avatar: '黄',
+      school: '江城理工大学',
+      distance: 3.5,
+      verified: true,
+      credit: 83,
+      tags: ['羽毛球', '周末', '出汗党'],
+      time: '周六 10:00',
+      place: '体育馆 2 号场',
+      hit: 58
+    },
+    {
+      id: 'b6',
+      type: '学习',
+      title: '雅思口语对练，每天 30 分钟',
+      desc: '目标 6.5，想找固定搭子，晚上线上对练。',
+      name: '林可',
+      avatar: '林',
+      school: '南方师范大学',
+      distance: 12,
+      verified: true,
+      credit: 95,
+      tags: ['雅思', '早起', '线上'],
+      time: '每天 21:00',
+      place: '线上',
+      hit: 63
+    },
+    {
+      id: 'b7',
+      type: '竞赛',
+      title: '挑战杯组队，缺一个会做 PPT 的',
+      desc: '已有 3 人（产品 / 代码 / 文档），想找一位做视觉和 PPT 的同学，本周内定人。',
+      name: '沈川',
+      avatar: '沈',
+      school: '江城理工大学',
+      distance: 0.8,
+      verified: true,
+      credit: 92,
+      tags: ['挑战杯', 'PPT', '本周开干'],
+      time: '今天 20:00',
+      place: '图书馆研讨间',
+      hit: 74
+    },
+    {
+      id: 'b8',
+      type: '竞赛',
+      title: '数学建模找搭子（缺写作手）',
+      desc: '两个工科生，建模和编程都能顶，缺一位写作 + 排版稳的同学，先线上碰一次。',
+      name: '郑一凡',
+      avatar: '郑',
+      school: '南方师范大学',
+      distance: 18,
+      verified: false,
+      credit: 78,
+      tags: ['数学建模', '写作', '线上'],
+      time: '周五前定人',
+      place: '线上',
+      hit: 69
+    }
+  ];
+
+  /* 同频圈：占位内容流（同校 / 全国两栏，图文 / 视频 / 吐槽三种形态） */
+
+  // 同频圈三栏：同校（本校）/ 地区（同城·周边）/ 发现（全国）
+  var FEED = [
+    {
+      id: 'f1',
+      range: '同校',
+      kind: '图文',
+      title: '图书馆五楼靠窗那排，今天光线绝了',
+      text: '顺手拍了三张。谁在附近想一起自习可以说一声，我占两个位置。',
+      user: '陈亦航 · 江城理工',
+      tags: ['自习', '随手拍'],
+      likes: 42
+    },
+    {
+      id: 'f2',
+      range: '同校',
+      kind: '视频',
+      title: '食堂三楼新窗口测评（43 秒）',
+      text: '糖醋里脊偏甜，但 12 块的套餐是真能吃饱。',
+      user: '吴一诺 · 江城理工',
+      tags: ['探店', '干饭'],
+      likes: 118
+    },
+    {
+      id: 'f5',
+      range: '同校',
+      kind: '图文',
+      title: '挑战杯组队进度 3/4',
+      text: '还缺一位做视觉的，评论或私信都行。',
+      user: '沈川 · 江城理工',
+      tags: ['挑战杯', '组队'],
+      likes: 27
+    },
+    {
+      id: 'f7',
+      range: '地区',
+      kind: '图文',
+      title: '江城三家自习咖啡店对比（含插座数量）',
+      text: '一杯美式坐一下午，实测最安静的是江湾路那家。',
+      user: '许知野 · 江城大学',
+      tags: ['同城', '自习地图'],
+      likes: 164
+    },
+    {
+      id: 'f8',
+      range: '地区',
+      kind: '视频',
+      title: '校门口夜市 20 块吃遍攻略',
+      text: '七点后出摊最全，烤冷面那家排队但值。',
+      user: '唐果 · 江城理工',
+      tags: ['同城', '夜市'],
+      likes: 271
+    },
+    {
+      id: 'f9',
+      range: '地区',
+      kind: '吐槽',
+      title: '周六去市图书馆，座位全靠抢',
+      text: '八点半到就已经没空位了，同城的朋友有推荐吗。',
+      user: '安禾 · 江城师范',
+      tags: ['同城', '图书馆'],
+      likes: 96
+    },
+    {
+      id: 'f3',
+      range: '发现',
+      kind: '吐槽',
+      title: '四六级报名又崩了，是不是只有我们学校这样',
+      text: '刷了半小时才挤进去，报上就行，别的不敢要求。',
+      user: '林可 · 南方师范',
+      tags: ['吐槽', '四六级'],
+      likes: 236
+    },
+    {
+      id: 'f4',
+      range: '发现',
+      kind: '图文',
+      title: '宿舍改造：60 块把这张桌子救回来了',
+      text: '灯带 + 理线盒 + 一块洞洞板，前后对比都拍了。',
+      user: '黄铭 · 江城理工',
+      tags: ['宿舍', '改造'],
+      likes: 305
+    },
+    {
+      id: 'f6',
+      range: '发现',
+      kind: '视频',
+      title: '操场夜跑 5 公里打卡（延时）',
+      text: '坚持第 21 天，配速还是慢，但一天没停。',
+      user: '郑一凡 · 南方师范',
+      tags: ['夜跑', '打卡'],
+      likes: 88
+    }
+  ];
+
+  var CONVOS = [
+    {
+      id: 'c1',
+      name: '陈亦航',
+      avatar: '陈',
+      last: '成，我带了两支黑笔，你不用买',
+      time: '18:42',
+      unread: 2,
+      tag: '考研战友',
+      color: 'shine-yellow',
+      school: '示例大学'
+    },
+    {
+      id: 'c2',
+      name: '苏航',
+      avatar: '苏',
+      last: '你今天练腿还是背？',
+      time: '17:05',
+      unread: 1,
+      tag: '增肌搭子',
+      color: 'shine-orange',
+      school: '示例大学'
+    },
+    {
+      id: 'c3',
+      name: '周乐',
+      avatar: '周',
+      last: '周日见，记得穿浅色衣服',
+      time: '昨天',
+      unread: 0,
+      tag: '拍照搭子',
+      color: 'shine-violet',
+      school: '示例大学'
+    }
+  ];
+
+  var CHAT = {
+    c1: [
+      { me: false, text: '同学你好，我看了你的需求，今晚我也去 402 刷高数 👍', time: '18:31' },
+      { me: true, text: '好呀，我 18:40 到，帮你占靠墙的位置', time: '18:33' },
+      { me: false, text: '成，我带了两支黑笔，你不用买', time: '18:42' }
+    ],
+    c2: [{ me: false, text: '你今天练腿还是背？', time: '17:05' }],
+    c3: [{ me: false, text: '周日见，记得穿浅色衣服', time: '昨天' }],
+    ai: [
+      { me: false, text: '你好，我是同频的情绪引导助手。今天感觉怎么样？', time: '16:20' },
+      { me: true, text: '有点焦虑，下周两门考试挤在一起', time: '16:22' },
+      {
+        me: false,
+        text: '听起来你在为两门考试紧张。要不要先只挑一门、只定今晚一小时？把范围缩小的那一刻，焦虑通常会降一点。',
+        time: '16:22'
+      }
+    ]
+  };
+
+  var TITLES = [
+    { ico: '🪪', name: '已认证', rarity: 'common', cond: '学生认证通过', owned: true },
+    { ico: '🤝', name: '首搭完成', rarity: 'common', cond: '完成第一次搭子', owned: true },
+    { ico: '🔥', name: '连续 7 天', rarity: 'common', cond: '连续 7 天有互动', owned: true },
+    { ico: '💪', name: '力量新手', rarity: 'rare', cond: '完成 10 次健身打卡', owned: false },
+    { ico: '🌙', name: '深夜自习室', rarity: 'rare', cond: '连续 5 天 23 点后打卡', owned: false },
+    { ico: '📚', name: '资料贡献者', rarity: 'rare', cond: '上传 3 份审核通过的资料', owned: false },
+    { ico: '🍅', name: '番茄达人', rarity: 'rare', cond: '累计完成 25 个番茄', owned: false },
+    { ico: '🏆', name: '十次靠谱', rarity: 'rare', cond: '完成 10 次搭子且无举报', owned: false },
+    { ico: '🧭', name: '校园活地图', rarity: 'rare', cond: '同校频道发布 5 次卡片', owned: false },
+    { ico: '⭐', name: '五星搭子', rarity: 'legend', cond: '被对方点赞 20 次', owned: false },
+    { ico: '🛡️', name: '信誉守护者', rarity: 'legend', cond: '信誉分保持 95 以上满 30 天', owned: false },
+    { ico: '🎓', name: '学长学姐', rarity: 'legend', cond: '帮助 10 位低年级同学', owned: false }
+  ];
+
+  var RARITY_TEXT = { common: '普通', rare: '稀有', legend: '传说' };
+
+  /* -------------------------------------------------------- 搭子标签预设色
+     全部是「带反光质感的闪亮色」：亮饱和底 + 一道白色高光斜扫（见 .tag--buddy）
+     用户可从这 8 个里挑，也可给标签自定义文字。 */
+
+  var TAG_COLORS = [
+    { key: 'shine-yellow', name: '闪耀黄', hex: '#ffde00' },
+    { key: 'shine-orange', name: '熔岩橙', hex: '#ff4d00' },
+    { key: 'shine-rose', name: '荧光粉', hex: '#ff5fa2' },
+    { key: 'shine-violet', name: '霓虹紫', hex: '#a855f7' },
+    { key: 'shine-cyan', name: '电光青', hex: '#22d3ee' },
+    { key: 'shine-mint', name: '薄荷绿', hex: '#34d399' },
+    { key: 'shine-blue', name: '宝石蓝', hex: '#3b82f6' },
+    { key: 'shine-gold', name: '香槟金', hex: '#e9c46a' }
+  ];
+
+  /* 我的搭子：每段关系 = 一个自定义标签 + 一个颜色 */
+  var BUDDY_RELATIONS = [
+    { id: 'r1', name: '陈亦航', avatar: '陈', label: '考研战友', color: 'shine-yellow', note: '每天 19:00 图书馆，一起到 22:00', days: 12 },
+    { id: 'r2', name: '苏航', avatar: '苏', label: '增肌搭子', color: 'shine-orange', note: '周一三五练背 / 腿，互相补动作', days: 8 },
+    { id: 'r3', name: '周乐', avatar: '周', label: '拍照搭子', color: 'shine-violet', note: '周末出片，还没定固定时间', days: 3 }
+  ];
+
+  /* 标签框里的推荐词：点一下就填进去，也能自己打 */
+  var TAG_SUGGESTIONS = ['考研战友', '增肌搭子', '自习搭子', '拍照搭子', '饭搭子', '竞赛队友', '夜跑搭子', '雅思同桌'];
+
+  /* ------------------------------------------------------------ 屏幕元信息 */
+
+  var SCREENS = {
+    login: { title: '登录', tabbar: false, topbar: false, fab: false },
+    home: { title: '首页', tab: 'home', tabbar: true, topbar: true, fab: false },
+    hall: { title: '搭子大厅', parent: 'home', tab: 'home', tabbar: false, topbar: true, fab: false },
+    feed: { title: '同频圈', tab: 'feed', tabbar: true, topbar: true, fab: false },
+    detail: { title: '需求详情', parent: 'hall', tab: 'home', tabbar: false, topbar: true, fab: false },
+    match: { title: '匹配结果', parent: 'hall', tab: 'home', tabbar: false, topbar: true, fab: false },
+    messages: { title: '消息', tab: 'messages', tabbar: true, topbar: true, fab: false },
+    chat: { title: '聊天', parent: 'messages', tab: 'messages', tabbar: false, topbar: true, fab: false },
+    me: { title: '我的', tab: 'me', tabbar: true, topbar: true, fab: false },
+    verify: { title: '学生认证', parent: 'me', tab: 'me', tabbar: false, topbar: true, fab: false },
+    titles: { title: '称号库', parent: 'me', tab: 'me', tabbar: false, topbar: true, fab: false },
+    fitness: { title: '健身与打卡', parent: 'home', tab: 'home', tabbar: false, topbar: true, fab: false },
+    study: { title: '学习 & 番茄钟', parent: 'home', tab: 'home', tabbar: false, topbar: true, fab: false },
+    post: { title: '发一条日常', parent: 'feed', tab: 'feed', tabbar: false, topbar: true, fab: false },
+    buddy: { title: '我的搭子', parent: 'messages', tab: 'messages', tabbar: false, topbar: true, fab: false }
+  };
+
+  // 一级页顺序（不包含中间的「＋」，它不是页面）
+  var TAB_ORDER = ['home', 'feed', 'messages', 'me'];
+
+  // 底栏是 5 列，中间第 2 列（下标 2）被凸起的「＋」占掉，所以滑动块的落点要单独映射
+  var TAB_SLOT = { home: 0, feed: 1, messages: 3, me: 4 };
+
+  var current = null;
+  var currentConvo = 'c1';
+
+  /* ---------------------------------------------------------------- 元素 */
+
+  var $ = function (sel, root) {
+    return (root || document).querySelector(sel);
+  };
+  var $$ = function (sel, root) {
+    return Array.prototype.slice.call((root || document).querySelectorAll(sel));
+  };
+
+  var phone = $('#phone');
+  var screens = $$('.screen');
+  var topbar = $('#topbar');
+  var topbarTitle = $('#topbarTitle');
+  var backBtn = $('#backBtn');
+  var tabbar = $('#tabbar');
+  var tabIndicator = $('#tabIndicator');
+  var scrim = $('#scrim');
+  var tabs = $$('.tab');            // 只含 4 个真 tab（不含中间的「＋」，它的类是 .tab-plus）
+  var tabPlus = $('#tabPlus');
+
+  /* ---------------------------------------------------------------- 轻提示 */
+
+  var toastEl = document.createElement('div');
+  toastEl.className = 'toast';
+  phone.appendChild(toastEl);
+  var toastTimer = null;
+
+  function toast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('is-on');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toastEl.classList.remove('is-on');
+    }, 1800);
+  }
+
+  /* -------------------------------------------------------------- 渲染列表 */
+
+  function escapeText(s) {
+    return String(s).replace(/[&<>]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c];
+    });
+  }
+
+  /** 从调色板取颜色；找不到就给黄 */
+  function tagColorHex(key) {
+    var c = TAG_COLORS.filter(function (x) {
+      return x.key === key;
+    })[0];
+    return c ? c.hex : TAG_COLORS[0].hex;
+  }
+
+  /** 闪亮自定义标签：底色由内联 background-color 给，反光高光由 .tag--buddy 的 background-image 叠在上面 */
+  function shinyTag(label, colorKey) {
+    return (
+      '<span class="tag tag--buddy" style="background-color:' + tagColorHex(colorKey) + '">' +
+      escapeText(label) + '</span>'
+    );
+  }
+
+  function buddyCard(b, showHit) {
+    var hit = showHit
+      ? '<span class="hit">重合度 ' + b.hit + '%</span>'
+      : '';
+    var verify = b.verified
+      ? '<span class="badge badge--yellow mono">已认证</span>'
+      : '<span class="badge mono">未认证</span>';
+    var tags = b.tags
+      .map(function (t) {
+        return '<span class="tag">' + escapeText(t) + '</span>';
+      })
+      .join('');
+    return (
+      '<article class="card" data-open="' + b.id + '">' +
+      '<div class="card-top">' +
+      '<div class="avatar">' + escapeText(b.avatar) + '</div>' +
+      '<div class="card-title">' + escapeText(b.title) + '</div>' +
+      hit +
+      '</div>' +
+      '<p class="card-desc">' + escapeText(b.desc) + '</p>' +
+      '<div class="card-meta">' + verify + tags +
+      '<span class="tag tag--fill">' + escapeText(b.type) + '</span>' +
+      '</div>' +
+      '<div class="card-meta">' +
+      '<span class="mono">' + escapeText(b.time) + ' · ' + escapeText(b.place) + '</span>' +
+      '<span class="mono muted">' + escapeText(b.name) + ' · ' + escapeText(b.school) +
+      ' · 信誉 ' + b.credit + '</span>' +
+      '</div>' +
+      '</article>'
+    );
+  }
+
+  function renderHall() {
+    var type = state.type;
+    var range = state.range;
+    var list = BUDDIES.filter(function (b) {
+      var typeOk = type === '全部' || b.type === type;
+      var rangeOk =
+        range === '同校' ? b.distance === 0 : range === '附近' ? b.distance <= 5 : true;
+      return typeOk && rangeOk;
+    });
+
+    var host = $('#hallList');
+    if (list.length === 0) {
+      host.innerHTML =
+        '<div class="block-black"><span class="mono">NO RESULT</span>' +
+        '<strong>这个筛选下还没有需求</strong>' +
+        '<span class="mono">试试换类型，或用「一键匹配」放宽标签</span></div>';
+    } else {
+      host.innerHTML = list
+        .map(function (b, i) {
+          return buddyCard(b, false).replace(
+            'class="card"',
+            'class="card stagger" style="--i:' + i + '"'
+          );
+        })
+        .join('');
+    }
+    $('#hallCount').textContent = list.length + ' 条需求';
+
+    var notice = $('#rangeNotice');
+    var text =
+      range === '同校'
+        ? '同校频道需要学生认证，你已认证'
+        : range === '附近'
+        ? '附近 5 公里内，共 ' + list.length + ' 条'
+        : '全城范围，注意约在公共场所';
+    notice.querySelector('span:last-child').textContent = text;
+  }
+
+  function renderHomeBuddies() {
+    $('#homeBuddies').innerHTML = CONVOS.slice(0, 3)
+      .map(function (c, i) {
+        return (
+          '<article class="card stagger" style="--i:' + i + '" data-go="chat" data-convo="' + c.id + '">' +
+          '<div class="card-top">' +
+          '<div class="avatar">' + escapeText(c.avatar) + '</div>' +
+          '<div class="card-title">' + escapeText(c.name) + '</div>' +
+          shinyTag(c.tag, c.color) +
+          '</div>' +
+          '<p class="card-desc">' + escapeText(c.last) + '</p>' +
+          '</article>'
+        );
+      })
+      .join('');
+  }
+
+  /* ------------------------------------------- 我的搭子：自定义标签编辑器 */
+
+  var draftLabel = '';
+  var draftColor = TAG_COLORS[0].key;
+
+  function renderBuddy() {
+    var host = $('#buddyList');
+    if (!host) return;
+
+    host.innerHTML = BUDDY_RELATIONS.map(function (r, i) {
+      return (
+        '<div class="card stagger" style="--i:' + i + ';cursor:default">' +
+        '<div class="card-top">' +
+        '<div class="avatar">' + escapeText(r.avatar) + '</div>' +
+        '<div class="card-title">' + escapeText(r.name) + '</div>' +
+        '<span class="mono muted">第 ' + r.days + ' 天</span>' +
+        '</div>' +
+        '<div class="tag-preview">' +
+        '<span class="buddy-tag--big" style="background-color:' + tagColorHex(r.color) + '">' +
+        escapeText(r.label) + '</span>' +
+        '<button class="btn btn--sm" data-tag-edit="' + r.id + '">改标签</button>' +
+        '</div>' +
+        '<p class="card-desc">' + escapeText(r.note) + '</p>' +
+        '</div>'
+      );
+    }).join('');
+
+    var prev = $('#tagPreview');
+    if (prev) {
+      prev.innerHTML =
+        '<span class="buddy-tag--big" style="background-color:' + tagColorHex(draftColor) + '">' +
+        escapeText(draftLabel || '（还没填标签）') +
+        '</span>';
+    }
+
+    $$('#tagSwatches .color-dot').forEach(function (d) {
+      d.classList.toggle('is-on', d.getAttribute('data-color') === draftColor);
+    });
+  }
+
+  function renderTagPalette() {
+    var box = $('#tagSwatches');
+    if (!box) return;
+    box.innerHTML = TAG_COLORS.map(function (c) {
+      return (
+        '<button class="color-dot" data-color="' + c.key + '" title="' + c.name + '" ' +
+        'style="background-color:' + c.hex + '"></button>'
+      );
+    }).join('');
+  }
+
+  function renderTagSuggest() {
+    var box = $('#tagSuggest');
+    if (!box) return;
+    box.innerHTML = TAG_SUGGESTIONS.map(function (s) {
+      return '<button class="chip chip--mini" data-tag-suggest="' + s + '">' + s + '</button>';
+    }).join('');
+  }
+
+  function renderConvos() {
+    $('#convoList').innerHTML = CONVOS.map(function (c, i) {
+      var unread = c.unread ? '<span class="unread">' + c.unread + '</span>' : '';
+      return (
+        '<article class="convo stagger" style="--i:' + (i + 1) + '" data-go="chat" data-convo="' + c.id + '">' +
+        '<div class="avatar">' + escapeText(c.avatar) + '</div>' +
+        '<div class="convo-main">' +
+        '<div class="convo-top">' +
+        '<span class="convo-name">' + escapeText(c.name) + '</span>' +
+        '<span class="mono muted">' + escapeText(c.time) + '</span>' +
+        '</div>' +
+        '<div class="convo-last">' + escapeText(c.last) + '</div>' +
+        '<div class="card-meta" style="border:0;padding:4px 0 0">' +
+        shinyTag(c.tag, c.color) +
+        '<span class="tag">' + escapeText(c.school) + '</span>' +
+        '</div>' +
+        '</div>' + unread +
+        '</article>'
+      );
+    }).join('');
+  }
+
+  function renderMatch() {
+    var list = BUDDIES.slice().sort(function (a, b) {
+      return b.hit - a.hit;
+    }).slice(0, 4);
+    $('#matchList').innerHTML = list
+      .map(function (b, i) {
+        return buddyCard(b, true).replace(
+          'class="card"',
+          'class="card stagger" style="--i:' + i + '"'
+        );
+      })
+      .join('');
+  }
+
+  function renderTitles() {
+    var wall = $('#titleWall');
+    if (wall) {
+      wall.innerHTML = TITLES.map(function (t) {
+        return (
+          '<div class="title-cell ' + (t.owned ? 'is-owned' : 'is-locked') + '">' +
+          '<span class="t-ico">' + t.ico + '</span>' +
+          '<span>' + escapeText(t.name) + '</span>' +
+          '<span class="mono muted">' + (t.owned ? '已获得' : '未解锁') + '</span>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    var grid = $('#titleLibrary');
+    if (grid) {
+      grid.innerHTML = TITLES.map(function (t) {
+        return (
+          '<div class="title-cell ' + (t.owned ? 'is-owned' : 'is-locked') + '">' +
+          '<span class="t-ico">' + t.ico + '</span>' +
+          '<span>' + escapeText(t.name) + '</span>' +
+          '<span class="rarity rarity--' + t.rarity + '">' + RARITY_TEXT[t.rarity] + '</span>' +
+          '<span class="mono muted title-cond">' + escapeText(t.cond) + '</span>' +
+          '</div>'
+        );
+      }).join('');
+    }
+  }
+
+  function renderDetail(id) {
+    var b = BUDDIES.filter(function (x) {
+      return x.id === id;
+    })[0] || BUDDIES[0];
+    var tags = b.tags
+      .map(function (t) {
+        return '<span class="tag">' + escapeText(t) + '</span>';
+      })
+      .join('');
+    $('#detailBody').innerHTML =
+      '<div class="detail-head stagger" style="--i:0">' +
+      '<div class="detail-title">' + escapeText(b.title) + '</div>' +
+      '<p class="card-desc" style="color:#d8d8d8">' + escapeText(b.desc) + '</p>' +
+      '</div>' +
+      '<div class="detail-grid stagger" style="--i:1">' +
+      '<div class="detail-cell"><span class="k">发布者</span><span class="v">' + escapeText(b.name) + '</span></div>' +
+      '<div class="detail-cell"><span class="k">认证</span><span class="v">' + (b.verified ? '已认证' : '未认证') + '</span></div>' +
+      '<div class="detail-cell"><span class="k">学校</span><span class="v">' + escapeText(b.school) + '</span></div>' +
+      '<div class="detail-cell"><span class="k">信誉分</span><span class="v">' + b.credit + '</span></div>' +
+      '<div class="detail-cell"><span class="k">时间</span><span class="v">' + escapeText(b.time) + '</span></div>' +
+      '<div class="detail-cell"><span class="k">地点</span><span class="v">' + escapeText(b.place) + '</span></div>' +
+      '</div>' +
+      '<div class="card stagger" style="--i:2;cursor:default">' +
+      '<div class="card-top"><span class="card-title">标签重合</span><span class="hit">' + b.hit + '%</span></div>' +
+      '<div class="card-meta" style="border:0;padding-top:0">' + tags + '</div>' +
+      '</div>' +
+      '<button class="btn btn--orange btn--block stagger" style="--i:3" data-toast="已发出申请，对方同意后建立搭子关系">我想搭 →</button>' +
+      '<button class="btn btn--block stagger" style="--i:4" data-toast="已提交举报，后台会在 24 小时内处理">举报这张卡片</button>';
+  }
+
+  function renderChat() {
+    var isAi = currentConvo === 'ai';
+    var convo = CONVOS.filter(function (c) {
+      return c.id === currentConvo;
+    })[0];
+
+    var bar = $('#chatBar');
+    if (isAi) {
+      bar.innerHTML =
+        '<div class="avatar avatar--orange">AI</div>' +
+        '<div><div class="convo-name">情绪引导机器人</div>' +
+        '<span class="mono muted">非医疗建议 · 紧急情况请联系校心理中心</span></div>';
+    } else {
+      bar.innerHTML =
+        '<div class="avatar">' + escapeText(convo.avatar) + '</div>' +
+        '<div><div class="convo-name">' + escapeText(convo.name) + '</div>' +
+        '<span class="mono muted">' + escapeText(convo.school) + '</span></div>' +
+        '<span class="chat-buddy-tag" style="background-color:' + tagColorHex(convo.color) + '">' +
+        escapeText(convo.tag) + '</span>';
+    }
+
+    var msgs = CHAT[currentConvo] || [];
+    $('#chatScroll').innerHTML = msgs
+      .map(function (m) {
+        return (
+          '<div class="bubble-row ' + (m.me ? 'is-me' : '') + '">' +
+          '<div class="bubble">' + escapeText(m.text) + '</div>' +
+          '<span class="bubble-time">' + escapeText(m.time) + '</span>' +
+          '</div>'
+        );
+      })
+      .join('');
+    scrollChatToEnd();
+  }
+
+  function scrollChatToEnd() {
+    var box = $('#chatScroll');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  /* ------------------------------------------------------------------ 状态 */
+
+  var state = { type: '全部', range: '同校' };
+
+  /* -------------------------------------------------------------- 屏幕切换 */
+
+  function activeScreen() {
+    return $('.screen.is-active');
+  }
+
+  function go(id, dir) {
+    if (!SCREENS[id] || (current === id && dir !== 'back')) return;
+    var meta = SCREENS[id];
+    var next = $('.screen[data-screen="' + id + '"]');
+    var prev = activeScreen();
+    var back = dir === 'back';
+
+    // 方向决定进出场位移，保证"返回"是反向的
+    next.style.setProperty('--enter-x', back ? '-28px' : '28px');
+    if (prev) prev.style.setProperty('--leave-x', back ? '20px' : '-20px');
+
+    if (prev && prev !== next) {
+      prev.classList.remove('is-active');
+      prev.classList.add('is-leaving');
+      setTimeout(function () {
+        prev.classList.remove('is-leaving');
+      }, 340);
+    }
+
+    // 移除再强制重排再加，视觉上让入场与子元素逐个进场重新播放
+    next.classList.remove('is-active');
+    void next.offsetWidth;
+    next.classList.add('is-active');
+    next.scrollTop = 0;
+
+    current = id;
+    // file:// 下部分浏览器禁止 replaceState，忽略即可（原型不依赖它）
+    try {
+      if (history.replaceState) history.replaceState(null, '', '#/' + id);
+    } catch (err) {}
+
+    // 顶部直达按钮：当前屏反色高亮
+    $$('.jump').forEach(function (j) {
+      j.classList.toggle('is-on', j.getAttribute('data-go') === id);
+    });
+
+    // 顶栏 / 底栏 / 悬浮按钮
+    if (meta.topbar === false) {
+      topbar.classList.add('is-hidden');
+    } else {
+      topbar.classList.remove('is-hidden');
+      topbarTitle.textContent = meta.title;
+      backBtn.classList.toggle('is-hidden', !meta.parent);
+    }
+
+    tabbar.classList.toggle('is-hidden', !meta.tabbar);
+
+    if (meta.tab) {
+      var slot = TAB_SLOT[meta.tab];
+      if (typeof slot === 'number') {
+        tabIndicator.style.transform = 'translateX(' + slot * 100 + '%)';
+      }
+      // 高亮只看 4 个真 tab，别把中间的「＋」点亮
+      tabs.forEach(function (t) {
+        t.classList.toggle('is-on', t.getAttribute('data-tab-go') === meta.tab);
+      });
+    }
+
+    if (id === 'hall') renderHall();
+    if (id === 'feed') {
+      syncFeedControls();
+      renderFeed();
+    }
+    if (id === 'match') renderMatch();
+    if (id === 'titles') renderTitles();
+    if (id === 'fitness') renderFitness();
+    if (id === 'study') renderStudy();
+    if (id === 'buddy') renderBuddy();
+  }
+
+  /* -------------------------------------------------------------- 事件绑定 */
+
+  document.addEventListener('click', function (e) {
+    var target = e.target;
+    if (!target || !target.closest) return;
+    var el = target.closest(
+      '[data-go], [data-sheet], [data-sheet-close], [data-toast], [data-tab-go], [data-open], [data-view], ' +
+      '[data-tag-suggest], [data-tag-edit], [data-color]'
+    );
+    if (!el) return;
+
+    // 视图切换：可点击原型 / 效果图总览
+    if (el.hasAttribute('data-view')) {
+      setView(el.getAttribute('data-view'));
+      return;
+    }
+
+    // 标签推荐词：点一下填进标签框
+    if (el.hasAttribute('data-tag-suggest')) {
+      draftLabel = el.getAttribute('data-tag-suggest');
+      var f = $('#tagField');
+      if (f) f.value = draftLabel;
+      renderBuddy();
+      return;
+    }
+
+    // 预设闪亮颜色
+    if (el.hasAttribute('data-color')) {
+      draftColor = el.getAttribute('data-color');
+      renderBuddy();
+      return;
+    }
+
+    // 改某段搭子关系的标签
+    if (el.hasAttribute('data-tag-edit')) {
+      var rid = el.getAttribute('data-tag-edit');
+      var rel = BUDDY_RELATIONS.filter(function (r) {
+        return r.id === rid;
+      })[0];
+      if (rel) {
+        draftLabel = rel.label;
+        draftColor = rel.color;
+        var field = $('#tagField');
+        if (field) field.value = rel.label;
+        renderBuddy();
+        toast('已载入「' + rel.name + '」的标签，改完点保存');
+        var ed = $('#tagEditor');
+        if (ed && ed.scrollIntoView) ed.scrollIntoView({ block: 'center' });
+      }
+      return;
+    }
+
+    // 抽屉关闭
+    if (el.hasAttribute('data-sheet-close')) {
+      closeSheet();
+      if (el.hasAttribute('data-toast') && el.getAttribute('data-toast')) {
+        toast(el.getAttribute('data-toast'));
+      }
+      return;
+    }
+
+    // 打开抽屉
+    if (el.hasAttribute('data-sheet')) {
+      openSheet(el.getAttribute('data-sheet'));
+      return;
+    }
+
+    // 底部标签
+    if (el.hasAttribute('data-tab-go')) {
+      go(el.getAttribute('data-tab-go'));
+      return;
+    }
+
+    // 打开卡片详情
+    if (el.hasAttribute('data-open')) {
+      renderDetail(el.getAttribute('data-open'));
+      go('detail');
+      return;
+    }
+
+    // 跳转
+    if (el.hasAttribute('data-go')) {
+      var target = el.getAttribute('data-go');
+      // 在「效果图总览」里点缩略图：先切回可点击原型，再进那一屏
+      if (document.body.classList.contains('view-gallery')) setView('proto');
+      if (target === 'chat') {
+        currentConvo = el.getAttribute('data-convo') || 'c1';
+        renderChat();
+      }
+      if (target === 'hall' && el.hasAttribute('data-filter')) {
+        state.type = { study: '学习', fitness: '健身', photo: '拍照' }[el.getAttribute('data-filter')] || '全部';
+        state.range = '同校';
+        syncHallControls();
+      }
+      go(target);
+      return;
+    }
+
+    // 只弹提示
+    if (el.hasAttribute('data-toast')) {
+      var msg = el.getAttribute('data-toast');
+      if (msg) toast(msg);
+      return;
+    }
+  });
+
+  // 登录按钮：先提示，再进入首页
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var btn = t.closest('.screen[data-screen="login"] .btn--orange');
+    if (!btn) return;
+    setTimeout(function () {
+      go('home');
+    }, 260);
+  });
+
+  backBtn.addEventListener('click', function () {
+    var meta = SCREENS[current];
+    if (meta && meta.parent) go(meta.parent, 'back');
+  });
+
+  // 中间的「＋」= 发同频圈内容（走的是 data-go="post"，已被委派点击处理）
+  if (tabPlus) {
+    tabPlus.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        go('post');
+      }
+    });
+  }
+
+  scrim.addEventListener('click', closeSheet);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSheet();
+  });
+
+  // 芯片筛选
+  $$('#typeChips .chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      $$('#typeChips .chip').forEach(function (c) {
+        c.classList.remove('is-on');
+      });
+      chip.classList.add('is-on');
+      state.type = chip.getAttribute('data-type');
+      renderHall();
+    });
+  });
+
+  // 范围分段控件
+  var segThumb = $('#segThumb');
+  $$('#rangeSeg .seg').forEach(function (seg, i) {
+    seg.addEventListener('click', function () {
+      $$('#rangeSeg .seg').forEach(function (s) {
+        s.classList.remove('is-on');
+      });
+      seg.classList.add('is-on');
+      segThumb.style.transform = 'translateX(' + i * 100 + '%)';
+      state.range = seg.getAttribute('data-range');
+      renderHall();
+    });
+  });
+
+  // 同频圈：同校 / 全国
+  $$('#feedSeg .seg').forEach(function (seg) {
+    seg.addEventListener('click', function () {
+      feedState.range = seg.getAttribute('data-feed');
+      syncFeedControls();
+      renderFeed();
+    });
+  });
+
+  // 同频圈：图文 / 视频 / 吐槽
+  $$('#postChips .chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      feedState.kind = chip.getAttribute('data-post');
+      syncFeedControls();
+      renderFeed();
+    });
+  });
+
+  // 发布类型芯片
+  $$('#publishChips .chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      $$('#publishChips .chip').forEach(function (c) {
+        c.classList.remove('is-on');
+      });
+      chip.classList.add('is-on');
+    });
+  });
+
+  // 聊天发送
+  function sendChat() {
+    var field = $('#chatField');
+    var text = field.value.trim();
+    if (!text) {
+      toast('说点什么再发');
+      return;
+    }
+    CHAT[currentConvo].push({ me: true, text: text, time: nowTime() });
+    field.value = '';
+    renderChat();
+
+    // 原型演示：对方自动回一句
+    setTimeout(function () {
+      var isAi = currentConvo === 'ai';
+      var reply = isAi
+        ? '我听到了。要不要把它拆成今晚能做的一件小事？做完就算赢。（非医疗建议）'
+        : '收到，我看看时间再回你 👍';
+      CHAT[currentConvo].push({ me: false, text: reply, time: nowTime() });
+      renderChat();
+    }, 900);
+  }
+
+  $('#chatSend').addEventListener('click', sendChat);
+  $('#chatField').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') sendChat();
+  });
+
+  function nowTime() {
+    var d = new Date();
+    return (
+      ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2)
+    );
+  }
+
+  function syncHallControls() {
+    $$('#typeChips .chip').forEach(function (c) {
+      c.classList.toggle('is-on', c.getAttribute('data-type') === state.type);
+    });
+    var idx = $$('#rangeSeg .seg').findIndex
+      ? $$('#rangeSeg .seg').findIndex(function (s) {
+          return s.getAttribute('data-range') === state.range;
+        })
+      : 0;
+    segThumb.style.transform = 'translateX(' + Math.max(idx, 0) * 100 + '%)';
+    $$('#rangeSeg .seg').forEach(function (s) {
+      s.classList.toggle('is-on', s.getAttribute('data-range') === state.range);
+    });
+  }
+
+  /* -------------------------------------------------------------- 同频圈 */
+
+  var feedState = { range: '同校', kind: '全部' };
+
+  function renderFeed() {
+    var list = $('#feedList');
+    if (!list) return;
+    var items = FEED.filter(function (p) {
+      return p.range === feedState.range && (feedState.kind === '全部' || p.kind === feedState.kind);
+    });
+    if (!items.length) {
+      list.innerHTML =
+        '<div class="placeholder-note">这一栏还没有内容。同频圈现在只有占位数据，真实内容排在后续迭代。</div>';
+      return;
+    }
+    list.innerHTML = items
+      .map(function (p) {
+        var mediaCls =
+          p.kind === '视频'
+            ? 'post-media post-media--video'
+            : p.kind === '吐槽'
+            ? 'post-media post-media--text'
+            : 'post-media';
+        var mediaTxt = p.kind === '视频' ? '▶ 视频占位' : p.kind === '图文' ? '［图片占位］' : '［纯文字］';
+        return (
+          '<article class="post-card">' +
+          '<div class="' + mediaCls + '">' + mediaTxt + '</div>' +
+          '<div class="post-body">' +
+          '<span class="post-title">' + p.title + '</span>' +
+          '<span class="post-text">' + p.text + '</span>' +
+          '</div>' +
+          '<div class="post-foot">' +
+          '<span class="post-user">' + p.user + ' · ' + p.kind + ' · ' + p.likes + ' 赞</span>' +
+          '<span class="post-tags">' +
+          p.tags
+            .map(function (t) {
+              return '<em class="post-tag">' + t + '</em>';
+            })
+            .join('') +
+          '</span>' +
+          '</div>' +
+          '</article>'
+        );
+      })
+      .join('');
+  }
+
+  function syncFeedControls() {
+    $$('#postChips .chip').forEach(function (c) {
+      c.classList.toggle('is-on', c.getAttribute('data-post') === feedState.kind);
+    });
+    var idx = 0;
+    $$('#feedSeg .seg').forEach(function (s, i) {
+      var on = s.getAttribute('data-feed') === feedState.range;
+      s.classList.toggle('is-on', on);
+      if (on) idx = i;
+    });
+    var thumb = $('#feedThumb');
+    if (thumb) thumb.style.transform = 'translateX(' + idx * 100 + '%)';
+  }
+
+  /* ------------------------------------------------------------------ 抽屉 */
+
+  function openSheet(id) {
+    var sheet = $('.sheet[data-sheet-id="' + id + '"]');
+    if (!sheet) return;
+    scrim.classList.add('is-on');
+    sheet.classList.add('is-on');
+    // 抽屉打开时让底栏与悬浮按钮整体让位（避免穿模）
+    document.body.classList.add('sheet-open');
+  }
+
+  function closeSheet() {
+    scrim.classList.remove('is-on');
+    $$('.sheet').forEach(function (s) {
+      s.classList.remove('is-on');
+    });
+    document.body.classList.remove('sheet-open');
+  }
+
+  /* ------------------------------------------------------------ 健身打卡 */
+
+  var WEEK = ['一', '二', '三', '四', '五', '六', '日'];
+  var weekState = [true, false, true, true, false, false, false];
+  var todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+
+  var FITNESS_PLANS = [
+    { name: '推 · 胸肩三头', gear: '自由重量', time: '45 分钟', moves: '卧推 4×8 · 肩上推举 3×10 · 绳索下压 3×12' },
+    { name: '拉 · 背二头', gear: '固定器械', time: '50 分钟', moves: '高位下拉 4×10 · 坐姿划船 3×10 · 弯举 3×12' },
+    { name: '腿 · 下肢', gear: '自由重量', time: '55 分钟', moves: '深蹲 4×6 · 罗马尼亚硬拉 3×8 · 提踵 4×15' },
+    { name: '有氧 + 拉伸', gear: '有氧', time: '30 分钟', moves: '慢跑 20 分钟 · 全身拉伸 10 分钟' }
+  ];
+
+  function renderFitness() {
+    var dots = $('#weekDots');
+    if (dots) {
+      dots.innerHTML = WEEK.map(function (d, i) {
+        return (
+          '<button class="day-dot' + (weekState[i] ? ' is-on' : '') + (i === todayIdx ? ' is-today' : '') +
+          '" data-day="' + i + '"><span>' + d + '</span><span>' + (weekState[i] ? '✓' : '·') + '</span></button>'
+        );
+      }).join('');
+    }
+
+    var count = $('#weekCount');
+    if (count) count.textContent = weekState.filter(Boolean).length + ' / 7';
+
+    var plans = $('#fitnessPlans');
+    if (plans) {
+      plans.innerHTML = FITNESS_PLANS.map(function (p, i) {
+        return (
+          '<div class="plan-card stagger" style="--i:' + i + '" data-toast="' +
+          escapeText(p.name) + ' · 可自定义组数与休息时间">' +
+          '<div class="row-between"><strong>' + escapeText(p.name) + '</strong>' +
+          '<span class="mono">' + escapeText(p.time) + '</span></div>' +
+          '<span class="mono muted">' + escapeText(p.gear) + ' · ' + escapeText(p.moves) + '</span>' +
+          '</div>'
+        );
+      }).join('');
+    }
+  }
+
+  var weekBox = $('#weekDots');
+  if (weekBox) {
+    weekBox.addEventListener('click', function (e) {
+      var dot = e.target && e.target.closest ? e.target.closest('.day-dot') : null;
+      if (!dot) return;
+      var i = parseInt(dot.getAttribute('data-day'), 10);
+      weekState[i] = !weekState[i];
+      renderFitness();
+      if (weekState[i]) toast('已打卡 · 周' + WEEK[i] + ' +1 学习积分');
+    });
+  }
+
+  /* ---------------------------------------------------------- 学习 / 番茄钟 */
+
+  var STUDY_BUDDIES = [
+    { name: '图书馆四楼常驻', tags: ['期末复习', '安静', '22:00 前'], hit: 82 },
+    { name: '高数互助小组', tags: ['高数', '讲题', '每周二'], hit: 74 },
+    { name: '六级单词搭子', tags: ['英语六级', '背单词', '打卡'], hit: 68 }
+  ];
+
+  function renderStudy() {
+    var box = $('#studyBuddies');
+    if (!box) return;
+    box.innerHTML = STUDY_BUDDIES.map(function (b, i) {
+      return (
+        '<div class="plan-card stagger" style="--i:' + i + '" data-toast="已发出申请：' + escapeText(b.name) + '">' +
+        '<div class="row-between"><strong>' + escapeText(b.name) + '</strong>' +
+        '<span class="hit">' + b.hit + '%</span></div>' +
+        '<div class="chips stagger" style="--i:' + i + ';margin:0;padding:0;border:0">' +
+        b.tags
+          .map(function (t) {
+            return '<span class="tag">' + escapeText(t) + '</span>';
+          })
+          .join('') +
+        '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  var POMO_TOTAL = 25 * 60;
+  var pomoLeft = POMO_TOTAL;
+  var pomoTimer = null;
+
+  function paintTimer() {
+    var text = $('#timerText');
+    if (!text) return;
+    var m = Math.floor(pomoLeft / 60);
+    var s = pomoLeft % 60;
+    text.textContent = ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+    var fill = $('#timerFill');
+    if (fill) fill.style.width = ((POMO_TOTAL - pomoLeft) / POMO_TOTAL) * 100 + '%';
+    var hint = $('#timerHint');
+    if (hint) {
+      hint.textContent = pomoTimer
+        ? '专注中 · 完成 1 个番茄 +1 学习积分'
+        : (pomoLeft === POMO_TOTAL ? '完成 1 个番茄 +1 学习积分' : '已暂停，点继续接着来');
+    }
+  }
+
+  var timerToggleBtn = $('#timerToggle');
+  var timerResetBtn = $('#timerReset');
+
+  function toggleTimer() {
+    if (pomoTimer) {
+      clearInterval(pomoTimer);
+      pomoTimer = null;
+      if (timerToggleBtn) timerToggleBtn.textContent = '继续';
+      paintTimer();
+      return;
+    }
+    if (pomoLeft <= 0) return;
+    if (timerToggleBtn) timerToggleBtn.textContent = '暂停';
+    pomoTimer = setInterval(function () {
+      pomoLeft -= 1;
+      if (pomoLeft <= 0) {
+        pomoLeft = 0;
+        clearInterval(pomoTimer);
+        pomoTimer = null;
+        if (timerToggleBtn) timerToggleBtn.textContent = '开始';
+        toast('🍅 番茄完成，学习积分 +1');
+      }
+      paintTimer();
+    }, 1000);
+    paintTimer();
+  }
+
+  if (timerToggleBtn) timerToggleBtn.addEventListener('click', toggleTimer);
+  if (timerResetBtn) {
+    timerResetBtn.addEventListener('click', function () {
+      if (pomoTimer) clearInterval(pomoTimer);
+      pomoTimer = null;
+      pomoLeft = POMO_TOTAL;
+      if (timerToggleBtn) timerToggleBtn.textContent = '开始';
+      paintTimer();
+    });
+  }
+
+  /* 开关：只在本地切换状态，不弹提示 */
+  document.addEventListener(
+    'click',
+    function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var sw = t.closest('.switch');
+      if (!sw) return;
+      e.stopPropagation();
+      e.preventDefault();
+      sw.classList.toggle('is-on');
+    },
+    true
+  );
+
+  /* -------------------------------------------------------- 发日常：可见范围 */
+
+  (function () {
+    var seg = $('#postScopeSeg');
+    var thumb = $('#postScopeThumb');
+    if (!seg || !thumb) return;
+    seg.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('.seg') : null;
+      if (!b || !seg.contains(b)) return;
+      var list = $$('.seg', seg);
+      var idx = list.indexOf(b);
+      if (idx < 0) return;
+      list.forEach(function (s, i) {
+        s.classList.toggle('is-on', i === idx);
+      });
+      thumb.style.transform = 'translateX(' + idx * 100 + '%)';
+    });
+  })();
+
+  /* -------------------------------------------------- ＋搭子：保存自定义标签 */
+
+  (function () {
+    function saveTag() {
+      var field = $('#tagField');
+      var text = field ? field.value.trim() : '';
+      if (!text) {
+        toast('先给这段关系起个名字');
+        return;
+      }
+      if (text.length > 8) {
+        toast('标签最多 8 个字');
+        return;
+      }
+      draftLabel = text;
+      // 原型：把当前第一段关系的标签改成新填的，模拟"保存成功"
+      if (BUDDY_RELATIONS.length) {
+        BUDDY_RELATIONS[0].label = text;
+        BUDDY_RELATIONS[0].color = draftColor;
+      }
+      renderBuddy();
+      toast('已保存「' + text + '」（原型演示，不落库）');
+    }
+
+    var addBtn = $('#tagAdd');
+    if (addBtn) addBtn.addEventListener('click', saveTag);
+
+    var input = $('#tagField');
+    if (input) {
+      input.addEventListener('input', function () {
+        draftLabel = input.value;
+        renderBuddy();
+      });
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') saveTag();
+      });
+    }
+  })();
+
+  /* ------------------------------------------------------------ 效果图总览 */
+
+  // 顺序 = 缩略图顺序（按真实使用路径排，不按 DOM 顺序）
+  var GALLERY_ORDER = [
+    'login', 'home', 'hall', 'feed', 'post', 'detail', 'match',
+    'messages', 'buddy', 'chat', 'me', 'verify', 'titles', 'fitness', 'study'
+  ];
+
+  var STRIP_ATTRS = [
+    'data-go', 'data-open', 'data-sheet', 'data-sheet-close', 'data-toast', 'data-tab-go', 'data-view',
+    'data-tag-suggest', 'data-tag-edit', 'data-color'
+  ];
+
+  function buildGallery() {
+    var grid = $('#galleryGrid');
+    if (!grid) return;
+
+    renderDetail('b1'); // 详情页平时是点卡片才渲染的，缩略图得先有内容
+
+    grid.innerHTML = '';
+    GALLERY_ORDER.forEach(function (id, i) {
+      var sc = $('.screen[data-screen="' + id + '"]');
+      if (!sc) return;
+      var meta = SCREENS[id] || {};
+      var title = meta.title || id;
+
+      var item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.setAttribute('data-go', id);
+      item.setAttribute('title', '进「' + title + '」');
+
+      var shot = document.createElement('div');
+      shot.className = 'shot';
+
+      var scale = document.createElement('div');
+      scale.className = 'shot-scale';
+
+      var bar = document.createElement('div');
+      bar.className = 'shot-bar';
+      bar.innerHTML = '<span>9:41</span><span>▮▮▮ 100%</span>';
+
+      var tb = document.createElement('div');
+      tb.className = 'shot-topbar';
+      tb.innerHTML =
+        '<span class="shot-back">' +
+        (meta.parent ? '‹' : '') +
+        '</span><span class="shot-title">' +
+        title +
+        '</span>';
+
+      var vp = document.createElement('div');
+      vp.className = 'shot-viewport';
+
+      var clone = sc.cloneNode(true);
+      clone.removeAttribute('id');
+      clone.removeAttribute('data-screen');
+      clone.className = 'screen is-active';
+      clone.style.opacity = '1';
+      clone.style.transform = 'none';
+      clone.style.overflow = 'hidden';
+      clone.style.pointerEvents = 'none';
+      // 缩略图是死的：去掉重复 id 与全部交互属性，免得点到克隆体里的按钮
+      $$('[id]', clone).forEach(function (el) {
+        el.removeAttribute('id');
+      });
+      $$(
+        '[data-go], [data-open], [data-sheet], [data-sheet-close], [data-toast], [data-tab-go], [data-view]',
+        clone
+      ).forEach(function (el) {
+        STRIP_ATTRS.forEach(function (a) {
+          el.removeAttribute(a);
+        });
+      });
+      vp.appendChild(clone);
+
+      scale.appendChild(bar);
+      scale.appendChild(tb);
+      scale.appendChild(vp);
+      shot.appendChild(scale);
+
+      var label = document.createElement('div');
+      label.className = 'shot-label';
+      label.innerHTML =
+        '<span class="shot-name">' +
+        title +
+        '</span><span class="shot-no">' +
+        ('0' + (i + 1)).slice(-2) +
+        '</span>';
+
+      item.appendChild(shot);
+      item.appendChild(label);
+      grid.appendChild(item);
+    });
+
+    var n = String(GALLERY_ORDER.length);
+    if ($('#galleryCount')) $('#galleryCount').textContent = n;
+    if ($('#galleryCount2')) $('#galleryCount2').textContent = n;
+  }
+
+  function setView(v) {
+    var gallery = v === 'gallery';
+    document.body.classList.toggle('view-gallery', gallery);
+    $$('.vbtn').forEach(function (b) {
+      b.classList.toggle('is-on', b.getAttribute('data-view') === v);
+    });
+    var g = $('#gallery');
+    if (g) g.hidden = !gallery;
+    if (gallery) buildGallery();
+    window.scrollTo(0, 0);
+  }
+
+  /* -------------------------------------------------------------- 初始化 */
+
+  function initStagger() {
+    screens.forEach(function (sc) {
+      $$('.stagger', sc).forEach(function (el, i) {
+        if (!el.style.getPropertyValue('--i')) el.style.setProperty('--i', i);
+      });
+    });
+  }
+
+  function init() {
+    renderHomeBuddies();
+    renderConvos();
+    renderTitles();
+    renderMatch();
+    renderChat();
+    renderFitness();
+    renderStudy();
+    paintTimer();
+    renderTagPalette();
+    renderTagSuggest();
+    renderBuddy();
+    initStagger();
+    syncHallControls();
+    syncFeedControls();
+    renderFeed();
+
+    // 效果图总览的缩略图先建好（切过去就能看）；失败就写在页面上，别静默
+    try {
+      buildGallery();
+    } catch (err) {
+      var gbox = $('#galleryGrid');
+      if (gbox) {
+        gbox.innerHTML = '<div class="placeholder-note">缩略图生成失败：' + err.message + '</div>';
+      }
+    }
+
+    var hash = (location.hash || '').replace('#/', '');
+    go(SCREENS[hash] ? hash : 'login');
+  }
+
+  window.addEventListener('hashchange', function () {
+    var id = (location.hash || '').replace('#/', '');
+    if (SCREENS[id] && id !== current) {
+      go(id, SCREENS[id].parent ? 'back' : 'forward');
+    }
+  });
+
+  init();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "card-apply",
+  "version": "1.0.0",
+  "description": "申请搭子：apply/accept/reject/cancel",
+  "main": "index.js"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "message-conversations",
+  "version": "1.0.0",
+  "description": "会话列表：对方信息 + 搭子标签 + 未读数",
+  "main": "index.js"
+}

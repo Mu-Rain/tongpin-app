@@ -1,0 +1,7 @@
+{
+  "name": "set-admin",
+  "version": "1.0.0",
+  "description": "One-off ops tool: grant admin role to a phone number",
+  "main": "index.js",
+  "dependencies": {}
+}

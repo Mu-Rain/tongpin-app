@@ -1,0 +1,6 @@
+{
+  "name": "buddy-list",
+  "version": "1.0.0",
+  "description": "My buddies list: relations + peer profile + conversation summary",
+  "main": "index.js"
+}

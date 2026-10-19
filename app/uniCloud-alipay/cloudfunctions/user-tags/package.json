@@ -1,0 +1,9 @@
+{
+    "name":  "user-tags",
+    "version":  "1.0.0",
+    "description":  "cloud function: user-tags",
+    "main":  "index.js",
+    "dependencies":  {
+
+                     }
+}

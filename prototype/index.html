@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>同频 · HTML 原型（新粗野主义）</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ===== 顶部直达按钮：任意一屏一键到达（手机端也保留） ===== -->
+<header class="jumpbar">
+  <div class="viewbar">
+    <button class="vbtn is-on" data-view="proto">可点击原型</button>
+    <button class="vbtn" data-view="gallery">效果图总览 · <span id="galleryCount">14</span> 屏</button>
+    <span class="viewbar-hint">手机壳里的东西都能点；「效果图总览」一页看完全部界面，点缩略图直接进去。</span>
+  </div>
+  <div class="jumpbar-inner">
+    <span class="jumpbar-tag">v2 · 直达</span>
+    <button class="jump" data-go="login">登录 / 注册</button>
+    <button class="jump" data-go="home">首页</button>
+    <button class="jump" data-go="hall">搭子大厅</button>
+    <button class="jump" data-go="feed">同频圈</button>
+    <button class="jump" data-go="post">发日常</button>
+    <button class="jump" data-sheet="publish">发布卡片</button>
+    <button class="jump" data-go="match">匹配结果</button>
+    <button class="jump" data-go="chat">聊天</button>
+    <button class="jump" data-go="messages">消息</button>
+    <button class="jump" data-go="buddy">我的搭子</button>
+    <button class="jump" data-go="me">我的</button>
+    <button class="jump" data-go="titles">称号库</button>
+    <button class="jump" data-go="verify">学生认证</button>
+    <button class="jump" data-go="fitness">健身打卡</button>
+    <button class="jump" data-go="study">学习 &amp; 番茄钟</button>
+  </div>
+  <div class="jumpbar-hint">手机壳里没有假按钮：底部 Tab 切页、搭子卡片进详情、卡片里点「我想搭」、聊天能发消息、右下角 + 号发布、左上角返回。上面的按钮可直达任意一屏。</div>
+</header>
+
+<div class="stage">
+
+  <!-- ===== 桌面端设计说明（手机上自动隐藏） ===== -->
+  <aside class="spec">
+    <div class="spec-block spec-hero">
+      <div class="spec-eyebrow">PROTOTYPE / v0.1</div>
+      <h1 class="spec-title">同频<br /><span class="hl">原型</span></h1>
+      <p class="spec-note">校园搭子 App 的高保真界面原型。左侧手机是真的可以点的：切标签、点卡片、发布、进聊天都有真实过渡动画。</p>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-eyebrow">STYLE</div>
+      <ul class="spec-list">
+        <li>新粗野主义：直角 / 硬边框 / 硬阴影</li>
+        <li>边框 3px 纯黑，阴影 4px→8px 无模糊</li>
+        <li>原色只用于强调（黄）+ CTA（橙）</li>
+        <li>反色块：黑底白字、黄底黑字</li>
+      </ul>
+    </div>
+
+    <div class="spec-block">
+      <div class="spec-eyebrow">TOKENS</div>
+      <div class="swatches">
+        <div class="swatch" style="background:#000000"><span>INK</span></div>
+        <div class="swatch" style="background:#ffffff"><span>PAPER</span></div>
+        <div class="swatch" style="background:#ffde00"><span>YELLOW</span></div>
+        <div class="swatch" style="background:#ff4d00"><span>ORANGE</span></div>
+      </div>
+      <ul class="spec-list">
+        <li>--border: 3px solid #000</li>
+        <li>--shadow: 4px 4px 0 #000</li>
+        <li>--shadow-lg: 8px 8px 0 #000</li>
+        <li>--radius: 0</li>
+        <li>过渡 180–320ms / cubic-bezier(.22,1,.36,1)</li>
+      </ul>
+    </div>
+
+    <div class="spec-block spec-foot">
+      <div class="spec-eyebrow">SCREENS</div>
+      <ul class="spec-list spec-list--tight">
+        <li>登录 / 首页 / 搭子大厅</li>
+        <li>卡片详情 / 匹配结果</li>
+        <li>消息 / 聊天 / 我的</li>
+        <li>发布抽屉 / 每日百科抽屉</li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- ===== 手机 ===== -->
+  <div class="phone" id="phone">
+    <div class="phone-bar">
+      <span class="mono">9:41</span>
+      <span class="mono phone-bar-right">5G ▮▮▮</span>
+    </div>
+
+    <header class="topbar" id="topbar">
+      <button class="icon-btn" id="backBtn" aria-label="返回">←</button>
+      <div class="topbar-title" id="topbarTitle">首页</div>
+      <div class="logo-sq">同</div>
+    </header>
+
+    <main class="viewport" id="viewport">
+
+      <!-- ===== 登录 ===== -->
+      <section class="screen" data-screen="login" data-title="登录" data-chrome="off">
+        <div class="login">
+          <div class="login-hero">
+            <div class="stamp">校园搭子 · 找同频的人</div>
+            <h1 class="login-title">同频</h1>
+            <p class="login-sub">三分钟，找到一个今天能一起做事的人</p>
+          </div>
+
+          <div class="panel">
+            <label class="field">
+              <span class="field-label">手机号</span>
+              <input class="input" type="tel" maxlength="11" placeholder="11 位手机号" />
+            </label>
+            <label class="field">
+              <span class="field-label">密码</span>
+              <input class="input" type="password" placeholder="至少 6 位" />
+            </label>
+            <button class="btn btn--orange btn--block" data-toast="登录接口第 2 天接入云函数">登录</button>
+            <div class="login-row">
+              <span class="link" data-toast="注册页第 2 天做">还没有账号？去注册</span>
+              <span class="link" data-toast="找回密码第 2 天做">忘记密码</span>
+            </div>
+          </div>
+
+          <div class="block-black login-note">
+            <span class="mono">MVP · 3 秒轮询 + uni-push</span>
+            <span class="mono">未认证可用，同校频道需认证</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 首页 ===== -->
+      <section class="screen" data-screen="home" data-title="首页" data-tab="home">
+        <div class="screen-body">
+          <div class="wiki-entry stagger" data-sheet="wiki">
+            <span class="wiki-tag mono">每日百科</span>
+            <span class="wiki-text">考试周前一晚，咖啡因该在几点喝？</span>
+            <span class="wiki-arrow">→</span>
+          </div>
+
+          <h2 class="h2 stagger">今天想做什么？</h2>
+
+          <!-- 便当格：板块大小刻意不统一，搭子大厅最大 -->
+          <button class="bento bento--hero stagger" data-go="hall">
+            <span class="bento-kicker mono">主入口 · 发一张卡片，按标签算契合度</span>
+            <span class="bento-title">搭子大厅</span>
+            <span class="bento-desc">学习搭子 · 健身搭子 · 拍照 / 逛校园 · 竞赛搭子，都从这一个口进</span>
+            <span class="bento-tags">
+              <em>学习</em><em>健身</em><em>拍照</em><em>竞赛</em>
+            </span>
+            <span class="bento-go mono">进大厅 →</span>
+          </button>
+
+          <div class="bento-row stagger">
+            <button class="bento bento--half bento--yellow" data-go="study">
+              <span class="bento-ico">⏱️</span>
+              <span class="bento-title-sm">学习</span>
+              <span class="bento-meta mono">番茄钟 · 资料共享 · 自习打卡</span>
+            </button>
+            <button class="bento bento--half" data-go="fitness">
+              <span class="bento-ico">🏋️</span>
+              <span class="bento-title-sm">健身</span>
+              <span class="bento-meta mono">训练计划 · 打卡 · 器械分类</span>
+            </button>
+          </div>
+
+          <button class="bento bento--calm stagger" data-go="chat" data-convo="ai">
+            <span class="bento-kicker mono">预留板块 · 简化版</span>
+            <span class="bento-title-sm">心理疏导 · 情绪引导机器人</span>
+            <span class="bento-desc">先只做「一个能聊两句的框」：不诊断、不量表、不评价。后续再扩成完整板块。</span>
+            <span class="bento-preview">
+              <em class="bubble-mini bubble-mini--ai">今天有点累，想找个人说说话。</em>
+              <em class="bubble-mini">我在。先从最难受的那件事说起也行。</em>
+            </span>
+          </button>
+
+          <div class="row-between stagger">
+            <h2 class="h2">我的搭子</h2>
+            <span class="link" data-go="messages">全部 →</span>
+          </div>
+          <div class="stack" id="homeBuddies"></div>
+        </div>
+      </section>
+
+      <!-- ===== 搭子大厅 ===== -->
+      <section class="screen" data-screen="hall" data-title="搭子大厅" data-parent="home">
+        <div class="screen-body">
+          <div class="segmented stagger" id="rangeSeg" style="--seg-count: 3">
+            <div class="seg-thumb" id="segThumb"></div>
+            <button class="seg is-on" data-range="同校">同校</button>
+            <button class="seg" data-range="附近">附近</button>
+            <button class="seg" data-range="城市">城市</button>
+          </div>
+
+          <button class="hall-publish stagger" data-sheet="publish">
+            <span>发布搭子需求 ＋</span>
+            <span class="hall-publish-sub">每天最多 5 条</span>
+          </button>
+
+          <div class="notice stagger" id="rangeNotice">
+            <span class="badge badge--yellow mono">认证</span>
+            <span>同校频道需要学生认证，你已认证</span>
+          </div>
+
+          <div class="chips stagger" id="typeChips">
+            <button class="chip is-on" data-type="全部">全部</button>
+            <button class="chip" data-type="学习">学习</button>
+            <button class="chip" data-type="健身">健身</button>
+            <button class="chip" data-type="拍照">拍照</button>
+            <button class="chip" data-type="竞赛">竞赛</button>
+            <button class="chip" data-type="吃饭">吃饭</button>
+            <button class="chip" data-type="运动">运动</button>
+          </div>
+
+          <div class="row-between stagger">
+            <span class="mono muted" id="hallCount">6 条需求</span>
+            <button class="btn btn--sm" data-go="match">一键匹配 ⚡</button>
+          </div>
+
+          <div class="stack" id="hallList"></div>
+        </div>
+      </section>
+
+      <!-- ===== 同频圈（原底部「大厅」Tab 的位置） ===== -->
+      <section class="screen" data-screen="feed" data-title="同频圈" data-tab="feed">
+        <div class="screen-body">
+          <div class="segmented stagger" id="feedSeg" style="--seg-count: 3">
+            <div class="seg-thumb" id="feedThumb"></div>
+            <button class="seg is-on" data-feed="同校">同校</button>
+            <button class="seg" data-feed="地区">地区</button>
+            <button class="seg" data-feed="发现">发现</button>
+          </div>
+
+          <div class="chips stagger" id="postChips">
+            <button class="chip is-on" data-post="全部">全部</button>
+            <button class="chip" data-post="图文">图文</button>
+            <button class="chip" data-post="视频">视频</button>
+            <button class="chip" data-post="吐槽">吐槽</button>
+          </div>
+
+          <div class="feed-grid" id="feedList"></div>
+
+          <button class="btn btn--block stagger" data-go="post">＋ 发一条日常</button>
+          <div class="placeholder-note stagger">占位板块：同校 / 全国两栏、图文与视频流、点赞评论都排在后续迭代，这里先把结构占住。</div>
+        </div>
+      </section>
+
+      <!-- ===== 发日常（同频圈发帖，原型占位） ===== -->
+      <section class="screen" data-screen="post" data-title="发一条日常" data-parent="feed">
+        <div class="screen-body">
+          <div class="segmented stagger" id="postScopeSeg">
+            <div class="seg-thumb" id="postScopeThumb"></div>
+            <button class="seg is-on" data-scope="同校">同校可见</button>
+            <button class="seg" data-scope="全国">全国可见</button>
+          </div>
+
+          <label class="field stagger">
+            <span class="field-label">说点什么</span>
+            <textarea class="input input--area" rows="4">图书馆四楼今天人好少，来自习的可以坐一起。</textarea>
+          </label>
+
+          <div class="chips stagger">
+            <button class="chip is-on" data-media="图文">图文</button>
+            <button class="chip" data-media="视频">视频</button>
+            <button class="chip" data-media="吐槽">纯文字</button>
+          </div>
+
+          <div class="upload-row stagger">
+            <div class="upload-box upload-box--sm"><span class="mono">＋ 图片</span><span class="mono muted">最多 9 张</span></div>
+            <div class="upload-box upload-box--sm"><span class="mono">＋ 视频</span><span class="mono muted">≤ 60 秒</span></div>
+            <div class="upload-box upload-box--sm"><span class="mono">＋ 话题</span><span class="mono muted">最多 3 个</span></div>
+          </div>
+
+          <label class="field stagger">
+            <span class="field-label">话题标签</span>
+            <input class="input" value="#期末冲刺 #图书馆搭子" />
+          </label>
+
+          <button class="btn btn--orange btn--block stagger" data-toast="已发到「同校」（原型演示，不做真上传）">发布</button>
+          <div class="placeholder-note stagger">占位页：同频圈的发帖入口。真实上传 / 审核 / 点赞评论都排在后续迭代，这里先把发帖的字段与流程占住。</div>
+        </div>
+      </section>
+
+      <!-- ===== 卡片详情 ===== -->
+      <section class="screen" data-screen="detail" data-title="需求详情" data-parent="hall">
+        <div class="screen-body" id="detailBody"></div>
+      </section>
+
+      <!-- ===== 匹配结果 ===== -->
+      <section class="screen" data-screen="match" data-title="匹配结果" data-parent="hall">
+        <div class="screen-body">
+          <div class="block-yellow match-head stagger">
+            <div class="match-score mono">TOP 10</div>
+            <div class="match-title">按标签重合度排序</div>
+            <div class="match-sub">硬过滤：同类型 · 进行中 · 排除自己 · 信誉 ≥ 60</div>
+          </div>
+          <div class="stack" id="matchList"></div>
+          <button class="btn btn--block" data-toast="已放宽 2 个标签，重新匹配">匹配不到？放宽标签</button>
+        </div>
+      </section>
+
+      <!-- ===== 消息 ===== -->
+      <section class="screen" data-screen="messages" data-title="消息" data-tab="messages">
+        <div class="screen-body">
+          <div class="ai-entry stagger" data-go="chat" data-convo="ai">
+            <div class="avatar avatar--orange">AI</div>
+            <div class="convo-main">
+              <div class="convo-top">
+                <span class="convo-name">情绪引导机器人</span>
+                <span class="mono muted">刚刚</span>
+              </div>
+              <div class="convo-last">看起来你有点焦虑，要聊聊吗？（非医疗建议）</div>
+            </div>
+            <span class="badge mono">独立聊天框</span>
+          </div>
+          <div class="stack" id="convoList"></div>
+          <button class="btn btn--block stagger" data-go="buddy">我的搭子与标签 →</button>
+        </div>
+      </section>
+
+      <!-- ===== 我的搭子与标签（自定义标签 + 闪亮配色） ===== -->
+      <section class="screen" data-screen="buddy" data-title="我的搭子与标签" data-parent="messages">
+        <div class="screen-body">
+          <div class="block-black stagger">
+            <span class="mono">搭子 ≠ 好友</span>
+            <strong class="state-line">给每段搭子关系起个名字</strong>
+            <span>搭子关系不自动变好友。标签只在你们这一栏显示，可随时改。</span>
+          </div>
+
+          <div class="stack" id="buddyList"></div>
+
+          <div class="tag-editor stagger" id="tagEditor">
+            <span class="field-label">搭子标签</span>
+            <div class="tag-editor-row">
+              <input class="input" id="tagField" maxlength="8" placeholder="给这段关系起个名字" />
+              <button class="buddy-add" id="tagAdd">＋搭子</button>
+            </div>
+
+            <span class="field-label">推荐词（点一下就填）</span>
+            <div class="chips" id="tagSuggest"></div>
+
+            <span class="field-label">标签颜色 · 预设闪亮色</span>
+            <div class="color-swatches" id="tagSwatches"></div>
+
+            <span class="field-label">预览</span>
+            <div class="tag-preview" id="tagPreview"></div>
+          </div>
+
+          <div class="placeholder-note stagger">标签颜色全部带反光高光；悬停卡片的标签会有一道反光扫过（原型演示）。</div>
+        </div>
+      </section>
+
+      <!-- ===== 聊天 ===== -->
+      <section class="screen" data-screen="chat" data-title="聊天" data-parent="messages" data-chrome="chat">
+        <div class="chat-wrap">
+          <div class="chat-bar" id="chatBar"></div>
+          <div class="chat-scroll" id="chatScroll"></div>
+          <div class="chat-input">
+            <input class="input input--flat" id="chatField" placeholder="说点什么…" />
+            <button class="btn btn--orange btn--sm" id="chatSend">发送</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 我的 ===== -->
+      <section class="screen" data-screen="me" data-title="我的" data-tab="me">
+        <div class="screen-body">
+          <div class="profile stagger">
+            <div class="avatar avatar--lg">林</div>
+            <div class="profile-main">
+              <div class="profile-top">
+                <span class="profile-name">林小满</span>
+                <span class="badge badge--yellow mono">已认证</span>
+              </div>
+              <div class="mono muted">示例大学 · 大三 · U100238</div>
+              <div class="profile-tags">
+                <span class="chip chip--mini">早起</span>
+                <span class="chip chip--mini">考研</span>
+                <span class="chip chip--mini">健身新手</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="stats stagger">
+            <div class="stat"><span class="stat-num mono">86</span><span class="stat-label">信誉分</span></div>
+            <div class="stat"><span class="stat-num mono">12</span><span class="stat-label">搭子</span></div>
+            <div class="stat"><span class="stat-num mono">3</span><span class="stat-label">称号</span></div>
+          </div>
+
+          <div class="menu-list stagger">
+            <button class="menu-row" data-go="verify">
+              <span class="menu-label">学生认证</span>
+              <span class="badge badge--yellow mono">已认证</span>
+              <span class="menu-arrow">→</span>
+            </button>
+            <button class="menu-row" data-go="titles">
+              <span class="menu-label">称号库</span>
+              <span class="mono muted">3 / 12</span>
+              <span class="menu-arrow">→</span>
+            </button>
+            <button class="menu-row" data-go="fitness">
+              <span class="menu-label">健身与打卡</span>
+              <span class="mono muted">本周 4 / 7</span>
+              <span class="menu-arrow">→</span>
+            </button>
+            <button class="menu-row" data-go="study">
+              <span class="menu-label">学习与番茄钟</span>
+              <span class="mono muted">今日 2 个番茄</span>
+              <span class="menu-arrow">→</span>
+            </button>
+          </div>
+
+          <h2 class="h2 stagger">称号墙</h2>
+          <div class="titles stagger" id="titleWall"></div>
+
+          <h2 class="h2 stagger">信誉明细</h2>
+          <div class="ledger stagger">
+            <div class="ledger-row"><span>完成一次搭子</span><span class="delta up mono">+2</span></div>
+            <div class="ledger-row"><span>学生认证通过</span><span class="delta up mono">+5</span></div>
+            <div class="ledger-row"><span>被举报（成立）</span><span class="delta down mono">-10</span></div>
+            <div class="ledger-row ledger-row--note"><span class="mono muted">信誉分只由流水推导，低于 60 禁止发布与进同校频道</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 学生认证 ===== -->
+      <section class="screen" data-screen="verify" data-title="学生认证" data-parent="me">
+        <div class="screen-body">
+          <div class="block-black stagger" style="--i:0">
+            <span class="mono">STATUS · VERIFIED</span>
+            <strong class="state-line">已通过认证</strong>
+            <span class="mono">认证后可进同校频道 · 卡片带认证标识 · 信誉 +5</span>
+          </div>
+
+          <div class="upload-box stagger" style="--i:1">
+            <span class="upload-ico">🎓</span>
+            <span class="upload-title">学生证 / 校园卡照片</span>
+            <span class="mono muted">只用于人工审核 · 存私有空间 · 通过后 30 天删除</span>
+            <button class="btn btn--sm" data-toast="选择图片（原型演示）">重新上传</button>
+          </div>
+
+          <h2 class="h2 stagger" style="--i:2">认证流程</h2>
+          <div class="steps-mini stagger" style="--i:3">
+            <div class="step-mini">
+              <span class="step-no mono">1</span>
+              <div><strong>上传证件</strong><span class="mono muted">学号与姓名页，不遮不挡</span></div>
+            </div>
+            <div class="step-mini">
+              <span class="step-no mono">2</span>
+              <div><strong>人工审核</strong><span class="mono muted">1–2 个工作日，最多重试 2 次</span></div>
+            </div>
+            <div class="step-mini">
+              <span class="step-no mono">3</span>
+              <div><strong>信息脱敏</strong><span class="mono muted">库表只存状态与时间，不存证件图地址</span></div>
+            </div>
+          </div>
+
+          <div class="block-yellow stagger" style="--i:4">
+            <span class="mono">合规提醒</span>
+            <span>学生证是敏感个人信息：只放私有存储、只有后台管理员可读、公共目录不留原始文件。</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 称号库 ===== -->
+      <section class="screen" data-screen="titles" data-title="称号库" data-parent="me">
+        <div class="screen-body">
+          <div class="block-yellow stagger" style="--i:0">
+            <span class="mono">已获得 3 / 12</span>
+            <strong class="state-line">称号来自互动，不靠签到</strong>
+            <span>大部分称号较难获取：连续互动、被对方点赞、完成 10 次靠谱搭子等。</span>
+          </div>
+          <div class="progress-track stagger" style="--i:1">
+            <div class="progress-fill" style="width:25%"></div>
+          </div>
+          <div class="titles titles--wide stagger" style="--i:2" id="titleLibrary"></div>
+          <div class="callout-line stagger" style="--i:3">
+            <span class="mono">称号可在个人资料里选 1 个展示</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 健身 ===== -->
+      <section class="screen" data-screen="fitness" data-title="健身与打卡" data-parent="home">
+        <div class="screen-body">
+          <div class="week-card stagger" style="--i:0">
+            <div class="row-between">
+              <span class="mono">本周打卡</span>
+              <span class="mono" id="weekCount">4 / 7</span>
+            </div>
+            <div class="week-dots" id="weekDots"></div>
+            <span class="mono muted">点一下方块就能打卡（原型演示）</span>
+          </div>
+
+          <h2 class="h2 stagger" style="--i:1">训练模板</h2>
+          <div class="stack" id="fitnessPlans"></div>
+
+          <h2 class="h2 stagger" style="--i:2">器械分类</h2>
+          <div class="chips stagger" style="--i:3" id="gearChips">
+            <button class="chip is-on">自由重量</button>
+            <button class="chip">固定器械</button>
+            <button class="chip">有氧</button>
+            <button class="chip">拉伸放松</button>
+          </div>
+
+          <div class="menu-list stagger" style="--i:4">
+            <button class="menu-row" data-toast="已开启训练提醒：每天 19:30">
+              <span class="menu-label">训练提醒</span>
+              <span class="switch is-on"><span class="knob"></span></span>
+            </button>
+            <button class="menu-row" data-toast="自定义计划：自己排动作、组数、休息时间">
+              <span class="menu-label">自定义计划</span>
+              <span class="menu-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 学习 & 番茄钟 ===== -->
+      <section class="screen" data-screen="study" data-title="学习 & 番茄钟" data-parent="home">
+        <div class="screen-body">
+          <div class="timer-card stagger" style="--i:0">
+            <span class="mono">番茄钟 · 25 分钟</span>
+            <div class="timer" id="timerText">25:00</div>
+            <div class="progress-track">
+              <div class="progress-fill" id="timerFill" style="width:0%"></div>
+            </div>
+            <div class="timer-actions">
+              <button class="btn btn--orange" id="timerToggle">开始</button>
+              <button class="btn" id="timerReset">重置</button>
+            </div>
+            <span class="mono muted" id="timerHint">完成 1 个番茄 +1 学习积分</span>
+          </div>
+
+          <h2 class="h2 stagger" style="--i:1">学习搭子</h2>
+          <div class="stack" id="studyBuddies"></div>
+
+          <h2 class="h2 stagger" style="--i:2">资料共享</h2>
+          <div class="file-list stagger" style="--i:3">
+            <div class="file-row">
+              <span class="file-ico mono">PDF</span>
+              <div><strong>高数期末复习提纲（手写版）</strong>
+                <span class="mono muted">2.1MB · 已审核 · 下载 128</span></div>
+            </div>
+            <div class="file-row">
+              <span class="file-ico mono">IMG</span>
+              <div><strong>线代公式速查表</strong>
+                <span class="mono muted">860KB · 已审核 · 下载 64</span></div>
+            </div>
+            <div class="file-row is-pending">
+              <span class="file-ico mono">PDF</span>
+              <div><strong>英语六级真题 2019–2023</strong>
+                <span class="mono muted">12MB · 审核中</span></div>
+            </div>
+          </div>
+          <button class="btn btn--block stagger" style="--i:4" data-toast="只支持 PDF / 图片 / 文档，≤ 20MB，先审后发">上传资料</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ===== 底部标签栏（中间是抖音式凸起「＋」，发布同频圈内容） ===== -->
+    <nav class="tabbar" id="tabbar">
+      <div class="tab-indicator" id="tabIndicator"></div>
+      <button class="tab is-on" data-tab-go="home"><span class="tab-ico">◼</span><span class="tab-txt">首页</span></button>
+      <button class="tab" data-tab-go="feed"><span class="tab-ico">◼</span><span class="tab-txt">同频圈</span></button>
+      <button class="tab-plus" id="tabPlus" data-go="post" aria-label="发布同频圈内容">
+        <span class="tab-plus-core">＋</span>
+      </button>
+      <button class="tab" data-tab-go="messages"><span class="tab-ico">◼</span><span class="tab-txt">消息</span><span class="tab-dot" id="tabDot">3</span></button>
+      <button class="tab" data-tab-go="me"><span class="tab-ico">◼</span><span class="tab-txt">我的</span></button>
+    </nav>
+
+    <!-- 发布入口现在在搭子大厅页内（原悬浮按钮已移除，避免遮挡与穿模） -->
+
+    <!-- ===== 抽屉：发布 ===== -->
+    <div class="scrim" id="scrim"></div>
+
+    <div class="sheet" id="sheet-publish" data-sheet-id="publish">
+      <div class="sheet-head">
+        <h3 class="sheet-title">发布搭子需求</h3>
+        <button class="icon-btn" data-sheet-close="1">×</button>
+      </div>
+      <div class="sheet-body">
+        <span class="field-label">需求类型</span>
+        <div class="chips" id="publishChips">
+          <button class="chip is-on" data-ptype="学习">学习</button>
+          <button class="chip" data-ptype="健身">健身</button>
+          <button class="chip" data-ptype="拍照">拍照</button>
+          <button class="chip" data-ptype="吃饭">吃饭</button>
+        </div>
+        <label class="field">
+          <span class="field-label">一句话需求</span>
+          <input class="input" maxlength="30" value="今晚 7 点图书馆刷题搭子" />
+        </label>
+        <label class="field">
+          <span class="field-label">补充说明（限 200 字）</span>
+          <textarea class="input input--area" rows="3">目标：高数期末。想找能坐得住、不聊天的同学。</textarea>
+        </label>
+        <div class="field-pair">
+          <label class="field">
+            <span class="field-label">时间</span>
+            <input class="input" value="今天 19:00" />
+          </label>
+          <label class="field">
+            <span class="field-label">地点</span>
+            <input class="input" value="三教 402" />
+          </label>
+        </div>
+        <button class="btn btn--orange btn--block" data-toast="已发布，出现在大厅顶部（原型演示）" data-sheet-close="1">发布</button>
+        <div class="mono muted center">每天最多 5 条 · 发布后可在「我的」里下架</div>
+      </div>
+    </div>
+
+    <!-- ===== 抽屉：每日百科 ===== -->
+    <div class="sheet" id="sheet-wiki" data-sheet-id="wiki">
+      <div class="sheet-head">
+        <h3 class="sheet-title">每日百科</h3>
+        <button class="icon-btn" data-sheet-close="1">×</button>
+      </div>
+      <div class="sheet-body">
+        <div class="block-yellow wiki-card">
+          <div class="mono">2026-10-16 · 健康</div>
+          <h4 class="wiki-h">考试周前一晚，咖啡因该在几点喝？</h4>
+          <p class="wiki-p">咖啡因半衰期约 5 小时。想 23:00 入睡，最后一杯别晚于 15:00，否则入睡时间平均推迟 40 分钟以上。今晚换成 20 分钟闭眼小睡，效果比第四杯美式更好。</p>
+        </div>
+        <div class="wiki-list">
+          <div class="wiki-item"><span class="mono">10-15</span><span>图书馆座位：靠窗≠更好，光照 500lx 最提神</span></div>
+          <div class="wiki-item"><span class="mono">10-14</span><span>学生证丢了先办临时卡，别急着补办</span></div>
+          <div class="wiki-item"><span class="mono">10-13</span><span>深蹲膝盖疼，多半是脚踝活动度不够</span></div>
+        </div>
+        <button class="btn btn--block" data-toast="已收藏到「我的」">收藏这条</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 效果图总览：一页看全 14 屏 ===== -->
+<main class="gallery" id="gallery" hidden>
+  <div class="gallery-inner">
+    <div class="gallery-head">
+      <h2 class="gallery-title">效果图总览 · <span id="galleryCount2">14</span> 屏</h2>
+      <p class="gallery-note">按 430 × 880 的设计稿等比缩小（0.4×），带手机状态栏与顶栏。点任意一张，直接跳进那张的「可点击原型」。</p>
+    </div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </div>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

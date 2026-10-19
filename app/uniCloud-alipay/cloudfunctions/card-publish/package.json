@@ -1,0 +1,6 @@
+{
+  "name": "card-publish",
+  "version": "1.0.0",
+  "description": "发布搭子卡片",
+  "main": "index.js"
+}

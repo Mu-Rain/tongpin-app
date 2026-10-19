@@ -1,0 +1,6 @@
+{
+  "name": "match-cards",
+  "version": "1.0.0",
+  "description": "一键匹配：按标签贴合度排序的搭子卡片",
+  "main": "index.js"
+}
