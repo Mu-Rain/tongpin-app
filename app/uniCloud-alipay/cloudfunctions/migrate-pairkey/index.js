@@ -33,7 +33,8 @@ const DB_RELATIONS = 'buddy_relations'
 const DB_CARDS = 'cards'
 
 // ★ 一次性运维工具。正式环境请改成 false 或删除本云函数。
-const ALLOW = true
+// ★ 一次性运维工具。正式环境已默认关闭（见项目安全规范：上线前 ALLOW 改 false）。
+const ALLOW = false
 
 /**
  * ★★ 免参数自跑配置（HBuilderX 的「上传并运行」不带参数框，只能用这里的默认值）。
@@ -46,7 +47,8 @@ const ALLOW = true
  *
  * 请求里显式传了参数时，以请求为准（控制台网页版仍可覆盖这里）。
  */
-const ADMIN_PHONE = '19122926171'      // ← 改成你的手机号，例如 '19122926171'
+// ⚠️ 安全：不再内置任何真实手机号。迁移请改用 token 鉴权，或调用时显式传入 phone。
+const ADMIN_PHONE = ''
 const MODE = 'dry'          // 'dry' 只统计不改库；'run' 真执行
 
 function fail(msg, code) {
