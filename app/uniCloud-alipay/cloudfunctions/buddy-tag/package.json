@@ -1,0 +1,6 @@
+{
+  "name": "buddy-tag",
+  "version": "1.0.0",
+  "description": "Update my own buddy tag label and color (prefix only, suffix is fixed)",
+  "main": "index.js"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "migrate-pairkey",
+  "version": "1.0.0",
+  "description": "One-off admin migration: backfill user_pair_key on conversations and category on buddy_relations",
+  "main": "index.js"
+}

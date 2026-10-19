@@ -1,0 +1,9 @@
+{
+    "name":  "tag-list",
+    "version":  "1.0.0",
+    "description":  "cloud function: tag-list",
+    "main":  "index.js",
+    "dependencies":  {
+
+                     }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "fit-seed",
+  "version": "1.0.0",
+  "description": "Seed fitness exercise library and official plan templates (idempotent)",
+  "main": "index.js",
+  "dependencies": {}
+}

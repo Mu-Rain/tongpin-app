@@ -1,0 +1,9 @@
+{
+    "name":  "tag-seed",
+    "version":  "1.0.0",
+    "description":  "cloud function: tag-seed",
+    "main":  "index.js",
+    "dependencies":  {
+
+                     }
+}

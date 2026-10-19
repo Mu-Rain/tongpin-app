@@ -1,0 +1,7 @@
+{
+  "name": "fit-plan",
+  "version": "1.0.0",
+  "description": "Fitness plan templates: list official/custom plans and plan detail grouped by training day",
+  "main": "index.js",
+  "dependencies": {}
+}

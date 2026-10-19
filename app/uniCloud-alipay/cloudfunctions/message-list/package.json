@@ -1,0 +1,6 @@
+{
+  "name": "message-list",
+  "version": "1.0.0",
+  "description": "拉消息：首次加载最近 N 条 / 按 lastMessageId 增量补拉",
+  "main": "index.js"
+}

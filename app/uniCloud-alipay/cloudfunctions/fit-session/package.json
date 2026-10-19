@@ -1,0 +1,7 @@
+{
+  "name": "fit-session",
+  "version": "1.0.0",
+  "description": "Workout session: start / addSet / delSet / finish / list / detail / stats, with set-level logging and PR detection",
+  "main": "index.js",
+  "dependencies": {}
+}

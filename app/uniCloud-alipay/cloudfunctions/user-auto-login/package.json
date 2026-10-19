@@ -1,0 +1,6 @@
+{
+  "name": "user-auto-login",
+  "version": "1.0.0",
+  "description": "用本地 token 换回登录态（免重复登录）",
+  "main": "index.js"
+}

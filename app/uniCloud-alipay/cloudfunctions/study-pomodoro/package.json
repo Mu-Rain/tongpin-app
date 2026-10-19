@@ -1,0 +1,7 @@
+{
+  "name": "study-pomodoro",
+  "version": "1.0.0",
+  "description": "Pomodoro timer records and study stats",
+  "main": "index.js",
+  "dependencies": {}
+}

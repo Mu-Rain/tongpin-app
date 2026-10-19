@@ -1,0 +1,9 @@
+{
+    "name":  "user-login",
+    "version":  "1.0.0",
+    "description":  "cloud function: user-login",
+    "main":  "index.js",
+    "dependencies":  {
+
+                     }
+}

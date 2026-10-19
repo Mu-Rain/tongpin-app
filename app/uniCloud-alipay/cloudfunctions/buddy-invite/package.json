@@ -1,0 +1,6 @@
+{
+  "name": "buddy-invite",
+  "version": "1.0.0",
+  "description": "Targeted buddy invite: invite a named user with a desired buddy tag, accept/reject/cancel/list",
+  "main": "index.js"
+}

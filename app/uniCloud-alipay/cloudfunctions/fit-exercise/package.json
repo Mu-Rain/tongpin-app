@@ -1,0 +1,7 @@
+{
+  "name": "fit-exercise",
+  "version": "1.0.0",
+  "description": "Query fitness exercise library: list by muscle/equipment/keyword, detail by id",
+  "main": "index.js",
+  "dependencies": {}
+}

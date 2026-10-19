@@ -1,0 +1,6 @@
+{
+  "name": "card-detail",
+  "version": "1.0.0",
+  "description": "搭子卡片详情 + 申请状态",
+  "main": "index.js"
+}

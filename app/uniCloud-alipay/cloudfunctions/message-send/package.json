@@ -1,0 +1,6 @@
+{
+  "name": "message-send",
+  "version": "1.0.0",
+  "description": "发消息：落库 + clientMsgId 去重 + 未读数自增 + 会话摘要",
+  "main": "index.js"
+}
