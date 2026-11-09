@@ -1,0 +1,7 @@
+{
+  "name": "demo-seed",
+  "version": "1.0.0",
+  "description": "cloud function: demo-seed",
+  "main": "index.js",
+  "dependencies": {}
+}
