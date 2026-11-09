@@ -163,13 +163,35 @@ App 不在前台 / 锁屏时**没有轮询**（定时器会停），所以：
 
 ---
 
+## 4.5 ★ 起点（lastMessageId）什么时候才能前进（2026-10-21 修）
+
+**规则一句话：起点只在「这批消息确实交给页面了」之后前进，不是拉到就前进。**
+
+```
+fetchSince(null, { commit: false })   // 只拉，不动起点
+   ↓
+if (!running || myEpoch !== epoch) return   // 页面已退出 / 换代 → 整份丢弃，起点原地不动
+   ↓
+lastMessageId = list[list.length - 1]._id   // 确认收下，这时才前进
+   ↓
+messagesCb(list)
+```
+
+**不这么写会怎样**（真实 bug）：`fetchSince` 内部就把 `lastMessageId` 推到最新一条，而 `tick()` 到下一行才发现「页面已经退出、该丢弃」。于是 30 条历史被扔掉，起点却停在最新一条；`onShow` 再 `start()` 时走增量分支，服务端没有「比最新更新」的消息 → 只拉回最新 1 条。**用户看到的现象就是「聊天页有概率只显示最近一条，退出去再进来又好了」。**
+
+**配套的世代号 `epoch`**：`start()` 与 `stop()` 各 `epoch += 1`。在途请求回来时若 `myEpoch !== epoch`，说明它属于上一轮收消息周期，结果整份丢弃。没有这个号，只能靠布尔 `running` 判断，而 `stop()` 后立刻 `start()` 时 `running` 又是 `true`，旧结果会被误当成新结果。
+
+**`onLoaded` 只触发一次**：`tick()` 的空列表分支和 `start()` 的 `.then` 兜底都可能调它，用 `loadedOnce` 去重，否则页面会连着做两遍「解除 loading + 刷新好友申请状态」。
+
+---
+
 ## 5. 自查清单（写 / 改聊天相关代码时逐条过）
 
 | 检查项 | 通过标准 |
 |---|---|
 | 页面里有没有 `setInterval` 或直接 `uniCloud.callFunction`？ | **必须没有**。页面只能调 transport 的 7 个接口 |
 | `stop()` 有没有在 `onUnload` 里调？ | 有，否则离开页面还在轮询，白烧额度 |
-| 在途请求会不会重叠？ | 有 `isFetching` 标志位，`finally` 里复位 |
+| 在途请求会不会重叠？ | 有在途标志，`finally` 里复位。**注意它记的不是布尔而是「第几轮」**（`fetchingEpoch`），因为上一轮请求没回来时 `stop()`→`start()`，残留的 `true` 会把新一轮首次拉取直接挡掉，页面永远空着 |
 | 发送会不会产生两条？ | 有 `clientMsgId`，云函数按它判重 |
 | 拉回来的消息会不会重复渲染？ | 合并前用 `_id` 去重 |
 | 断网恢复后会不会丢消息？ | 保留 `lastMessageId`，恢复后 `fetchSince` 一次补齐 |

@@ -25,8 +25,10 @@
 | `applications` | 申请记录 | 🟡 中 | 只有卡片双方（`card-detail` 按身份分支） | `card-apply` |
 | `conversations` / `conversation_members` | 会话与成员 | 🟡 中 | 只有成员（`message-*` 先查 `conversation_members`） | `card-apply` / `buddy-invite` |
 | `messages` | 聊天内容 | 🔴 高 | 只有该会话成员 | `message-send` |
-| `buddy_relations` | 搭子关系 + 标签 | 🟡 中 | **标签是私有备注，只下发「我给对方起的」那一侧** | `buddy-tag` / `buddy-invite` / `card-apply` |
+| `buddy_relations` | 搭子关系 + 标签 | 🟡 中 | **标签是私有备注，只下发「我给对方起的」那一侧**；解除只改 `status`，对方那份 `label_*` 原样保留 | `buddy-tag` / `buddy-unlink` / `buddy-invite` / `card-apply` |
 | `buddy_invites` | 定向邀请 | 🟡 中 | 只有发起方与接收方 | `buddy-invite` |
+| `friendships` | 好友关系（`user_a_id < user_b_id`） | 🟡 中 | **客户端不可直读**（schema `read: false`）；只能经 `friend-list` / `friend-search` 云函数按「我参与的关系」下发 | **只由 `friend-request` 的 accept 分支写**，且只写 `user_a_id`/`user_b_id`/`created_at` 三个字段；没有拒绝好友、解除好友的删除路径 |
+| `friend_requests` | 好友申请（pending / accepted / rejected / canceled） | 🟡 中 | **客户端不可直读**（schema `read: false`）；只能经 `friend-request` 的 `list` 按 `box='in'/'out'` 下发 | **只由 `friend-request` 写**：`send` 建 `pending`，`accept` / `reject` / `cancel` 改状态 |
 | `schools` / `tags` | 学校名单、标签字典 | 🟢 低 | 公开 | 只有 `*-seed` |
 | `notifications` | 站内通知 | 🟡 中 | 只有接收者 | 各业务函数 |
 
@@ -61,7 +63,7 @@ Select-String -Path uniCloud-alipay\cloudfunctions\*\index.js -Pattern "password
 对全部 21 个碰用户表的云函数做了逐一核查，结果分两类：
 
 **A. 只把用户对象当「内部变量」用，从不返回** —— 安全。
-`buddy-invite` / `buddy-tag` / `card-apply` / `card-publish` / `message-send` / `user-auto-login` / `user-login` / `user-tags` / `migrate-pairkey` 都是 `where({ token })` 取到用户后只在内存里读 `_id` / 信誉分 / 角色，然后自己拼一个干净的返回对象。**这类不加 `.field()` 也不会泄露**，加了只是省流量。所以我没有改它们——避免为了"看起来规范"去动 9 个已经验收过的文件。
+`buddy-invite` / `buddy-tag` / `buddy-unlink` / `card-apply` / `card-publish` / `message-send` / `user-auto-login` / `user-login` / `user-tags` / `migrate-pairkey` / `friend-request` / `friend-list` / `friend-search` 都是 `where({ token })` 取到用户后只在内存里读 `_id` / 信誉分 / 角色，然后自己拼一个干净的返回对象。**这类不加 `.field()` 也不会泄露**，加了只是省流量。所以我没有改它们——避免为了"看起来规范"去动 9 个已经验收过的文件。
 
 **B. 需要额外注意的（已核查，目前正确）**
 - `user-me`：查出整行，但**返回值是手写的 12 个字段**，没有 `password` / `salt` / `token`。✅
@@ -82,9 +84,14 @@ DB Schema 的 `permission` 只能回答"这个集合能不能读写"，**不能�
 | 只有卡片双方能看申请记录 | `card-detail` 按 `is_mine` / `my_application` 分支组装 |
 | 只有管理员能审核 | `verify-review` 第一行 `isAdmin` 闸门 |
 | 只有关系当事人能改标签 | `buddy-tag` 校验 `relation.user_a_id / user_b_id` 含我 |
+| 只有关系当事人能解除 | `buddy-unlink` 校验 `relation.user_a_id / user_b_id` 含我，已解除的再解返回 400 |
 | 只有卡片发布者能同意申请 | `card-apply` accept 分支校验 `card.owner_id === me._id` |
 | 已下架的卡片只有发布者能看 | `card-detail` 对 `status === 'removed'` 返回 403 |
 | 别人的信誉分只给区间 | `user-profile` 的 `creditBand()` 返回「极好/很好/良好/一般/较低」，不给精确数字 |
+| 只有收件人能 accept 或 reject | `friend-request` 的 `accept` / `reject` 分支校验 `req.to_user_id === me._id`，否则 403「这不是发给你的申请」（先判权限再判状态，不让外人探知该申请处理没处理过） |
+| 只有发起人能 cancel | `friend-request` 的 `cancel` 分支校验 `req.from_user_id === me._id`，否则 403「只能撤回自己的申请」 |
+| 不能加自己 | `friend-request` 的 `send` 分支 `if (toId === me._id) fail('不能加自己为好友')` |
+| 已是好友不能再申请 | `friend-request` 的 `send` 分支先按 `(user_a_id, user_b_id)` 查 `friendships`，命中即 400「你们已经是好友了」；同一条 `pending` 也去重（我发过 → 「你已经发过申请了」；对方先发过 → 「对方已经申请加你」） |
 
 ---
 

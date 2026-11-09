@@ -31,7 +31,7 @@
 erDiagram
   users ||--o{ user_tags : 拥有
   tags  ||--o{ user_tags : 被选
-  users ||--o| verifications : 提交
+  users ||--o| verify_requests : 提交
   users ||--o{ cards : 发布
   cards ||--o{ card_tags : 带
   cards ||--o{ applications : 收到
@@ -60,14 +60,14 @@ erDiagram
 
 ---
 
-## 2. 集合清单（32 个）
+## 2. 集合清单（37 个）
 
 ### 2.1 账号与资料（5 个）
 
 | 集合 | 用途（一句话） | 关键字段 | 索引 ⚡ |
 |---|---|---|---|
-| `users` | 用户账号与资料 | `_id`、`phone`(string,唯一)、`password_hash`(string,加盐哈希)、`nickname`(string)、`user_no`(string,展示用用户号)、`avatar_url`(string)、`school`(string)、`school_id`(string,可为空)、`grade`(string)、`gender`(string)、`bio`(string,≤50字)、`is_verified`(bool)、`credit_score`(int,默认80)、`current_title_id`(string,佩戴称号)、`status`(string: normal/banned)、`last_active_at`(number)、`real_name_verify_id`(string,为空)、`created_at`/`updated_at`(number) | `phone`(唯一)、`user_no`(唯一)、`school_id`、`credit_score`、`is_verified` |
-| `verifications` | 学生认证申请 | `_id`、`user_id`、`card_image_url`(string)、`real_name_optional`(string,可选，最小化采集)、`status`(string: pending/approved/rejected)、`reject_reason`(string)、`reviewed_by`(string)、`reviewed_at`(number)、`created_at` | `user_id`、`status` |
+| `users` | 用户账号与资料 | `_id`、`uid`(string,8位数字，**对外唯一身份号**，搜人/加好友只用它)、`phone`(string,登录凭据)、`password_hash`(string,加盐哈希)、`nickname`(string,允许重名)、`user_no`(string,历史遗留字段，已不再生成)、`avatar_url`(string)、`school`(string)、`school_id`(string,可为空)、`grade`(string)、`gender`(string)、`bio`(string,≤50字)、`is_verified`(bool)、`credit_score`(int,默认80)、`current_title_id`(string,佩戴称号)、`status`(string: normal/banned)、`last_active_at`(number)、`real_name_verify_id`(string,为空)、`created_at`/`updated_at`(number) | **`uid`(唯一)**、`phone`(普通索引，仅登录/查重)、`school_id`、`credit_score`、`is_verified` |
+| `verify_requests` | 学生认证申请（集合名以代码为准：31 个 `DB_*` 常量里没有 `verifications`，旧名已废） | `_id`、`user_id`、`card_image_url`(string)、`real_name_optional`(string,可选，最小化采集)、`status`(string: pending/approved/rejected)、`reject_reason`(string)、`reviewed_by`(string)、`reviewed_at`(number)、`created_at` | `user_id`、`status` |
 | `tags` | 标签字典 | `_id`、`name`(string)、`category`(string: 作息/强度/性格/兴趣/偏好/科目)、`sort`(int)、`active`(bool) | `category`+`active` |
 | `user_tags` | 用户选了哪些标签 | `_id`、`user_id`、`tag_id`、`weight`(number,默认1；性格类1.5)、`created_at` | `user_id`、`tag_id`、复合 `(user_id, tag_id)` 唯一 |
 
@@ -96,9 +96,20 @@ erDiagram
 
 | 集合 | 用途（一句话） | 关键字段 | 索引 ⚡ |
 |---|---|---|---|
-| `buddy_relations` | 搭子关系（**双向一条**记录） | `_id`、`user_a_id`、`user_b_id`（约定 `user_a_id < user_b_id`，避免重复）、`source_card_id`(可空)、`label_a`(string,A给这段关系起的标签，**≤8字**)、`label_b`(string)、`label_a_color`(string,预设色 **key**，如 `shine-yellow`；可空=用默认色)、`label_b_color`(string)、`status`(string: active/ended)、`ended_by`(string)、`ended_at`(number)、`created_at` | `user_a_id`、`user_b_id`、复合 `(user_a_id, user_b_id)` 唯一、`status` |
-| `friendships` | 好友关系（双向一条） | `_id`、`user_a_id`、`user_b_id`（同样约定小 id 在前）、`created_at` | 复合 `(user_a_id, user_b_id)` 唯一 |
-| `friend_requests` | 好友申请 | `_id`、`from_user_id`、`to_user_id`、`source`(string: buddy/search)、`status`(string: pending/accepted/rejected)、`created_at` | `to_user_id`+`status`、`from_user_id` |
+| `buddy_relations` | 搭子关系（**双向一条**记录） | `_id`、`user_a_id`、`user_b_id`（约定 `user_a_id < user_b_id`，避免重复）、`source_card_id`(可空)、`label_a`(string,A给这段关系起的标签，**≤8字**)、`label_b`(string)、`label_a_color`(string,预设色 **key**，如 `shine-yellow`；可空=用默认色)、`label_b_color`(string)、`done_a`(bool,A 已点「这次搭完了」)、`done_b`(bool,B 已点)、`done_count`(int,双方都点过的次数)、`last_done_at`(number,最近一次结算时间)、`status`(string: **pending / active / ended**，见下方「邀请期间的关系状态」)、`ended_by`(string)、`ended_at`(number)、`created_at` | `user_a_id`、`user_b_id`、复合 `(user_a_id, user_b_id)` 唯一、`status` |
+| `friendships` | 好友关系（**双向一条**记录，建立后长期有效） | `_id`、`user_a_id`、`user_b_id`（**约定 `user_a_id < user_b_id`**，见下方唯一性键）、`created_at` | 复合 `(user_a_id, user_b_id)` 唯一 |
+| `friend_unlinks` | 解除过好友的历史（**一对人一行**，只补「曾经是好友」这点痕迹） | `_id`、`user_a_id`、`user_b_id`（**约定 `user_a_id < user_b_id`**，与 `friendships` 同）、`removed_at`、`removed_by` |
+| `friend_requests` | 好友申请（`source: buddy/search`） | `_id`、`from_user_id`、`to_user_id`、`source`(string: buddy/search)、`status`(string: **pending / accepted / rejected / canceled**)、`created_at`、`handled_at` | `to_user_id`+`status`、`from_user_id` |
+| `user_remarks` | 用户备注（我给别人起的私有称呼，**一条 = 一个方向**） | `_id`、`owner_id`(string，谁起的)、`target_user_id`(string，给谁起的)、`remark`(string，**≤12 字**，按码点数)、`created_at`、`updated_at` | 复合 `(owner_id, target_user_id)` 唯一、`target_user_id` |
+
+> **好友两表已落地（原为「只设计过、从未使用」，2026-10-19 补实际情况）**：
+> - **写入方只有 `friend-request` 一个云函数**。`friend_requests`：`send` 建一条 `pending`、`accept` / `reject` / `cancel` 改状态；`friendships`：只有 `accept` 分支会写（先按 `(user_a_id, user_b_id)` 查，已存在就复用 `_id`，所以重复点同意不会建出第二条）。
+> - **`status` 四个取值**：`pending`（待处理）、`accepted`（已同意）、`rejected`（被对方拒绝）、`canceled`（发起人自己撤回）。注意 `canceled` 是**单 l 美式拼写**，与 `accepted` / `rejected` 的双写不一致，是既有实现的既定取值，前端判断必须按 `canceled` 匹配。只有 `pending` 会被 `friend-request` 的 `list` 下发（历史申请对用户没有价值）。
+> - **★ 成为好友时把双方 active 的搭子置 ended（新规则）**：`accept` 成功后，把两人之间所有 `status='active'` 的 `buddy_relations` 逐条改成 `status='ended'` + `ended_by='friend'` + `ended_at` + `update_time`。所以「已是好友」与「同一对人还有 active 搭子」不会同时成立——「我的搭子」页不会因为变成好友冒出一堆死条目。
+
+> **`friend_unlinks` 为什么存在**：`friendships` 是「是好友就有一行，不是就没有」，解除好友直接删行、**历史不留**。于是 `is_friend:false` 同时代表「从来不是好友的搭子」和「当过好友又解除的」，前端无法区分（详见 `docs/28` §9）。这张表只补那点痕迹：一对人一行，先查再 `add`/`update`，重复解除只刷新 `removed_at`。三态判定优先级：`friendships` 有行 → `friend`；否则本表有行 → `unfriended`；都没有 → `none`。写入方只有 `friend-unlink` 与 `user-block`（拉黑会连带解除好友）两处，**各自独立 try/catch**，写失败不影响解除本身。
+> - **★ 这条规则的回声（已修）**：`message-conversations` 拼 `buddy_tags` 只收 `status='active'` 的关系，一旦成为好友该行标签会**整行消失**，用户会误以为关系断了。所以该函数补了 `is_friend` 布尔字段（`friendships` 查不到就降级为 `false`，表没建也不影响消息列表返回），消息页据此显示「好友」徽标。
+> - **好友关系的唯一性键是 `(user_a_id, user_b_id)`，且一律 `user_a_id < user_b_id`**（字符串比较，落库前用 `orderPair()` 排序）。不这么约定，同一对好友会存出两条镜像记录，好友列表里同一个人出现两次。查询「我参与的好友关系」必须分两次查（我作为 `user_a_id` / 我作为 `user_b_id`），**不要用 `or`**：`or` 里一旦把 a / b 写反，查出来的是别人之间的关系。
 
 > **★★ 搭子标签是「私有备注」（2026-10-18 定案，不可回退）**：`label_a` 只属于 `user_a`、`label_b` 只属于 `user_b`，**各写各的、互相不可见**。用户原话：「自己只能看到自己给对面起的搭子标签，就类似于备注一样，但是不要与用户备注混为一谈」。
 > - 写：任何入口（`card-apply` 同意申请后接受方自命名、`buddy-tag` 改标签、`buddy-invite` 接受邀请时自命名）**只允许写自己那一侧**。谁也不能替对方写备注。
@@ -107,35 +118,74 @@ erDiagram
 > - 与「用户备注」的区别：搭子标签绑定的是**一段关系**（同一对人在不同 category 下可以各有标签），用户备注绑定的是**一个人**；两者字段、表、生命周期都不同，**不要合并**。
 >
 > **★★ 一对人 → N 条关系，但界面上必须只有一张卡（2026-10-18 定案）**：
-> - 数据层：`buddy_relations` 的唯一性键是 **(`user_a_id`, `user_b_id`, `category`, `status='active'`)**，不是 (`user_a_id`, `user_b_id`)。同一对人在 `study` / `fitness` / `photo` 下可以同时各有一段 active 关系，各自有独立的 `label_a` / `label_b`。
+> - 数据层：`buddy_relations` 的唯一性键是 **(`user_a_id`, `user_b_id`, `category`)**，且该组合下同时最多只有一条「未结束」的关系（`status` ∈ {`pending`, `active`}），不是 (`user_a_id`, `user_b_id`)。同一对人在 `study` / `fitness` / `photo` 下可以同时各有一段 active 关系，各自有独立的 `label_a` / `label_b`。
+>   **2026-10-21 更正**：原来这里写的是 `status='active'`。引入 `pending` 后，若唯一性只认 active，同一 `category` 下会同时躺着 pending + active 两条（accept 找不到那条 pending 就会另建），所以 `ensureRelation()` 的判重条件已改为 `status: dbCmd.in(['active','pending'])`。
 > - 会话层：`conversations` 的唯一性键是 **`user_pair_key`**（两个 `_id` 排序后 `A|B` 拼接），**不是** `buddy_relation_id`。一对人全局只有一条 direct 会话，它同时服务于这个人名下的所有关系。`buddy_relation_id` 字段保留但**不参与判重**（老数据仍可能带着它，供兼容反查）。
 > - 展示层：任何"我的搭子"类列表**必须按人合并**，一条记录 = 一个人，其 `tags[]` 带上他名下全部关系产生的标签。**合并写在云函数里**（`buddy-list` 返回的就是按人合并后的结构），前端不再自己判断——否则每多一个读这份数据的页面就要重新实现一次合并，迟早漏一处（消息页、聊天页、我的搭子页都栽过这个坑）。
 > - 反例（已修）：`pages/buddy/buddy.vue` 曾直接 `v-for` 关系行，同一个人有几段关系就渲染几张卡；列表 `:key` 也不能用 `relation_id`，要用 `other_user_id`（一条卡 = 一个人）。
 >
+> **★ 邀请期间的关系状态（2026-10-21 修，`pending` 是新增取值）**：
+> - **`status` 现在三个取值**：`pending`（邀请已发出、对方还没回应）、`active`（对方同意了，关系成立）、`ended`（解除 / 被好友关系收掉 / 被清理）。
+> - **写入时序**：`buddy-invite` 的 `invite` 分支建一条 `status:'pending'` 的关系（**不是 active**），并把发起方自己那侧的 `label_a`/`label_b` 当场写进去；对方点同意时 `accept` 分支把同一条关系 `patch.status = 'active'`；拒绝 / 撤回时 `dropPendingRelation()` 把它改成 `ended`。
+> - **为什么必须是 pending**：`user-profile` / `buddy-list` / `buddy-tag` / `message-conversations` **全都只查 `status:'active'`**。旧实现邀请时就写 active，于是邀请还没被同意，对方主页已经显示「你们之间的搭子」+ 类别名 —— 这是「点邀请后对方直接出现搭子标签」的成因。
+> - **判重必须同时看 pending 和 active**：`ensureRelation()` 的判重条件是 `status: dbCmd.in(['active','pending'])`。只查 active 的话，`accept` 会找不到那条 pending 而另建一条 active，同一 `category` 下躺着两条，标签落在错的那条上。
+> - **`dropPendingRelation(inv, now, reason)`**：先按 `{source_invite_id, status:'pending'}` 精确定位，找不到再退化为按 `{user_a_id, user_b_id, category, status:'pending'}`。**只动 pending，绝不碰 active** —— active 可能来自别的邀请或卡片申请。
+> - **`ended_by` 的取值**：`friend`（成为好友时收掉，见上）、`rejected`（对方拒绝）、`cancelled`（发起人撤回）、`repair`（历史脏数据清理）、以及 `buddy-unlink` 解除搭子时写的值。
+> - **历史脏数据清理**：`buddy-invite` 提供 `action:'repair'`（不带任何参数直接运行也会走）：扫 `{source_type:'invite', status:'active'}` 的关系，逐条查它 `source_invite_id` 指向的邀请，邀请状态**不是 `accepted`** 的说明这段关系从没被同意过，改成 `{status:'ended', ended_by:'repair'}`。真正成立的搭子（邀请是 accepted）一条不动。
+
 > **搭子自定义标签的颜色（2026-10-16 新增）**：`label_a_color` / `label_b_color` 各存一个**预设色 key（字符串）**，**不存 hex**。理由：① 颜色是**封闭的 8 选 1**，不是自由取色盘——存 key 让前端只认一份色表、换色（改 hex）不用回刷历史数据，也免得用户从外部粘贴任意色值把界面搞脏；② 校验简单，`enum` 就能挡住非法值（存 hex 则要写格式正则，还挡不住"合法但不属于这 8 个"的颜色）；③ 与既有风格一致——本项目所有"枚举型"字段（`type` / `status` / `kind` / `rarity`）都是存英文 key，中文名与 hex 由前端色表负责映射。
 > 预设色就是 **8 个「带反光质感的闪亮色」**：`shine-yellow` 闪耀黄 `#ffde00`、`shine-orange` 熔岩橙 `#ff4d00`、`shine-rose` 荧光粉 `#ff5fa2`、`shine-violet` 霓虹紫 `#a855f7`、`shine-cyan` 电光青 `#22d3ee`、`shine-mint` 薄荷绿 `#34d399`、`shine-blue` 宝石蓝 `#3b82f6`、`shine-gold` 香槟金 `#e9c46a`。**反光质感由前端实现**：色块与标签用内联 `background-color` 上底色，再叠一道**斜向白色高光**（如 `linear-gradient(115deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 45%)`）；这层高光是纯展示，**不入库**，所以数据库只存颜色 key。
 
+> **★ `user_remarks` 用户备注（2026-10-21 新增，与搭子标签是两张表）**：
+> - **一条记录只代表一个方向**：`owner_id` 是起备注的人，`target_user_id` 是被起备注的人。A 叫 B「老张」不会让 B 那边看到「老张」，B 对 A 的称呼是另一条记录。所以**不存在双向共用一条**，这与 `buddy_relations` / `friendships` 的 `user_a_id < user_b_id` 约定完全不同，不要照抄那套。
+> - **唯一性键是 `(owner_id, target_user_id)`**，写入前不必排序（两个字段语义不同，不能互换）。重复设置走 **upsert**：先 `get` 查有无旧行再决定 `add` 还是 `update`，**不能靠 `update` 返回的 `updated` 条数判断** —— 把备注改成和原来一样的值时 `updated=0`，会被误判成没有旧行，于是再 `add` 一条，同一对人出现两条备注。
+> - **删除语义**：`remark` 传空串表示**删除这条备注**（`where(cond).remove()` 删整行），不是存一个空字符串。查询侧一律 `remarkMap[id] || ''`，没有记录和空备注在界面上等价。
+> - **长度按码点数算，不是 `String.length`**：`charLen()` 用 `Array.from(s).length`，所以一个 emoji 算 1 个字。上限 `REMARK_MAX = 12`。用 `.length` 会让含 emoji 的备注被误判超长。
+> - **展示规则（2026-10-21 定）**：有备注时，昵称位置显示**备注**，正下方用灰色小字显示「用户名：<真实昵称>」；没有备注时只显示真实昵称、不显示小字行。头像首字**始终取真实昵称**，不被备注改写（头像代表这个人本身）。
+> - **读方（4 处，各自独立 try/catch，表不存在就静默降级空串）**：`user-profile`（出 `my_remark`）、`buddy-list`、`friend-list`、`message-conversations`（各出 `remark` 字段）。写方只有 `user-remark` 一个云函数（`set` / `map` 两个 action，`map` 供批量反查，上限 `MAP_MAX = 50`）。
+> - **与 `buddy_tag` 的分工**：`buddy_tag` 是「这段关系叫什么」（绑定 `buddy_relations`，成为好友后会被 `status='ended'` 收掉），`remark` 是「这个人叫什么」（绑定人，一直存在）。**两者不合并、不同表、不同生命周期。**
 ### 2.4 聊天
 
 | 集合 | 用途（一句话） | 关键字段 | 索引 ⚡ |
 |---|---|---|---|
 | `conversations` | 会话 | `_id`、`type`(string: direct/ai)、`buddy_relation_id`(可空，用于显示搭子标签)、`last_message_id`(string,排序用)、`last_message_at`(number,排序用)、`created_at`/`updated_at` | `last_message_at`、`type` |
-| `conversation_members` | 会话成员（谁在这个会话里、未读数） | `_id`、`conversation_id`、`user_id`、`unread_count`(int,默认0)、`last_read_message_id`(string,已读游标) | 复合 `(conversation_id, user_id)` 唯一、`(user_id, unread_count)` |
-| `messages` | 消息 | `_id`、`conversation_id`、`sender_id`、`type`(string: text/image/system)、`content`(string,文本或图片 URL)、`client_msg_id`(string,客户端生成，**去重与重发用**)、`created_at`(number) | `(conversation_id, created_at)`、复合 `(conversation_id, client_msg_id)` 唯一 |
+| `conversation_members` | 会话成员（谁在这个会话里、未读数、每人一份的会话设置） | `_id`、`conversation_id`、`user_id`、`unread_count`(int,默认0)、`last_read_message_id`(string,已读游标)、`pinned`(bool,默认false)、`muted`(bool,默认false)、`cleared_at`(number,默认0) | 复合 `(conversation_id, user_id)` 唯一、`(user_id, unread_count)` |
+| `messages` | 消息 | `_id`、`conversation_id`、`sender_id`、`type`(string: text/image/voice/system)、`content`(string,文本或图片 URL)、`client_msg_id`(string,客户端生成，**去重与重发用**)、`duration`(int,仅 voice：秒数 1–60)、`recalled`(bool,默认false)、`recalled_at`(number,默认0)、`recalled_by`(string)、`created_at`(number) | `(conversation_id, created_at)`、复合 `(conversation_id, client_msg_id)` 唯一 |
 | `ai_messages` | AI 机器人会话消息（**与真人消息分开存**） | `_id`、`user_id`、`role`(string: user/assistant)、`content`(string)、`tokens`(int,统计用量)、`created_at` | `(user_id, created_at)` |
 | `ai_usage_daily` | AI 每日用量（做额度的依据） | `_id`、`user_id`、`date_key`(string,形如 `2026-10-16`，用服务器时间生成)、`count`(int)、`updated_at` | 复合 `(user_id, date_key)` 唯一、`date_key`（全局日额度要统计当天所有记录） |
 
 > 为什么 AI 消息要和真人消息分开？① 计额度和审计方便；② AI 的历史将来可以单独清理；③ 万一 AI 接口出问题，不会污染真实聊天记录。
 > **心理疏导（情绪引导机器人）不新建表**：直接复用 `conversations(type='ai')`（每个用户一条固定 AI 会话，与消息页的固定项是同一个）+ `ai_messages` + `ai_usage_daily`（额度规则见 §4.5）。本期心理疏导只保留首页入口与占位、不实际调用 AI，所以这 3 个集合暂时只放演示数据。
 
+> **`conversation_members` 的三个新字段都是「每人一份」**：`pinned` / `muted` / `cleared_at` 只作用在我这一行，对方的行不受影响。所以「置顶」「免打扰」「清空记录」都必须是 `where({conversation_id, user_id: me._id}).update(...)` —— 少写 `user_id` 会把对方也一起置顶/清空。
+>
+> **`cleared_at` 不是「删除」**：它只记一个时间点，消息一条都不删。`message-list` 与 `message-search` 都按 `created_at > cleared_at` 过滤，`message-conversations` 里「清空之后没有新消息」的会话整行不返回；一旦对方发来新消息（`last_at > cleared_at`），会话会自动重新出现在列表里。
+>
+> **撤回不删数据**：`recalled=true` 只打标记，`content` 原文仍留在库里（举报与审核要用）。`message-list` 下发时把 `content` 换成空串，前端按 `recalled` 渲染成「你撤回了一条消息」。
+>
+> **`type` 新增 `voice`**：语音消息的 `content` 仍是云存储 fileID（与图片同构），另带 `duration` 秒数。文字/图片消息的文档形态与改造前完全一致，`duration` 只在语音上写。
+
+### 2.4.1 `user_blocks`（黑名单，单向）
+
+| 集合 | 用途（一句话） | 关键字段 | 索引 ⚡ |
+|---|---|---|---|
+| `user_blocks` | 黑名单（**单向**：我拉黑他 ≠ 他拉黑我） | `_id`、`owner_id`(string 🔗 拉黑发起人 = 我)、`target_id`(string 🔗 被拉黑的人)、`created_at`(number) | 复合 `(owner_id, target_id)` 唯一、`owner_id`、`target_id` |
+
+> **为什么要三个索引**：这张表被三个方向读 —— 「我拉黑了谁」（`owner_id`，会话列表每次都要）、「谁拉黑了我」（`target_id`，`message-send` 每条消息都要）、「我拉黑他没有」（`owner_id + target_id` 精确查）。少任何一个都有一次查询退化成全表扫。
+>
+> **拉黑的连锁动作**（`user-block` 的 add 分支，两段各自独立 try/catch）：① 删掉 `friendships` 里这一对的行；② 把两个方向上 `pending` 的 `friend_requests` 置成 `canceled`。两段失败都不影响拉黑本身生效。
+>
+> **单向彻底静默的三道闸**：`message-send` 双向拦截（他拉黑我 → 我发不出去；我拉黑他 → 我也发不出去）、`message-conversations` 剔掉我拉黑的会话整行、`user-profile` 的 `can_invite` 一律 false。
+
 ### 2.5 信誉、举报、称号
 
 | 集合 | 用途（一句话） | 关键字段 | 索引 ⚡ |
 |---|---|---|---|
-| `credit_events` | 信誉流水（**分数的唯一真相**） | `_id`、`user_id`、`delta`(int: +2/−5/−10/+5)、`reason_code`(string: buddy_completed/no_show/report_upheld/verified/admin_adjust)、`reason_text`(string,给用户看的人话)、`ref_id`(string,可空)、`score_after`(int,变更后分数，便于画曲线)、`created_at` | `(user_id, created_at)` |
+| `credit_events` | 信誉流水（**分数的唯一真相**） | `_id`、`user_id`、`delta`(int: +2/−5/−10/+5)、`reason_code`(string: **buddy_done / no_show / report_upheld / verify_pass / admin_adjust**，与 `credit_rules.code` 对应)、`reason_text`(string,写入时的文案快照)、`ref_id`(string,关联的搭子关系/认证申请/举报 id，可空)、`score_after`(int,变更后分数，便于画曲线)、`created_at` | `(user_id, created_at 降序)` |
+| `credit_rules` | 信誉规则表（**分值不许写死在代码里**） | `_id`、`code`(string,唯一，与 `credit_events.reason_code` 对应)、`delta`(int,分值)、`text`(string,给用户看的人话)、`active`(bool,false=停用并回落到代码内置默认值)、`created_at` | `code` 唯一 |
 | `reports` | 举报 | `_id`、`reporter_id`、`target_type`(string: user/card/message/material)、`target_id`(string)、`reason`(string: harassment/fake/ad/other)、`detail`(string)、`status`(string: pending/upheld/dismissed)、`handled_by`(string)、`handled_at`(number)、`created_at` | `(status, created_at)`、`(reporter_id, target_type, target_id)` 唯一 |
-| `titles` | 称号库 | `_id`、`name`(string)、`desc`(string)、`rarity`(string: common/rare/epic)、`condition_type`(string: buddy_count/streak_days/credit_score/verified_days/custom)、`condition_value`(int)、`condition_text`(string,给用户看的解锁条件)、`icon_url`(string)、`active`(bool) | `rarity` |
-| `user_titles` | 用户获得了哪些称号 | `_id`、`user_id`、`title_id`、`obtained_at`(number)、`is_equipped`(bool,同时只有1个为true) | 复合 `(user_id, title_id)` 唯一、`user_id` |
+| `titles` | 称号库（**表可以是空的**，代码内置 3 条兜底） | `_id`、`code`(string,唯一，如 `profile_complete`)、`name`(string)、`desc`(string)、`rarity`(string: common/rare/epic)、`condition_type`(string: **profile / verify / buddy**，本轮只认这三种)、`condition_value`(int,可空)、`condition_text`(string,给用户看的解锁条件)、`icon_url`(string)、`active`(bool)、`sort`(int)、`created_at`(long) | `code` **唯一** |
+| `user_titles` | 用户获得了哪些称号 | `_id`、`user_id`、`title_id`(**存的是 `titles.code` 字符串，不是 `titles._id`**——表空也能工作)、`obtained_at`(long)、`is_equipped`(bool,同时只有1个为true) | 复合 `(user_id, title_id)` 唯一、`user_id` |
 
 ### 2.6 健身 / 学习 / 百科
 
@@ -148,9 +198,11 @@ erDiagram
 | `fit_sets` | 一次训练里的**每一组** | `_id`、`session_id`、`user_id`、`exercise_id`、`exercise_name`(string,冗余)、`muscle`(string,冗余)、`set_index`(int)、`weight`(number,kg,支持 0-500)、`reps`(int,1-200)、`rest_sec`(int)、`is_warmup`(bool)、`is_pr`(bool,**写入时判定并落库**)、`est_1rm`(number,估算 1RM)、`done_at`、`created_at` | `(session_id, exercise_id)`、`(user_id, exercise_id, weight)` |
 | `study_pomodoros` | 番茄钟记录 | `_id`、`user_id`、`minutes`(int 1-180，**记的是设定时长**，不是实际用了多久)、`started_at`、`finished_at`、`completed`(bool,false=中途放弃)、`subject`(string ≤20 字)、`log_date`(string,按 `finished_at` 算) | `(user_id, log_date)` |
 | `study_materials` | 资料共享 | `_id`、`user_id`、`title`(string)、`course`(string)、`description`(string)、`file_url`(string)、`file_type`(string)、`file_size`(int,≤20MB)、`status`(string: pending/approved/rejected)、`download_count`(int)、`created_at` | `(status, created_at)`、`user_id` |
-| `encyclopedia` | 每日百科 | `_id`、`title`(string)、`content`(string)、`category`(string: study/health/life/campus)、`publish_date`(string,形如 `2026-10-16`)、`active`(bool)、`created_at` | `publish_date`(唯一) |
+| `encyclopedia` | 每日百科（**空表也能跑**，首页显示空态） | `_id`、`title`(string)、`content`(string)、`category`(string: study/health/life/campus)、`publish_date`(string,形如 `2026-10-16`；**演示数据留空串**，靠「最近一条」回落)、`active`(bool)、`created_at`(long) | `publish_date` **唯一** |
 
 > `log_date` / `publish_date` / `date_key` 这类"按天"的字段用 `YYYY-MM-DD` 字符串而不是时间戳，因为要能按天分组和比较（时间戳每次都不一样，做不到）。这是 03 文档里唯一不按毫秒时间戳存的时间字段，属于刻意例外。
+>
+> **百科取数规则（2026-10-22 落地）**：`encyclopedia-daily` 先按 `{publish_date: 今天, active: true}` 精确查；查不到回落按 `publish_date desc, created_at desc` 取最近一条已发布的；都没有返回 `item: null`。**「今天」按北京时间算**——服务器是 UTC，直接取 UTC 日期会在早上 8 点前算成昨天。
 >
 > **唯一索引只加在真正"一天一条"的地方**（`encyclopedia.publish_date`）。`fit_sessions.log_date` 与 `study_pomodoros.log_date` **故意不加唯一约束** —— 一天练两次、记多个番茄都是正常的，约束死反而会挡住用户。
 
@@ -161,6 +213,8 @@ erDiagram
 | `notifications` | 站内通知（先只做列表，不做推送） | `_id`、`user_id`、`type`(string)、`title`(string)、`content`(string)、`ref_id`(string)、`is_read`(bool)、`created_at` | `(user_id, is_read)` |
 
 ### 2.8 内容流（同频圈，P2 / 预留；本期只读占位数据）
+
+> **口径澄清（2026-10-31）**：本节 4 个集合仍是 **P2 预留，没有任何云函数读写它们**。同频圈的列表页现在读的是 `cards` 集合的搭子卡片流（调 `card-list`），**不是** `posts`。别看到「同频圈能看到内容」就以为 `posts` 已启用——见 `docs/28` §10。
 
 | 集合 | 用途（一句话） | 关键字段 | 索引 ⚡ |
 |---|---|---|---|
@@ -418,7 +472,7 @@ erDiagram
 ### 4.2 状态机（四处，别写错）
 
 ```
-认证 verifications.status:  pending → approved | rejected
+认证 verify_requests.status:  pending → approved | rejected
                               ↑                    │
                               └──── 重新提交 ───────┘
 举报 reports.status:        pending → upheld（成立，扣 −10） | dismissed（驳回）
@@ -467,99 +521,4 @@ score = Σ(共同标签的 weight) ÷ Σ(请求方标签的 weight) × 100
 - `weight` 来自 `user_tags.weight`（默认 1，性格类 1.5）。
 - 含义：**"我关心的标签里，有几成对方也满足"** → 输出 0–100 的百分比，直接显示给用户看，比一个没有量纲的分数更有说服力。
 - 注意分母是**请求方的标签权重和**，不是两者之和。所以 100% 表示"我的每个标签他都满足"，这是用户能理解的语义。
-
-### 5.2 硬过滤（先筛掉不合格的，再打分）
-
-| 条件 | 为什么 |
-|---|---|
-| `type` 相同 | 找学习搭子，不该出健身卡片 |
-| `status == 'open'` | 已匹配/已下架的不该再出现 |
-| `owner_id != 我自己` | 不能匹配到自己的卡片 |
-| 发布者 `credit_score >= 60` | 低信誉用户不能被推荐（见 01 文档权限表） |
-| `deleted_at` 为空 | 软删除的不要 |
-
-**排序**：`score` 降序 → **同校优先** → `created_at` 降序。**取前 10** → 前端算"共同标签"高亮。
-
-### 5.3 在文档型数据库里怎么实现（两个方案）
-
-**方案 A（推荐，MVP 用它）：云函数里拉候选集 + JS 打分**
-
-```
-1. 云函数拿到请求者的 user_tags（一次查询）
-2. 查 candidates：cards 里 status='open'、type=请求的类型、owner_id != 我，
-   按 school_id 是否相同分成"同校"和"非本校"两批，各取前 N 条（如各 50 条）
-3. 把这 N 条卡片的 card_tags 一次性查出来（用 _id 批量 in 查询）
-4. 在云函数里用 JS 按公式算 score（几十条数据，一次循环几毫秒）
-5. 排序、截前 10、返回
-6. 顺便写 matches 记录（答辩时能证明算法真的在跑）
-```
-
-**方案 B：聚合管道（aggregate）**
-把 `$lookup`（拼 `card_tags`）+ `$match` + `$addFields` 算分 + `$sort` + `$limit` 全部丢给数据库。
-
-**为什么 MVP 选 A**：
-
-| 理由 | 说明 |
-|---|---|
-| 好写、好调 | JS 打分逻辑 AI 一次就能写对；聚合管道里一个阶段写错，报错信息很难懂 |
-| 好解释 | 答辩老师问"怎么算的"，你直接念那段 JS，一眼看懂。管道写法很难口头讲 |
-| 数据量小 | 内测几十个用户、几百张卡片，**拉回来在内存里算完全够快** |
-| 好加规则 | 以后想加"同校 +10 分""认证用户优先"，A 方案是加两行 if；B 方案要改管道，风险大 |
-| 好换 | 将来数据量真的大了，把 A 换成 B，**只改这一个云函数**，页面完全不动 |
-
-> **一句话**：33 天工期内，**能读得懂、改得动**比"数据库层性能最优"重要得多。这就是选 A 的原因。
-
----
-
-## 6. 索引与性能清单（先加这些就够）
-
-| 集合 | 索引 | 为什么 |
-|---|---|---|
-| `cards` | `(status, type, created_at 降序)` | 大厅列表 + 匹配的候选集 |
-| `cards` | `school_id`、`city_code` | 同校频道 / 地区范围 |
-| `cards` | `owner_id` | 我的卡片列表 |
-| `messages` | `(conversation_id, created_at)` | **轮询的核心索引**，`fetchSince` 每次都要走它 |
-| `messages` | `(conversation_id, client_msg_id)` 唯一 | 消息去重 |
-| `conversation_members` | `(user_id, unread_count)` | 消息页未读红点 |
-| `users` | `phone`、`user_no`（唯一） | 登录、搜索加好友 |
-| `applications` | `(card_id, status)` | 卡片下看收到的申请 |
-| `credit_events` | `(user_id, created_at 降序)` | 信誉明细页 |
-| `reports` | `(status, created_at 降序)` | 后台待处理列表 |
-| `posts` | `(status, scope, created_at 降序)` | 同频圈「同校 / 地区 / 发现」三栏的内容流 |
-| `posts` | `city_code` | 地区（同城·周边）频道的筛选 |
-| `posts` | `(status, kind, created_at 降序)` | 按 图文 / 视频 / 吐槽 形态筛选 |
-| `post_likes` | 复合 `(post_id, user_id)` 唯一 | 防重复点赞 + 我的点赞列表 |
-| `post_comments` | `(post_id, created_at)` | 帖子详情下的评论列表 |
-
-> 索引不是越多越好：**每个索引都会拖慢写入**。上面这些覆盖了 MVP 的所有高频查询，**先只加这些**，等真慢了再看控制台里哪条查询慢。
-
----
-
-## 7. 待确认（和数据设计强相关）
-
-1. **学校用文本还是字典？** 建议：`users.school` 先存文本 + 另建一张 `schools` 字典集合（全国本科院校约 1300 条，可找现成清单）。字典集合是为了"选学校"下拉和准确的同校匹配，`school_id` 一存，同校筛选就只是一个字符串比较。
-2. **搭子标签是自由输入还是从标签库选？** 建议：**自由输入为主**（2026-10-16 已定为功能要求：输入框限 8 字 + 「＋搭子」按钮，仅双方可见、可随时改），再给 8 个推荐词（考研战友 / 增肌搭子 / 自习搭子 / 拍照搭子 / 饭搭子 / 竞赛队友 / 夜跑搭子 / 雅思同桌）一点即填降低输入成本；颜色从 8 个预设闪亮色里选，存 key（见 §2.3）。用户资料里的"兴趣标签"仍走 `tags` 标签库（可控、可统计、能算权重）。
-3. **卡片允许多人（`expected_people` > 1）吗？** 字段已留，**MVP 只做 1 对 1**：申请同意即把卡片置 `matched`，简化状态流转。多人会让"谁先同意""人满没有"变复杂，33 天不值得。
-4. **`conversations.read` 要不要关掉？** 建议 MVP 就设成 `false`（见 §3.4 的说明），会话列表统一走云函数，安全且顺手。
-5. **同频圈的「同校 / 地区 / 发现」怎么判定？** 建议：`scope` 在发布时选好写死（不做实时判断），同校流过滤 `school_id == 我的 school_id`，地区流过滤 `city_code == 我的 city_code`，发现流全量（= 原「全国」）；未认证用户没有学校，只给看地区与发现。见 §2.8。
-6. **同频圈的发布要不要放开客户端直写？** 建议：`posts` 系列沿用本项目总原则（`create/update/delete` 全 `false`，只走云函数），审核状态只能由云函数 / 后台改；本期连云函数都不写，只放演示数据。
-
----
-
-## 8. 技术债台账（答辩大概率被问，先记着）
-
-> 下面每一条都是**有意识的取舍**，不是忘了做。被问到时照实说，比装作没这回事强得多。
-
-| # | 问题 | 现状 | 上线前必须怎么改 | 影响面 |
-|---|---|---|---|---|
-| D1 | **token 明文存在 `users` 集合里** | `user-login` / `user-auto-login` 直接 `where({ token })` 查 | 存 `token_hash`（加盐哈希），比较哈希而非明文；token 绑定设备 ID | 拿到数据库快照 = 能冒充所有人。**这是最该改的一条** |
-| D2 | **换 token 会互踢** | 每次登录生成新 token 覆盖旧的，多设备同时登录只有最后登录的设备能用 | 允许一个用户多条有效 token（独立 `user_tokens` 集合，带设备标识与各自过期时间），或用 JWT | 用户体验；答辩演示时如果两台设备同号会露馅 |
-| D3 | **「同意」的 5 步写操作没有事务** | `card-apply` 里 accept 是顺序执行 + 逐步校验 | 包进 `db.startTransaction()` | 并发下可能出现「关系建了但卡片还开着」的中间态。单机演示够用 |
-| D4 | **`applications` 没有联合唯一索引** | 靠先 `count()` 再 `add()` 防重复申请 | 并发下两个请求可能同时通过检查 → 两条 pending。要么加唯一索引（文档型 DB 支持有限），要么接受并做去重展示 | 低概率，但重复申请会出现 |
-| D5 | **信誉分只有扣分路径** | 字段和规则已设计（§6），但举报、扣分、恢复的云函数还没写（第 3 周 M3 的事） | 实现举报流程 + 定时恢复 | 功能缺失，不是漏洞 |
-| D6 | **云函数没有频率限制** | 任何登录用户理论上能狂调 `card-publish`（日限 5 条是在业务层判的） | 云函数入口加按 user_id 的计数与节流，或依赖 uniCloud 的调用配额告警 | 免费额度 1.5 万次/月，被刷会提前耗尽 |
-| D7 | **`cards` 软删除后仍可被直读** | `status: 'removed'` 的卡只有发布者能看，但 DB Schema 里 `read` 若为 true 就挡不住 | 确认 `cards.read` 设成 `false`，一切走云函数 | 下架内容可能仍可见 |
-
-> **D1 和 D2 建议合并做**：一次引入 `user_tokens` 集合，既解决明文存储，也解决多设备互踢。
-> 预计工作量：半天。放在 M3（信誉与激励）那一周一起做最省事。
 
