@@ -1,0 +1,6 @@
+{
+  "name": "report-submit",
+  "version": "1.0.0",
+  "description": "Submit a report against a user / card / message / material",
+  "main": "index.js"
+}

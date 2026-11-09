@@ -1,0 +1,6 @@
+{
+  "name": "card-favorite",
+  "version": "1.0.0",
+  "description": "卡片收藏（toggle / check / list）",
+  "main": "index.js"
+}

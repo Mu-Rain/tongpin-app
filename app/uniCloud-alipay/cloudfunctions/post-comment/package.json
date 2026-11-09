@@ -1,0 +1,6 @@
+{
+  "name": "post-comment",
+  "version": "1.0.0",
+  "description": "动态评论（list / add）",
+  "main": "index.js"
+}

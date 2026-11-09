@@ -1,0 +1,6 @@
+{
+  "name": "post-detail",
+  "version": "1.0.0",
+  "description": "动态详情（同频圈）",
+  "main": "index.js"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "post-publish",
+  "version": "1.0.0",
+  "description": "发布日常动态（同频圈）",
+  "main": "index.js"
+}

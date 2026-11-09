@@ -1,0 +1,6 @@
+{
+  "name": "post-like",
+  "version": "1.0.0",
+  "description": "动态点赞（like / unlike）",
+  "main": "index.js"
+}

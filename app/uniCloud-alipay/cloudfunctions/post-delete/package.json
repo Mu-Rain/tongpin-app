@@ -1,0 +1,6 @@
+{
+  "name": "post-delete",
+  "version": "1.0.0",
+  "description": "删除自己的动态（软删）",
+  "main": "index.js"
+}

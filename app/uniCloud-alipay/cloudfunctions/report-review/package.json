@@ -1,0 +1,6 @@
+{
+  "name": "report-review",
+  "version": "1.0.0",
+  "description": "Admin review of a report (upheld deducts credit for user targets)",
+  "main": "index.js"
+}

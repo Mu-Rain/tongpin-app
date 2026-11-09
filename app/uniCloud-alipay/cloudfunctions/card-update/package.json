@@ -1,0 +1,6 @@
+{
+  "name": "card-update",
+  "version": "1.0.0",
+  "description": "编辑 / 关闭自己发布的搭子卡片",
+  "main": "index.js"
+}
