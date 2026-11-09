@@ -1,0 +1,46 @@
+[
+  {
+    "IndexName": "idx_owner_target",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "owner_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "target_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_owner",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "owner_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_target",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "target_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

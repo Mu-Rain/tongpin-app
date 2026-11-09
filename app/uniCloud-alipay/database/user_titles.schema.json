@@ -1,0 +1,36 @@
+{
+  "bsonType": "object",
+  "description": "用户已获得的称号。title_id 存 titles.code（不是 _id），所以 titles 表为空时照样能记账。",
+  "required": [
+    "user_id",
+    "title_id"
+  ],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "description": "获得者",
+      "foreignKey": "uni-id-users._id"
+    },
+    "title_id": {
+      "bsonType": "string",
+      "description": "称号 code，对应 titles.code；不随 titles 改名/重建而失效"
+    },
+    "obtained_at": {
+      "bsonType": "long",
+      "description": "获得时间，Date.now() 毫秒时间戳；补发时写入，之后不再覆盖"
+    },
+    "is_equipped": {
+      "bsonType": "bool",
+      "description": "是否佩戴中，同一用户最多一条为 true"
+    }
+  }
+}

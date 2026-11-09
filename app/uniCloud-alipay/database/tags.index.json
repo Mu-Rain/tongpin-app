@@ -1,0 +1,20 @@
+[
+  {
+    "IndexName": "idx_category_active",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "category",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "active",
+          "Direction": "1",
+          "Type": "bool"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

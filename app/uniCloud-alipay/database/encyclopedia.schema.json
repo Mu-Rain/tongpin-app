@@ -1,0 +1,52 @@
+{
+  "bsonType": "object",
+  "description": "每日百科（一天一条）。publish_date 用 'YYYY-MM-DD' 字符串而不是时间戳，因为要能按天精确匹配「今天这条」（契约 §1 / docs/03-database.md:198）。",
+  "required": [
+    "title",
+    "content",
+    "category",
+    "publish_date"
+  ],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "title": {
+      "bsonType": "string",
+      "description": "百科标题，首页卡片首行",
+      "trim": "both"
+    },
+    "content": {
+      "bsonType": "string",
+      "description": "正文，首页默认折叠 3 行，点展开看全文"
+    },
+    "category": {
+      "bsonType": "string",
+      "enum": [
+        "study",
+        "health",
+        "life",
+        "campus"
+      ],
+      "description": "分类：学习 / 健康 / 生活 / 校园"
+    },
+    "publish_date": {
+      "bsonType": "string",
+      "description": "发布日期 'YYYY-MM-DD'（按北京时间）；演示数据留空串表示不指定日期"
+    },
+    "active": {
+      "bsonType": "bool",
+      "description": "false 时 encyclopedia-daily 不再取到它（下架而不删数据）"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "description": "创建时间，Date.now() 毫秒时间戳"
+    }
+  }
+}

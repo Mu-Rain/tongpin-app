@@ -1,0 +1,15 @@
+[
+  {
+    "IndexName": "idx_active",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "active",
+          "Direction": "1",
+          "Type": "bool"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

@@ -1,0 +1,15 @@
+[
+  {
+    "IndexName": "idx_pair_key",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_pair_key",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

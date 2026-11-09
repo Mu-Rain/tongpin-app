@@ -1,0 +1,6 @@
+{
+  "name": "user-push",
+  "version": "1.0.0",
+  "description": "推送标识绑定/解绑：push_tokens 一台设备一行",
+  "main": "index.js"
+}

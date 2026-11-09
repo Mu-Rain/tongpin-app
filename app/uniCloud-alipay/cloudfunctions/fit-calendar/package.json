@@ -1,0 +1,7 @@
+{
+  "name": "fit-calendar",
+  "version": "1.0.0",
+  "description": "Workout calendar: month grid of logged days, streak, month counts, prev/next month flags",
+  "main": "index.js",
+  "dependencies": {}
+}

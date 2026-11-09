@@ -90,6 +90,13 @@ const action = str(event.action) || 'apply'
     // 申请
     // ============================================================
     if (action === 'apply') {
+      // 学生认证门槛：只拦「申请」这一步。accept / reject / cancel 是双方在处理
+      // 已经进流程的申请，在那里拦会把存量搭子关系锁死。
+      // 两套字段名取或（schoolVerified 是第 1 天的写法，is_verified 是设计文档的写法）
+      if (!(me.schoolVerified === true || me.is_verified === true)) {
+        fail('完成学生认证后才能申请搭子', 403)
+      }
+
       const cardId = str(event.card_id)
       const message = str(event.message)
       if (!cardId) fail('缺少 card_id')
@@ -131,6 +138,38 @@ const action = str(event.action) || 'apply'
         decided_at: 0,
         created_at: now
       })
+
+      // —— 埋点：publish_to_first_response（发布 → 第一条申请）——
+      //   为什么放在服务端：第一次「有人响应」发生在别人的设备上，发布者前端根本收不到那个时刻，
+      //   只有 card-apply 被调用时才知道「这张卡第一次被人申请」。
+      //   ★ 时点：**add 之后查 count() === 1**，不是 add 之前查 0。
+      //     add 之前查 0 更准（先到先得），但两条并发申请会同时查到 0 并各写一条，
+      //     要修就得靠唯一索引/锁，成本远高于这条指标的精度收益。
+      //     选 add 之后，代价换成另一侧：两条几乎同时的申请，后到的那次 add 完时 count 已是 2，
+      //     于是两次判断都不成立 —— 这条指标漏记一次。已知边界，接受：
+      //     宁可漏报，也不重复计数（avg(duration_ms) 里混进重复项会直接带偏口径）。
+      //   ★ 记在发布者（card.owner_id）头上：口径是「我的卡多久有人理」，不是「我多久申请一次」。
+      //   ★ 整段独立 try/catch，失败只吞不抛 —— 埋点挂了不能让申请流程挂。
+      try {
+        const cardCreatedAt = card.created_at
+        // created_at 缺失/非数字时整条不写：不拿 0 或负数冒充，脏数据比没数据更难查
+        if (typeof cardCreatedAt === 'number' && isFinite(cardCreatedAt)) {
+          const applied = await db.collection('applications').where({ card_id: cardId }).count()
+          if (applied.total === 1) {
+            await db.collection('track_events').add({
+              event: 'publish_to_first_response',
+              user_id: card.owner_id,
+              props: {
+                card_id: cardId,
+                duration_ms: Math.max(0, now - cardCreatedAt)
+              },
+              created_at: Date.now()
+            })
+          }
+        }
+      } catch (e) {
+        /* 埋点失败忽略 */
+      }
 
       // 通知发布者（站内通知，先只入库不推送）
       try {

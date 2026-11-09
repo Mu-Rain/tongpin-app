@@ -1,0 +1,28 @@
+[
+  {
+    "IndexName": "idx_card_tags_card",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "card_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_card_tags_tag",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "tag_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

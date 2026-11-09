@@ -1,0 +1,43 @@
+[
+  {
+    "IndexName": "idx_reporter_target",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "reporter_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "target_type",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "target_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_status_time",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "created_at",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

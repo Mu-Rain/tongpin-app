@@ -1,0 +1,38 @@
+[
+  {
+    "IndexName": "idx_conv_message",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "conversation_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "message_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_status_time",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "created_at",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

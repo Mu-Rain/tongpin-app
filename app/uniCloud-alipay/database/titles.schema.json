@@ -1,0 +1,64 @@
+{
+  "bsonType": "object",
+  "description": "称号定义表（数据驱动：表空时云函数回落内置 3 条，见 docs/20-M3称号系统契约.md §1）。user_titles.title_id 存本表的 code，不存 _id。",
+  "required": [
+    "code"
+  ],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "code": {
+      "bsonType": "string",
+      "description": "称号唯一标识（profile_complete / verify_pass / first_buddy …）",
+      "trim": "both"
+    },
+    "name": {
+      "bsonType": "string",
+      "description": "称号名，称号墙上直接显示"
+    },
+    "desc": {
+      "bsonType": "string",
+      "description": "称号说明，可为空"
+    },
+    "rarity": {
+      "bsonType": "string",
+      "enum": [
+        "common",
+        "rare",
+        "epic"
+      ],
+      "description": "稀有度，决定墙上的样式"
+    },
+    "condition_type": {
+      "bsonType": "string",
+      "description": "判定类型：profile / verify / buddy 由云函数自动判定；其它值本轮不自动发放"
+    },
+    "condition_value": {
+      "bsonType": "string",
+      "description": "判定阈值或附加参数，可为空（当前三条内置称号不用）"
+    },
+    "condition_text": {
+      "bsonType": "string",
+      "description": "未获得时显示的条件文案，改动后前端无需发版"
+    },
+    "active": {
+      "bsonType": "bool",
+      "description": "false 时该称号不上墙；三条内置称号回落内置定义"
+    },
+    "sort": {
+      "bsonType": "int",
+      "description": "称号墙排序，升序"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "description": "创建时间，Date.now() 毫秒时间戳"
+    }
+  }
+}

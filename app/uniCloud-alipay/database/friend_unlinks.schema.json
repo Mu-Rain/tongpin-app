@@ -1,0 +1,40 @@
+{
+  "bsonType": "object",
+  "description": "解除过好友的历史。friendships 是「存在即好友」，删行后不留痕迹；这张表专门补那点痕迹，用来区分「从来不是好友的搭子」和「当过好友又解除的」。一对人一行。",
+  "required": [
+    "user_a_id",
+    "user_b_id",
+    "removed_at",
+    "removed_by"
+  ],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "user_a_id": {
+      "bsonType": "string",
+      "description": "两个 user id 中字符串较小的那个（约定 user_a_id < user_b_id，与 friendships 同）",
+      "foreignKey": "uni-id-users._id"
+    },
+    "user_b_id": {
+      "bsonType": "string",
+      "description": "两个 user id 中字符串较大的那个",
+      "foreignKey": "uni-id-users._id"
+    },
+    "removed_at": {
+      "bsonType": "timestamp",
+      "description": "最近一次解除好友的时间（毫秒）"
+    },
+    "removed_by": {
+      "bsonType": "string",
+      "description": "最近一次发起解除的人",
+      "foreignKey": "uni-id-users._id"
+    }
+  }
+}

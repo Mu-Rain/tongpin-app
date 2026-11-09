@@ -1,0 +1,9 @@
+{
+    "name":  "uid-backfill",
+    "version":  "1.0.0",
+    "description":  "cloud function: uid-backfill",
+    "main":  "index.js",
+    "dependencies":  {
+
+                     }
+}

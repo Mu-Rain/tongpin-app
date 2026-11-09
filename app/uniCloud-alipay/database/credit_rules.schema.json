@@ -1,0 +1,42 @@
+{
+  "bsonType": "object",
+  "description": "信誉规则。规则与执行分离：云函数按 code 查 delta，查不到就回落到代码内置默认表。",
+  "required": [
+    "code",
+    "delta",
+    "text",
+    "active",
+    "created_at"
+  ],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "code": {
+      "bsonType": "string",
+      "description": "原因码，唯一；与 credit_events.reason_code 对应"
+    },
+    "delta": {
+      "bsonType": "int",
+      "description": "分值变化（buddy_done +2 / no_show -5 / report_upheld -10 / verify_pass +5 / admin_adjust 0）"
+    },
+    "text": {
+      "bsonType": "string",
+      "description": "给用户看的人话文案，前端「怎么算的」直接展示"
+    },
+    "active": {
+      "bsonType": "bool",
+      "description": "关掉后云函数回落到内置默认表，而不是当 0 分处理"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "description": "毫秒时间戳，Date.now()"
+    }
+  }
+}

@@ -8,7 +8,9 @@
  *   入参：token（必填）、type（可选，空 = 不限类型）、
  *        exclude_ids（可选 string[]，「换一批」时传已展示过的 card_id）、
  *        limit（可选，默认 10，最大 10）
- *   出参：{ code, msg, data: { list, need_tags, hint } }
+ *   出参：{ code, msg, data: { list, need_tags, hint, matched_total } }
+ *   matched_total = 打分后 score>0 的候选卡片数（在 limit 截断之前统计），
+ *   首页「今天 N 个人跟你同频」的 N 就是它 —— 分数口径只在这里算，前端不重复算。
  *
  * 算法照 docs/03-database.md §5 实现，走 §5.3 的「方案 A」：
  * 云函数里拉候选集 + JS 打分，不用聚合管道。
@@ -141,6 +143,33 @@ function compareMatches(a, b) {
   return (b.created_at || 0) - (a.created_at || 0)
 }
 
+/**
+ * 作者头像换临时链接：库里存的是 cloud:// fileID，<image> 只认 http 链接。
+ * 整页一次批量换；失败保留原值（裂图只是少张头像，不让匹配页报错）。
+ */
+async function resolveOwnerAvatars(list) {
+  const ids = []
+  for (let i = 0; i < list.length; i++) {
+    const u = list[i].owner && list[i].owner.avatar
+    if (typeof u === 'string' && u.indexOf('cloud://') === 0 && ids.indexOf(u) < 0) ids.push(u)
+  }
+  if (!ids.length) return
+  try {
+    const res = await uniCloud.getTempFileURL({ fileList: ids })
+    const fl = (res && res.fileList) || []
+    const map = {}
+    for (let i = 0; i < fl.length; i++) {
+      if (fl[i] && fl[i].tempFileURL) map[fl[i].fileID] = fl[i].tempFileURL
+    }
+    for (let i = 0; i < list.length; i++) {
+      const o = list[i].owner
+      if (o && map[o.avatar]) o.avatar = map[o.avatar]
+    }
+  } catch (e) {
+    console.warn('[match-cards] 头像换链失败', e && e.message)
+  }
+}
+
 exports.main = async (event) => {
   try {
     const action = str(event.action) || 'list'
@@ -176,7 +205,8 @@ exports.main = async (event) => {
       return ok({
         list: [],
         need_tags: true,
-        hint: '你还没有选择标签，先到「我的标签」选 8 - 10 个你在意的标签，才能算贴合度'
+        hint: '你还没有选择标签，先到「我的标签」选 8 - 10 个你在意的标签，才能算贴合度',
+        matched_total: 0
       })
     }
 
@@ -223,7 +253,7 @@ exports.main = async (event) => {
     // dbCmd.exists(false) 会把这类正常卡片一起排除掉，误伤数据。
     cards = cards.filter((c) => !c.deleted_at)
 
-    if (!cards.length) return ok({ list: [], need_tags: false, hint: '' })
+    if (!cards.length) return ok({ list: [], need_tags: false, hint: '', matched_total: 0 })
 
     // —— 4. 发布者一次拉齐（分批 in，不要 N+1）——
     const ownerIds = uniq(cards.map((c) => c.owner_id))
@@ -237,7 +267,7 @@ exports.main = async (event) => {
 
     // 硬过滤：发布者 credit_score >= 60（低信誉用户不能被推荐）
     cards = cards.filter((c) => creditOf(ownerMap[c.owner_id]) >= MIN_CREDIT)
-    if (!cards.length) return ok({ list: [], need_tags: false, hint: '' })
+    if (!cards.length) return ok({ list: [], need_tags: false, hint: '', matched_total: 0 })
 
     // —— 5. 卡片的标签（分批 in）——
     const cardIds = cards.map((c) => c._id)
@@ -297,30 +327,42 @@ exports.main = async (event) => {
       }
     })
 
+    await resolveOwnerAvatars(list)
+
     // —— 7. 排序 + 截前 limit ——
     list.sort(compareMatches)
+    // 首页「今天 N 个人跟你同频」的 N：打分后 score>0 的候选数。
+    // ★ 必须在 slice 之前统计 —— 首页只传 limit=1，截断后再数永远是 1。
+    const matchedTotal = list.filter((x) => x.score > 0).length
     const top = list.slice(0, limit)
 
     // —— 8. 写 matches 记录（§5.3 第 6 步）——
     // 返回几条就记几条：matches 是 (user_id, card_id) 粒度的匹配流水，
     // 记 1 条看不出"算法真的在跑"，记全部才经得起答辩追问。
     // 记录失败不影响本次匹配结果，所以单独兜一层 catch。
-    const now = Date.now()
-    for (let i = 0; i < top.length; i++) {
-      try {
-        await db.collection('matches').add({
-          user_id: me._id,
-          card_id: top[i].card_id,
-          score: top[i].score,
-          common_tag_count: top[i].common_tag_count,
-          created_at: now
-        })
-      } catch (e) {
-        // 静默：匹配结果是主线，流水记录是副产物
+    //
+    // record=false 时整段跳过：首页只为拿 matched_total 这个数字，它每次 onShow 都会
+    // 调一次本函数，若也记流水，matches 会随"逛了几次首页"无声膨胀，而这些行并不对应
+    // 任何一次用户主动匹配 —— 流水表就再也说不清每行是谁触发的。默认 true，
+    // 「一键匹配」主路径（match_result.vue）不传该字段，行为与改动前逐次等价。
+    if (event.record !== false) {
+      const now = Date.now()
+      for (let i = 0; i < top.length; i++) {
+        try {
+          await db.collection('matches').add({
+            user_id: me._id,
+            card_id: top[i].card_id,
+            score: top[i].score,
+            common_tag_count: top[i].common_tag_count,
+            created_at: now
+          })
+        } catch (e) {
+          // 静默：匹配结果是主线，流水记录是副产物
+        }
       }
     }
 
-    return ok({ list: top, need_tags: false, hint: '' })
+    return ok({ list: top, need_tags: false, hint: '', matched_total: matchedTotal })
   } catch (e) {
     return fail(500, e.message || '匹配失败')
   }

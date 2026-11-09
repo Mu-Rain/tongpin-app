@@ -1,0 +1,41 @@
+[
+  {
+    "IndexName": "idx_token",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "token",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_uid",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "uid",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_phone",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "phone",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

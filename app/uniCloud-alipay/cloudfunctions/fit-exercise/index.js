@@ -93,22 +93,24 @@ function doList(event) {
     query = db.collection(DB_EX).where(where)
   }
 
+  // 多取一条来判断「还有没有下一页」，而不是靠「满页就假定还有」——
+  // 结果正好是 pageSize 的整数倍时会误判，前端永远等不到「没有更多了」。
   return query
     .field(FIELDS)
     .orderBy('muscle', 'asc')
     .orderBy('sort', 'asc')
     .skip((page - 1) * pageSize)
-    .limit(pageSize)
+    .limit(pageSize + 1)
     .get()
     .then(function (res) {
-      const list = res.data || []
+      const rows = res.data || []
+      const list = rows.slice(0, pageSize)
       return ok({
         list: list,
         total_returned: list.length,
         page: page,
         page_size: pageSize,
-        // 没有 count 查询，用「满页」判断是否还有更多——省一次全表 count
-        has_more: list.length === pageSize
+        has_more: rows.length > pageSize
       })
     })
 }

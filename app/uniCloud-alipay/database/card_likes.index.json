@@ -1,0 +1,33 @@
+[
+  {
+    "IndexName": "idx_card_user",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "card_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "user_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_card",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "card_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

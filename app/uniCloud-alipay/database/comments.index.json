@@ -1,0 +1,25 @@
+[
+  {
+    "IndexName": "idx_comments_post_status_time",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "post_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "created_at",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "name": "fit-reminder",
+  "version": "1.0.0",
+  "description": "Workout reminder settings on uni-id-users plus server-side should_nudge decision (Beijing time)",
+  "main": "index.js",
+  "dependencies": {}
+}

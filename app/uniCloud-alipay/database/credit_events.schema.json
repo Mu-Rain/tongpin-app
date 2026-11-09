@@ -1,0 +1,52 @@
+{
+  "bsonType": "object",
+  "description": "信誉流水。分数的唯一真相：users.credit_score 只能由流水推导后写入，别处不许直接改。",
+  "required": [
+    "user_id",
+    "delta",
+    "reason_code",
+    "reason_text",
+    "score_after",
+    "created_at"
+  ],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "user_id": {
+      "bsonType": "string",
+      "description": "被加/扣分的人",
+      "foreignKey": "uni-id-users._id"
+    },
+    "delta": {
+      "bsonType": "int",
+      "description": "本次变化，如 +2 / -5 / -10 / +5（正负号本身是语义，别取绝对值）"
+    },
+    "reason_code": {
+      "bsonType": "string",
+      "description": "原因码，去 credit_rules.code 查分值；这里刻意不写 enum —— 加事件类型只改数据，不改 schema"
+    },
+    "reason_text": {
+      "bsonType": "string",
+      "description": "写入时的文案快照，后台之后改文案不影响历史记录"
+    },
+    "score_after": {
+      "bsonType": "int",
+      "description": "变化后的分数，便于画曲线/回溯"
+    },
+    "ref_id": {
+      "bsonType": "string",
+      "description": "关联对象 id（搭子关系 / 认证申请 / 举报），可空串"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "description": "毫秒时间戳，Date.now()"
+    }
+  }
+}

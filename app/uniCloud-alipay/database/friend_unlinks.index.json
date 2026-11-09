@@ -1,0 +1,46 @@
+[
+  {
+    "IndexName": "idx_pair",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_a_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "user_b_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  },
+  {
+    "IndexName": "idx_a",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_a_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_b",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_b_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

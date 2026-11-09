@@ -491,14 +491,20 @@ async function doList(event, me) {
   const pageSize = Math.min(50, Math.max(1, int(event.page_size, int(event.limit, 20))))
   const page = Math.max(1, int(event.page, 1))
 
+  // 多取一条来判断「还有没有下一页」。
+  // 不能用「刚好拉满一页就假定还有」——记录数正好是 pageSize 的整数倍时会误判，
+  // 前端就会一直停在「正在加载更多」而没有「只到这里了」。
   const r = await db.collection(DB_SESSIONS)
     .where({ user_id: me._id, status: 'done' })
     .orderBy('started_at', 'desc')
     .skip((page - 1) * pageSize)
-    .limit(pageSize)
+    .limit(pageSize + 1)
     .get()
 
-  const list = (r.data || []).map(function (s) {
+  const rows = r.data || []
+  const hasMore = rows.length > pageSize
+
+  const list = rows.slice(0, pageSize).map(function (s) {
     return {
       _id: s._id,
       plan_id: s.plan_id,
@@ -517,8 +523,8 @@ async function doList(event, me) {
     list: list,
     page: page,
     page_size: pageSize,
-    // 满页就假定还有下一页，省一次 count（和 fit-exercise 的 doList 同一套口径）
-    has_more: list.length === pageSize
+    // 由「多取一条」精确判断，不再靠满页推断
+    has_more: hasMore
   })
 }
 

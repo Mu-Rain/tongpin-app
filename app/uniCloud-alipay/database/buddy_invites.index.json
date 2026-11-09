@@ -1,0 +1,38 @@
+[
+  {
+    "IndexName": "idx_to_status",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "to_user_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_from_time",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "from_user_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "created_at",
+          "Direction": "-1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

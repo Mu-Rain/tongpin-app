@@ -1,0 +1,15 @@
+[
+  {
+    "IndexName": "idx_publish_date",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "publish_date",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  }
+]

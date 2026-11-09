@@ -1,0 +1,38 @@
+[
+  {
+    "IndexName": "idx_conv_time",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "conversation_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "created_at",
+          "Direction": "1",
+          "Type": "long"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_conv_client",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "conversation_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "client_msg_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

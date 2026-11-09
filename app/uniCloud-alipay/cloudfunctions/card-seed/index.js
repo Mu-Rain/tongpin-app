@@ -45,11 +45,13 @@ const ALLOW = false
 const OTHER_SCHOOL = '__seed_other_school__'
 
 // 虚拟发布者。credit 决定能否被推荐（>= 60）；same 决定学校是否与测试者同校
+// avatar 用包内自带头像（app/static/avatars/）：这些账号不登录，
+// 登录时补头像的 ensurePresetAvatar 永远跑不到它们，只能在这里直接写死。
 const SEED_USERS = [
-  { _id: 'seed_u_full', nickname: '林小满', credit: 95, same: true },
-  { _id: 'seed_u_part', nickname: '周叙', credit: 90, same: true },
-  { _id: 'seed_u_low', nickname: '信誉待恢复', credit: 40, same: true },
-  { _id: 'seed_u_other', nickname: '外校的许同学', credit: 92, same: false }
+  { _id: 'seed_u_full', nickname: '林小满', credit: 95, same: true, avatar: '/static/avatars/av-study.png' },
+  { _id: 'seed_u_part', nickname: '周叙', credit: 90, same: true, avatar: '/static/avatars/av-fitness.png' },
+  { _id: 'seed_u_low', nickname: '信誉待恢复', credit: 40, same: true, avatar: '/static/avatars/av-other.png' },
+  { _id: 'seed_u_other', nickname: '外校的许同学', credit: 92, same: false, avatar: '/static/avatars/av-photo.png' }
 ]
 
 // 卡片场景。note 写给测试者看：这条应该出现，还是应该被筛掉
@@ -190,17 +192,32 @@ exports.main = async (event) => {
 
     // —— 3. 建虚拟用户（只插缺失的）——
     const userIds = SEED_USERS.map((u) => u._id)
-    const existUserRes = await db.collection(DB_USERS).where({ _id: dbCmd.in(userIds) }).field({ _id: true }).get()
+    const existUserRes = await db
+      .collection(DB_USERS)
+      .where({ _id: dbCmd.in(userIds) })
+      .field({ _id: true, avatar: true, avatar_url: true })
+      .get()
     const existUser = {}
-    ;(existUserRes.data || []).forEach((d) => { existUser[d._id] = true })
+    ;(existUserRes.data || []).forEach((d) => { existUser[d._id] = d })
 
     let usersInserted = 0
+    let usersPatched = 0
     for (const u of SEED_USERS) {
-      if (existUser[u._id]) continue
+      const old = existUser[u._id]
+      if (old) {
+        // ★ 老种子账号补头像：它们从不登录，登录补号逻辑覆盖不到，
+        //   首页卡片上就一直是个纯色空圆。只补空的，已有头像不动。
+        if (!str(old.avatar) && !str(old.avatar_url)) {
+          await db.collection(DB_USERS).doc(u._id).update({ avatar_url: u.avatar })
+          usersPatched++
+        }
+        continue
+      }
       await db.collection(DB_USERS).add({
         _id: u._id,
         nickname: u.nickname,
         avatar: '',
+        avatar_url: u.avatar,
         // 同校的跟测试者同校，外校的给一个不存在的学校 id
         school: u.same ? ((me && me.school) || '同校测试') : '外校测试',
         school_id: u.same ? (mySchool || '__seed_same_school__') : OTHER_SCHOOL,
@@ -277,7 +294,7 @@ exports.main = async (event) => {
     }
 
     return ok({
-      users: { inserted: usersInserted, total: SEED_USERS.length },
+      users: { inserted: usersInserted, patched: usersPatched, total: SEED_USERS.length },
       cards: { inserted: cardsInserted, total: SEED_CARDS.length },
       card_tags: { inserted: tagsInserted },
       tag_source: tagSource,

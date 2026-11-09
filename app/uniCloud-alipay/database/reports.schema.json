@@ -1,0 +1,80 @@
+{
+  "bsonType": "object",
+  "description": "举报。status 是运营后台的待办游标，首次写入就要把三个处理态字段写全。",
+  "required": [
+    "reporter_id",
+    "target_type",
+    "target_id",
+    "reason",
+    "status"
+  ],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "reporter_id": {
+      "bsonType": "string",
+      "description": "举报人",
+      "foreignKey": "uni-id-users._id"
+    },
+    "target_type": {
+      "bsonType": "string",
+      "description": "举报对象类型",
+      "enum": [
+        "user",
+        "card",
+        "message",
+        "material"
+      ]
+    },
+    "target_id": {
+      "bsonType": "string",
+      "description": "被举报对象的 _id"
+    },
+    "reason": {
+      "bsonType": "string",
+      "description": "举报原因",
+      "enum": [
+        "harassment",
+        "fake",
+        "ad",
+        "other"
+      ]
+    },
+    "detail": {
+      "bsonType": "string",
+      "description": "补充说明，≤200 字（按 Unicode 码点计）"
+    },
+    "status": {
+      "bsonType": "string",
+      "description": "处理态",
+      "enum": [
+        "pending",
+        "upheld",
+        "dismissed"
+      ]
+    },
+    "handled_reason": {
+      "bsonType": "string",
+      "description": "管理员处置时填的说明，可空（report-review 写入，M4 后台页面要用）"
+    },
+    "handled_by": {
+      "bsonType": "string",
+      "description": "处理人 _id，未处理为空串"
+    },
+    "handled_at": {
+      "bsonType": "long",
+      "description": "处理时间，未处理为 0"
+    },
+    "created_at": {
+      "bsonType": "long",
+      "description": "举报时间，Date.now()"
+    }
+  }
+}

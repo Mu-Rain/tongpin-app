@@ -1,0 +1,20 @@
+[
+  {
+    "IndexName": "idx_owner_target",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "owner_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "target_user_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "name": "push-send",
+  "version": "1.0.0",
+  "description": "内部推送：按 to_user_id 取 cid 逐个发 uni-push 2.0 通知",
+  "main": "index.js",
+  "extensions": {
+    "uni-cloud-push": {}
+  },
+  "author": "",
+  "dependencies": {}
+}

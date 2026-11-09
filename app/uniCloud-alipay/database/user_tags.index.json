@@ -1,0 +1,28 @@
+[
+  {
+    "IndexName": "idx_user",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_tag",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "tag_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

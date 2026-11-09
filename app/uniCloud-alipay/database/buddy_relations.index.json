@@ -1,0 +1,66 @@
+[
+  {
+    "IndexName": "idx_user_a_status",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_a_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_user_b_status",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_b_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_pair_cat",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "user_a_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "user_b_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "category",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

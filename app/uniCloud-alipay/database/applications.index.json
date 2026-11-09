@@ -1,0 +1,38 @@
+[
+  {
+    "IndexName": "idx_card_status",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "card_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "status",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "idx_card_applicant",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "card_id",
+          "Direction": "1",
+          "Type": "varchar"
+        },
+        {
+          "Name": "applicant_id",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

@@ -1,0 +1,15 @@
+[
+  {
+    "IndexName": "idx_code",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "code",
+          "Direction": "1",
+          "Type": "varchar"
+        }
+      ],
+      "MgoIsUnique": true
+    }
+  }
+]

@@ -47,6 +47,27 @@ function str(v) {
   return typeof v === 'string' ? v.trim() : ''
 }
 
+/* 挑「最该用的那个头像标识」：cloud:// fileID（永久） > 包内静态路径 > http（可能是过期临时链接）。
+ * 写成 owner.avatar_url || owner.avatar 是错的：库里 avatar 是 cloud://，有些历史账号的
+ * avatar_url 是当年换出来的临时链接，过期后优先取它就是给前端一条死链 ——
+ * 有本地缓存的设备还看得见，换账号/换设备就是空圆。 */
+function pickAvatar(u) {
+  const cands = [u && u.avatar, u && u.avatar_url]
+  let best = ''
+  let bestRank = 0
+  for (let i = 0; i < cands.length; i++) {
+    const v = typeof cands[i] === 'string' ? cands[i] : ''
+    let rank = 0
+    if (v.indexOf('cloud://') === 0) rank = 3
+    else if (v.charAt(0) === '/') rank = 2
+    else if (v.indexOf('http') === 0) rank = 1
+    if (rank > bestRank) {
+      bestRank = rank
+      best = v
+    }
+  }
+  return best
+}
 exports.main = async (event) => {
   try {
     const cardId = str(event.card_id)
@@ -85,7 +106,7 @@ exports.main = async (event) => {
     const owner = {
       _id: o._id || '',
       nickname: o.nickname || '同学',
-      avatar_url: o.avatar_url || o.avatar || '',
+      avatar_url: pickAvatar(o),
       school: o.school || '',
       // 兼容两套字段名：第 1 天注册写的是 schoolVerified/credit，03 文档设计的是 is_verified/credit_score
       is_verified: !!(o.is_verified || o.schoolVerified),
@@ -202,7 +223,7 @@ exports.main = async (event) => {
           applicant: {
             _id: u._id || '',
             nickname: u.nickname || '同学',
-            avatar_url: u.avatar_url || u.avatar || '',
+            avatar_url: pickAvatar(u),
             school: u.school || '',
             is_verified: !!(u.is_verified || u.schoolVerified),
             credit_score: typeof u.credit_score === 'number' ? u.credit_score : typeof u.credit === 'number' ? u.credit : 80
@@ -219,6 +240,38 @@ exports.main = async (event) => {
     delete card.owner_id
     delete card.school_id
     delete card.city_code
+
+    // 配图 + 头像：cloud:// 必须换成临时链接才能渲染（支付宝云的 <image> 不认 fileID）。
+    // 口径与 card-list 的 resolveImageUrls 一致；换失败保留原值，白框不影响详情页其余内容。
+    // 头像和配图合成一批换：详情页一次请求只付一次 getTempFileURL 往返。
+    const pending = []
+    const pushId = (u) => {
+      if (typeof u === 'string' && u.indexOf('cloud://') === 0 && pending.indexOf(u) < 0) pending.push(u)
+    }
+    if (Array.isArray(card.images)) card.images.forEach((u) => pushId(u))
+    pushId(owner.avatar_url)
+    if (canApply && canApply.applications) {
+      canApply.applications.forEach((a) => pushId(a.applicant && a.applicant.avatar_url))
+    }
+    if (pending.length) {
+      try {
+        const ur = await uniCloud.getTempFileURL({ fileList: pending })
+        const urlMap = {}
+        ;((ur && ur.fileList) || []).forEach((x) => {
+          if (x && x.tempFileURL) urlMap[x.fileID] = x.tempFileURL
+        })
+        if (Array.isArray(card.images)) card.images = card.images.map((u) => urlMap[u] || u)
+        if (urlMap[owner.avatar_url]) owner.avatar_url = urlMap[owner.avatar_url]
+        if (canApply && canApply.applications) {
+          canApply.applications.forEach((a) => {
+            const ap = a.applicant
+            if (ap && urlMap[ap.avatar_url]) ap.avatar_url = urlMap[ap.avatar_url]
+          })
+        }
+      } catch (e) {
+        console.warn('[card-detail] getTempFileURL 失败，图片按原值返回', e && e.message)
+      }
+    }
 
     return {
       code: 0,

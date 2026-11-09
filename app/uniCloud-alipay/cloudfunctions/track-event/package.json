@@ -1,0 +1,6 @@
+{
+  "name": "track-event",
+  "version": "1.0.0",
+  "description": "埋点事件接收端点",
+  "main": "index.js"
+}
