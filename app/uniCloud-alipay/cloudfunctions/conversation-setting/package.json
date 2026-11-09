@@ -1,0 +1,6 @@
+{
+  "name": "conversation-setting",
+  "version": "1.0.0",
+  "description": "Pin / unpin / mute / unmute a conversation on my side",
+  "main": "index.js"
+}

@@ -60,7 +60,13 @@ export function createChatTransport(options) {
   let lastMessageId = opts.lastMessageId || ''
   let timer = null
   let running = false // 是否处于"正在接收"状态
-  let isFetching = false // ★ 在途请求标志位：防止请求堆积（06 文档 3.4）
+  // ★ 在途请求标志位（06 文档 3.4）：存的是"哪个世代有一个在途请求"，不是布尔。
+  //   用布尔会有一个致命副作用：上一轮的请求还没回来时 stop→start，
+  //   新一轮的首次拉取会被这个残留的 true 直接挡掉，页面永远空着。
+  let fetchingEpoch = -1
+  // ★ 世代号：每次 start/stop 都 +1。在途请求回来时若世代已变，说明它的结果
+  //   属于上一轮「收消息」周期，必须整份丢弃 —— 包括**不要推进 lastMessageId**。
+  let epoch = 0
   let backoff = 0 // 当前退避毫秒数，0 = 正常
   let lastActiveAt = Date.now() // 最近一次收发消息的时间
 
@@ -68,6 +74,9 @@ export function createChatTransport(options) {
   // onLoaded：首轮拉取「有结果」就回调一次，不管有没有消息。
   // 用来让页面解除 loading —— 空会话也必须放开，否则永远转圈。
   let loadedCb = opts.onLoaded || null
+  // ★ 首轮 loading 只放开一次：tick 内部空列表分支与 start 的兜底都可能调
+  //   loadedCb，不去重的话页面会连着做两遍「解除 loading + 刷新好友申请状态」。
+  let loadedOnce = false
   let statusCb = opts.onStatus || null
   let errorCb = opts.onError || null
 
@@ -91,7 +100,7 @@ export function createChatTransport(options) {
     backoff = 0
   }
 
-  /** 清掉定时器，并把在途请求标记作废 */
+  /** 只清定时器。作废在途请求是 stop()/start() 的职责（见 epoch） */
   function clearTimer() {
     if (timer) {
       clearTimeout(timer)
@@ -104,7 +113,10 @@ export function createChatTransport(options) {
    * 断线重连补拉、首次加载都用它。页面也可以主动调它。
    * @param {String} [sinceId] 不传则用内部记录的 lastMessageId
    */
-  async function fetchSince(sinceId) {
+  async function fetchSince(sinceId, opts) {
+    // ★ commit=false：只拉不推进起点。tick() 用它 —— 因为「拉到消息」和
+    //   「这批消息真的被页面收下了」是两件事，起点只能在后者发生时前进。
+    const commit = !(opts && opts.commit === false)
     const from = typeof sinceId === 'string' ? sinceId : lastMessageId
     const res = await uniCloud.callFunction({
       name: 'message-list',
@@ -119,32 +131,47 @@ export function createChatTransport(options) {
     if (r.code !== 0) throw new Error(r.msg || '拉取消息失败')
     const list = r.data || []
     if (list.length > 0) {
-      const last = list[list.length - 1]
-      lastMessageId = last._id || lastMessageId
       lastActiveAt = Date.now()
+      if (commit) lastMessageId = list[list.length - 1]._id || lastMessageId
     }
     return list
   }
 
   /** 一轮：拉取 + 回调 + 状态维护。失败不抛出，走 onError + 退避。 */
   async function tick() {
-    if (isFetching || !running) return
-    isFetching = true
+    if (!running) return
+    const myEpoch = epoch
+    if (fetchingEpoch === myEpoch) return // 本世代已有一个在途请求，别堆积
+    fetchingEpoch = myEpoch
     try {
-      const list = await fetchSince()
-      if (!running) return // 拉取期间页面已退出，结果丢弃
+      // ★ commit:false —— 先只拉不推进。起点要等「这批消息确实交给页面了」再前进。
+      const list = await fetchSince(null, { commit: false })
+      // ★ 拉取期间页面已退出（stop/onUnload）→ 整份结果丢弃，起点原地不动。
+      //   原来这里只在 fetchSince 内部推进起点，等回到这行才发现该丢弃，
+      //   于是 30 条历史被扔掉、起点却已跳到最新一条；onShow 再 start 走增量，
+      //   只拉回最新 1 条 —— 这就是「聊天页有概率只显示最近一条」的成因。
+      if (!running || myEpoch !== epoch) return
+      if (list.length > 0) {
+        const last = list[list.length - 1]
+        if (last && last._id) lastMessageId = last._id
+      }
       if (list.length > 0 && messagesCb) messagesCb(list)
-      else if (loadedCb) loadedCb(list) // ★ 空列表也要通知：解除 loading
+      else if (loadedCb) {
+        // ★ 空列表也要通知：解除 loading
+        loadedOnce = true
+        loadedCb(list)
+      }
       markActive()
       emitStatus('online')
     } catch (err) {
-      if (!running) return
+      if (!running || myEpoch !== epoch) return
       // 保留 lastMessageId 不推进，退避重试；恢复后一次补拉就能拿全
       backoff = backoff === 0 ? BACKOFF_START_MS : Math.min(backoff * 2, BACKOFF_MAX_MS)
       emitStatus('offline')
       emitError(err)
     } finally {
-      isFetching = false
+      // 只清自己的标记：别把新一代刚设上去的在途标志抹掉
+      if (fetchingEpoch === myEpoch) fetchingEpoch = -1
     }
   }
 
@@ -162,13 +189,20 @@ export function createChatTransport(options) {
     start() {
       if (running) return
       running = true
+      epoch += 1 // ★ 作废上一轮遗留的在途请求，它的结果不许再影响状态
       backoff = 0
       lastActiveAt = Date.now()
       emitStatus('connecting')
+      const myEpoch = epoch
       tick().then(function () {
+        if (!running || myEpoch !== epoch) return
         // 首轮跑完（成功或失败）都必须放开 loading：
         // 失败时也放开，让页面显示"还没有消息"，比无限转圈强
-        if (loadedCb) loadedCb([])
+        // ★ 只补一次：tick 内部空列表分支已经调过就不重复调。
+        if (!loadedOnce) {
+          loadedOnce = true
+          if (loadedCb) loadedCb([])
+        }
         if (running) schedule()
       })
     },
@@ -176,6 +210,7 @@ export function createChatTransport(options) {
     /** 停止接收、清掉定时器。必须在页面 onUnload 里调（06 文档 3.3） */
     stop() {
       running = false
+      epoch += 1 // ★ 作废在途请求：它的结果回来时世代已变，会被整份丢弃
       clearTimer()
     },
 

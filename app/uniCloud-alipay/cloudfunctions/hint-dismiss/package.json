@@ -1,0 +1,6 @@
+{
+  "name": "hint-dismiss",
+  "version": "1.0.0",
+  "description": "关闭 AI 情绪提示并落库",
+  "main": "index.js"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "message-clear",
+  "version": "1.0.0",
+  "description": "Clear my side of a conversation (cleared_at watermark)",
+  "main": "index.js"
+}

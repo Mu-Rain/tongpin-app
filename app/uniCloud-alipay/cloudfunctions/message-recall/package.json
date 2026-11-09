@@ -1,0 +1,6 @@
+{
+  "name": "message-recall",
+  "version": "1.0.0",
+  "description": "Recall one of my own messages within 2 minutes",
+  "main": "index.js"
+}
