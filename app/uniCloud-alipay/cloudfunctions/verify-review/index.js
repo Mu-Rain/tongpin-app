@@ -33,11 +33,10 @@
 const db = uniCloud.database()
 const dbCmd = db.command
 
-const DB_USERS = 'uni-id-users'
+// DB_USERS 由下面的 credit 核心段声明（四份副本里名字必须一致），这里不再重复
 const DB_VERIFY = 'verify_requests'
 const DB_NOTIFICATIONS = 'notifications'
 
-const VERIFY_REWARD = 5         // 认证通过加多少信誉分
 const DEFAULT_LIMIT = 20
 const MAX_LIMIT = 50
 
@@ -59,13 +58,6 @@ async function getUserByToken(token) {
   return res.data[0]
 }
 
-/** 读信誉分，两套字段名都要兼容 */
-function readCredit(user) {
-  if (typeof user.credit_score === 'number') return user.credit_score
-  if (typeof user.credit === 'number') return user.credit
-  return 80
-}
-
 /** 证件图存的是 fileID，要换成临时链接才能给前端 <image> 显示 */
 async function toTempUrl(fileId) {
   if (!fileId) return ''
@@ -79,6 +71,171 @@ async function toTempUrl(fileId) {
   } catch (e) {
     console.warn('[verify-review] getTempFileURL failed', e.message)
     return ''
+  }
+}
+
+// ===================== credit 核心（唯一副本，其余云函数照抄这一段） =====================
+// 为什么不抽公共模块：本仓库每个云函数目录上传时只打包自己，require 目录外的东西必挂，
+// 所以这段在每个用得上的云函数里各内联一份，改动时四处同步（credit-list 是母本）。
+
+const DB_USERS = 'uni-id-users'
+const DB_CREDIT_EVENTS = 'credit_events'
+const DB_CREDIT_RULES = 'credit_rules'
+
+// 契约 §1 的内置默认表：credit_rules 表不存在 / 查不到 / active=false 时用它。
+// 逐字照抄契约 —— 改这里等于改契约，前端「怎么算的」直接展示这些文案。
+const DEFAULT_RULES = [
+  { code: 'buddy_done', delta: 2, text: '完成一次搭子' },
+  { code: 'no_show', delta: -5, text: '放鸽子' },
+  { code: 'report_upheld', delta: -10, text: '举报被核实' },
+  { code: 'verify_pass', delta: 5, text: '通过学生认证' },
+  { code: 'admin_adjust', delta: 0, text: '管理员调整' }
+]
+
+const CREDIT_INIT = 80
+const CREDIT_MAX = 100
+const CREDIT_MIN = 0
+// admin_adjust 不是用户可见事件（契约 §3.1），规则列表里剔掉
+const RULE_HIDDEN = ['admin_adjust']
+// 契约 §4.4：低于 60 不能发卡片
+const CREDIT_PUBLISH_MIN = 60
+
+function pickInt(v, dft) {
+  return typeof v === 'number' ? v : dft
+}
+
+function clampScore(n) {
+  return Math.max(CREDIT_MIN, Math.min(CREDIT_MAX, n))
+}
+
+/** 双字段兼容：历史数据里 credit 和 credit_score 都有人写，读的时候两套都要认 */
+function readScore(user) {
+  const u = user || {}
+  return pickInt(u.credit_score, pickInt(u.credit, CREDIT_INIT))
+}
+
+function defaultRule(code) {
+  for (let i = 0; i < DEFAULT_RULES.length; i++) {
+    const r = DEFAULT_RULES[i]
+    if (r.code === code) return { code: r.code, delta: r.delta, text: r.text }
+  }
+  // 未知 code 也给完整结构，调用方不用到处判空（分值未知按 0 处理，绝不误加分）
+  return { code: code, delta: 0, text: code }
+}
+
+/**
+ * 取当前生效规则（含隐藏项）。
+ * 规则与执行分离（契约 §1）：表里有这条就用表里的 delta/text；没有、active=false、
+ * 或表根本不存在 → 用内置默认。表里新增的 code 也会被带出来，
+ * 这样将来加事件类型只改数据不改代码。
+ */
+async function loadRuleMap() {
+  const map = {}
+  DEFAULT_RULES.forEach(function (r) {
+    map[r.code] = { code: r.code, delta: r.delta, text: r.text }
+  })
+  let rows = []
+  try {
+    const res = await db.collection(DB_CREDIT_RULES).orderBy('created_at', 'asc').limit(200).get()
+    rows = res.data || []
+  } catch (e) {
+    // credit_rules 第一次写入前集合不存在，查询会抛；规则表只是覆盖层，
+    // 抛出去会让整个信誉页打不开，所以静默回落到内置表。
+    rows = []
+  }
+  rows.forEach(function (row) {
+    const code = str(row.code)
+    if (!code) return
+    if (row.active === false) {
+      map[code] = defaultRule(code)
+      return
+    }
+    const dft = defaultRule(code)
+    map[code] = {
+      code: code,
+      delta: pickInt(row.delta, dft.delta),
+      text: str(row.text) || dft.text
+    }
+  })
+  return map
+}
+
+/** 用户可见规则列表：顺序与契约 §1 表一致，表里多出来的 code 排在后面 */
+async function loadVisibleRules() {
+  const map = await loadRuleMap()
+  const codes = DEFAULT_RULES.map(function (r) {
+    return r.code
+  })
+  Object.keys(map).forEach(function (c) {
+    if (codes.indexOf(c) < 0) codes.push(c)
+  })
+  const list = []
+  codes.forEach(function (c) {
+    if (RULE_HIDDEN.indexOf(c) >= 0) return
+    const r = map[c]
+    list.push({ code: r.code, delta: r.delta, text: r.text })
+  })
+  return list
+}
+
+async function resolveRule(code) {
+  const map = await loadRuleMap()
+  return map[code] || defaultRule(code)
+}
+
+/**
+ * 写一行流水再改分。
+ * 顺序不能反：流水是分数的唯一真相（docs/03-database.md），先改分再写流水
+ * 会出现"分变了但明细里没有这一条"，信誉页和真实分数就永久对不上。
+ * 失败处理留给调用方 —— 给分失败不该把主业务（确认搭子 / 认证通过）一起回滚。
+ */
+async function applyCredit(userId, reasonCode, refId) {
+  if (!userId) throw new Error('缺少 user_id')
+  const rule = await resolveRule(reasonCode)
+  const uRes = await db
+    .collection(DB_USERS)
+    .doc(userId)
+    .field({ credit: true, credit_score: true })
+    .get()
+  const before = readScore((uRes.data && uRes.data[0]) || {})
+  const after = clampScore(before + rule.delta)
+  const now = Date.now()
+  await db.collection(DB_CREDIT_EVENTS).add({
+    user_id: userId,
+    delta: rule.delta,
+    reason_code: rule.code,
+    reason_text: rule.text, // 文案快照：后台以后改文案不影响历史记录
+    score_after: after,
+    ref_id: refId || '',
+    created_at: now
+  })
+  await db.collection(DB_USERS).doc(userId).update({
+    credit_score: after,
+    credit: after
+  })
+  return { score: after, delta: rule.delta }
+}
+// ===================== credit 核心结束 =====================
+
+function str(v) {
+  return typeof v === 'string' ? v.trim() : ''
+}
+
+/**
+ * 幂等查询：这个人有没有拿过 verify_pass 的分。
+ * 整段 try/catch —— credit_events 是本轮新加的集合，还没建时查询会抛，
+ * 抛出去等于认证永远审不过；没建就是"没拿过"，照常给分（首次 add 会自动建表）。
+ */
+async function hasVerifyPass(userId) {
+  try {
+    const res = await db
+      .collection(DB_CREDIT_EVENTS)
+      .where({ user_id: userId, reason_code: 'verify_pass' })
+      .limit(1)
+      .get()
+    return !!(res.data && res.data.length)
+  } catch (e) {
+    return false
   }
 }
 
@@ -110,6 +267,10 @@ exports.main = async (event, context) => {
           user_id: true,
           nickname: true,
           mode: true,
+          // 换校申请必须能在后台被认出来，否则审核员会拿新材料当首次认证去比对新学校。
+          // kind 缺失的是历史数据（首次认证时代没有这个字段），前端一律按普通申请渲染。
+          kind: true,
+          from_school_id: true,
           school_name: true,
           real_name: true,
           student_no: true,
@@ -158,13 +319,31 @@ exports.main = async (event, context) => {
         .get()
       const user = (userRes.data && userRes.data[0]) || {}
 
+      // 换校申请要把原学校中文名也带出来，审核员才看得懂"旧校 → 新校"。
+      // from_school_id 为空（历史数据/首次认证）或学校被删时给空串，绝不阻断审核。
+      let fromSchoolName = ''
+      if (req.from_school_id) {
+        try {
+          const fromRes = await db
+            .collection('schools')
+            .doc(req.from_school_id)
+            .field({ name: true })
+            .get()
+          const from = fromRes.data && fromRes.data[0]
+          if (from && from.name) fromSchoolName = from.name
+        } catch (e) {
+          console.warn('[verify-review] from school lookup failed', e.message)
+        }
+      }
+
       return {
         code: 0,
         msg: 'ok',
         data: {
           request: Object.assign({}, req, {
             photo_url: photoUrl,
-            chsi_url: chsiUrl
+            chsi_url: chsiUrl,
+            from_school_name: fromSchoolName
           }),
           user: user
         }
@@ -199,7 +378,25 @@ exports.main = async (event, context) => {
         .field({ credit: true, credit_score: true })
         .get()
       const target = (userRes.data && userRes.data[0]) || {}
-      const newCredit = Math.min(100, readCredit(target) + VERIFY_REWARD)
+
+      // 3) 信誉分 +5 改走 credit 核心（契约 §3.4）：分只能由 credit_events 推导，
+      //    所以先写流水再由核心改分，下面那个 patch 不再手写 credit_score。
+      //    幂等：认证被拒后可以重提交，但同一个人的 verify_pass 只能拿一次分。
+      let newCredit = readScore(target)
+      let creditGain = 0
+      if (await hasVerifyPass(req.user_id)) {
+        console.log('[verify-review] verify_pass already granted, skip', req.user_id)
+      } else {
+        try {
+          const applied = await applyCredit(req.user_id, 'verify_pass', requestId)
+          newCredit = applied.score
+          creditGain = applied.delta
+        } catch (e) {
+          // 给分失败不能把"认证通过"一起否掉 —— 用户确实审过了，分可以后台用
+          // admin_adjust 补；这里如实返回没加过的分，出参结构本身不变。
+          console.warn('[verify-review] credit grant failed', e.message)
+        }
+      }
 
       const patch = {
         verify_status: 'approved',
@@ -211,8 +408,6 @@ exports.main = async (event, context) => {
         school: req.school_name || '',
         real_name: req.real_name || '',
         student_no: req.student_no || '',
-        credit_score: newCredit,
-        credit: newCredit,
         update_time: now
       }
 
@@ -238,7 +433,7 @@ exports.main = async (event, context) => {
           user_id: req.user_id,
           type: 'verify_approved',
           title: '学生认证已通过',
-          content: '你已认证为「' + (req.school_name || '本校') + '」学生，现在可以进入同校频道了。信誉分 +' + VERIFY_REWARD + '。',
+          content: '你已认证为「' + (req.school_name || '本校') + '」学生，现在可以进入同校频道了。' + (creditGain > 0 ? '信誉分 +' + creditGain + '。' : ''),
           read: false,
           created_at: now
         })
@@ -281,9 +476,13 @@ exports.main = async (event, context) => {
         updated_at: now
       })
 
-      // 用户的 verify_status 退回 rejected，让他能重新提交
+      // 换校被拒 ≠ 认证被拒：这类用户本来就是已认证的，退回 'rejected' 会让前端
+      // 把他显示成"上次没通过"、can_submit 也跟着乱，所以把状态还原成 approved，
+      // 徽章（is_verified / schoolVerified）本来就没动过，学校也还是原学校。
+      // 普通认证（kind 缺失或为 'first'）保持退回 'rejected'，让他能改材料重交。
+      const isChangeSchool = req.kind === 'change_school'
       await db.collection(DB_USERS).doc(req.user_id).update({
-        verify_status: 'rejected',
+        verify_status: isChangeSchool ? 'approved' : 'rejected',
         verify_updated_at: now
       })
 
@@ -291,8 +490,11 @@ exports.main = async (event, context) => {
         await db.collection(DB_NOTIFICATIONS).add({
           user_id: req.user_id,
           type: 'verify_rejected',
-          title: '学生认证未通过',
-          content: '原因：' + reason + '。你可以修改后重新提交。',
+          // 换校被拒时别吓人：认证本身没丢，只是这次没批
+          title: isChangeSchool ? '更换学校申请未通过' : '学生认证未通过',
+          content: isChangeSchool
+            ? '原因：' + reason + '。你的原有认证仍然有效，可以修改后重新申请更换学校。'
+            : '原因：' + reason + '。你可以修改后重新提交。',
           read: false,
           created_at: now
         })

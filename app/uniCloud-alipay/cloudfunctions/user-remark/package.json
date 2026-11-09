@@ -1,0 +1,6 @@
+{
+  "name": "user-remark",
+  "version": "1.0.0",
+  "description": "Private per-user remarks: set, clear and batch map",
+  "main": "index.js"
+}

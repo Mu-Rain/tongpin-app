@@ -24,12 +24,24 @@
         <text class="unlock-ico">{{ u.icon }}</text>
         <text class="unlock-text">{{ u.text }}</text>
       </view>
+      <!-- 换校入口只放在已认证卡片的最后一行：转校是低频事件，
+           做成按钮会把真正的主功能（同校频道）压下去 -->
+      <text
+        class="change-link"
+        v-if="canChangeSchool && !changeSchool"
+        @tap="startChangeSchool"
+        >转校了？可以在这里重新认证学校</text
+      >
+      <text class="change-link change-link--muted" v-if="changePending"
+        >更换学校申请审核中{{ changeSchoolName ? '（' + changeSchoolName + '）' : '' }}，1–2 个工作日出结果</text
+      >
     </view>
 
-    <!-- ② 表单（未提交 / 被拒 时才出现） -->
-    <block v-if="canSubmit">
+    <!-- ② 表单（未提交 / 被拒 / 已认证后主动换校时才出现） -->
+    <!-- #verify-form 是给 startChangeSchool 量位置用的锚点 -->
+    <view id="verify-form" v-if="canSubmit || changeSchool">
       <!-- 被拒：先把理由摆在最上面，用户才知道改什么 -->
-      <view class="reject" v-if="status === 'rejected'">
+      <view class="reject" v-if="status === 'rejected' && !changeSchool">
         <text class="reject-title">上次没通过</text>
         <text class="reject-reason">{{ last.reject_reason || '未填写理由' }}</text>
         <text class="reject-tip">剩余提交次数：{{ remainAttempts }} 次</text>
@@ -141,7 +153,7 @@
       <button class="btn" :class="{ 'btn--off': !canPush }" :disabled="!canPush" @tap="submit">
         {{ submitting ? '提交中…' : '提交认证' }}
       </button>
-    </block>
+    </view>
 
     <!-- ⑤ 合规提醒（对齐原型 index.html:460-463 的 block-yellow） -->
     <view class="notice">
@@ -197,6 +209,12 @@ export default {
       maxAttempts: 3,
       canSubmit: false,
       last: null,
+
+      // 换校：入口是已认证卡片底部那行小字，changeSchool 一旦为真就复用上面整套表单
+      changeSchool: false,
+      canChangeSchool: false,
+      changePending: false,
+      changeSchoolName: '',
 
       // 表单
       mode: 'card',
@@ -310,6 +328,9 @@ export default {
         this.last = d.last || null;
         this.schoolId = d.school_id || '';
         this.schoolName = d.school || '';
+        this.canChangeSchool = !!d.can_change_school;
+        this.changePending = !!d.change_pending;
+        this.changeSchoolName = d.change_school_name || '';
       } catch (e) {
         uni.showToast({ title: e.message || '加载失败', icon: 'none' });
       } finally {
@@ -330,11 +351,27 @@ export default {
         sizeType: ['compressed'],
         sourceType: ['album', 'camera'],
         success: (res) => {
-          const path = res.tempFilePaths[0];
-          this.previewUrl = path; // 先本地预览，上传成功再换
-          this.uploadFile(path);
+          const path = res.tempFilePaths[0]
+          this.previewUrl = path // 先本地预览（用原图，看得清），上传走压缩后的
+          this.compressThenUpload(path)
         }
       });
+    },
+
+    /* 认证材料原图动辄几 MB，先压到 1080 宽再传：省流量也省上传时长。
+       端上不支持或压缩失败就退回原图，只影响体积，不阻断流程。 */
+    compressThenUpload(path) {
+      if (typeof uni.compressImage !== 'function') {
+        this.uploadFile(path)
+        return
+      }
+      uni.compressImage({
+        src: path,
+        quality: 70,
+        compressedWidth: 1080,
+        success: (r) => this.uploadFile((r && r.tempFilePath) || path),
+        fail: () => this.uploadFile(path)
+      })
     },
 
     async uploadFile(path) {
@@ -406,11 +443,36 @@ export default {
       this.schoolOpen = false;
     },
 
+    /* 换校入口：让表单在"已认证但主动要求换校"时也能出现。
+       学校必须清空 —— 带出旧学校既会诱导用户直接提交（后端会以"就是当前学校"拒掉），
+       也没表达出"我要换"的意图。 */
+    startChangeSchool() {
+      this.changeSchool = true;
+      this.schoolId = '';
+      this.schoolName = '';
+      // changeSchool 一变表单才被 v-if 渲染出来，必须等渲染完才量得到位置
+      this.$nextTick(() => {
+        const q = uni.createSelectorQuery();
+        q.select('#verify-form').boundingClientRect();
+        q.selectViewport().scrollOffset();
+        q.exec((res) => {
+          const rect = res && res[0];
+          if (!rect) return;
+          const scrolled = (res[1] && res[1].scrollTop) || 0;
+          // 往上留 24rpx，别让卡片贴着状态块
+          uni.pageScrollTo({
+            scrollTop: Math.max(0, rect.top + scrolled - 24),
+            duration: 240
+          });
+        });
+      });
+    },
+
     async submit() {
       if (!this.canPush) return;
       this.submitting = true;
       try {
-        await this.call('verify-submit', {
+        const payload = {
           action: 'submit',
           mode: this.mode,
           school_id: this.schoolId,
@@ -419,7 +481,15 @@ export default {
           grade: this.grade.trim(),
           photo_file_id: this.photoFileId,
           chsi_file_id: this.chsiFileId
-        });
+        };
+        // 只有换校才带这个开关，普通认证发出去的参数保持原样
+        if (this.changeSchool) payload.change_school = true;
+        await this.call('verify-submit', payload);
+        if (this.changeSchool) {
+          // 审核期不该看起来像"没提交"：先在本地切成审核中，接口回来再以服务端为准
+          this.changeSchool = false;
+          this.status = 'pending';
+        }
         uni.showToast({ title: '已提交，等待审核', icon: 'success' });
         this.loadStatus();
       } catch (e) {
@@ -444,7 +514,7 @@ export default {
   min-height: 100vh;
   padding: 32rpx 32rpx 80rpx;
   box-sizing: border-box;
-  background-color: var(--tf-bg);
+  background-color: transparent;
 }
 
 /* ---- 状态块 ---- */
@@ -452,18 +522,19 @@ export default {
   padding: 32rpx;
   margin-bottom: 24rpx;
   border-radius: 28rpx;
-  background-color: #1f2329;
+  /* 原为深灰主卡；新方案里「深色主卡」统一是靛蓝实色卡（对齐效果图首页「今日同频」） */
+  background-color: var(--tf-primary);
   display: flex;
   flex-direction: column;
   gap: 10rpx;
 }
 
 .status--approved {
-  background-color: #12b76a;
+  background-color: var(--tf-success);
 }
 
 .status--pending {
-  background-color: #f04438;
+  background-color: var(--tf-danger);
 }
 
 .status--rejected {
@@ -492,8 +563,12 @@ export default {
 .card {
   padding: 28rpx;
   margin-bottom: 24rpx;
-  background-color: var(--tf-card);
-  border-radius: 28rpx;
+  background: var(--tf-card);
+  border: 2rpx solid var(--tf-card-line);
+  border-radius: var(--tf-r-lg);
+  box-shadow: var(--tf-glass-shadow);
+  backdrop-filter: var(--tf-glass-blur);
+  -webkit-backdrop-filter: var(--tf-glass-blur);
   display: flex;
   flex-direction: column;
   gap: 16rpx;
@@ -529,6 +604,21 @@ export default {
   color: var(--tf-text-2);
 }
 
+/* ---- 换校小字入口 ---- */
+.change-link {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--tf-text-3);
+  text-align: center;
+  /* 靠下划线表示可点；不加按钮、边框、背景，别和主功能抢视觉 */
+  text-decoration: underline;
+}
+
+.change-link--muted {
+  /* 审核中那行只是告知状态，不可点，所以撤掉下划线 */
+  text-decoration: none;
+}
+
 /* ---- 被拒提示 ---- */
 .reject {
   padding: 28rpx;
@@ -555,7 +645,7 @@ export default {
 
 .reject-tip {
   font-size: 22rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 
 /* ---- 认证方式 ---- */
@@ -567,7 +657,7 @@ export default {
 
 .mode {
   padding: 24rpx;
-  border: 2rpx solid var(--tf-line);
+  border: 2rpx solid var(--tf-line-soft);
   border-radius: 20rpx;
   display: flex;
   flex-direction: column;
@@ -605,7 +695,7 @@ export default {
 
 .label-opt {
   font-size: 22rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 
 .input {
@@ -639,7 +729,7 @@ export default {
 }
 
 .picker-text--empty {
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 
 .picker-arrow {
@@ -652,7 +742,7 @@ export default {
   height: 320rpx;
   border-radius: 20rpx;
   background-color: var(--tf-bg);
-  border: 2rpx dashed var(--tf-line);
+  border: 2rpx dashed var(--tf-line-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -682,7 +772,7 @@ export default {
 
 .upload-note {
   font-size: 22rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 
 /* ---- 流程 ---- */
@@ -705,7 +795,9 @@ export default {
   flex-direction: row;
   gap: 20rpx;
   padding: 24rpx;
-  background-color: var(--tf-card);
+  background: var(--tf-card);
+  backdrop-filter: var(--tf-glass-blur);
+  -webkit-backdrop-filter: var(--tf-glass-blur);
   border-radius: 20rpx;
 }
 
@@ -760,7 +852,7 @@ export default {
 .notice-text {
   font-size: 25rpx;
   line-height: 1.7;
-  color: #1f2329;
+  color: var(--tf-text);
 }
 
 /* ---- 按钮 ---- */
@@ -803,7 +895,9 @@ export default {
   max-height: 78vh;
   padding: 32rpx 32rpx 48rpx;
   box-sizing: border-box;
-  background-color: var(--tf-card);
+  background: var(--tf-card);
+  backdrop-filter: var(--tf-glass-blur);
+  -webkit-backdrop-filter: var(--tf-glass-blur);
   border-radius: 32rpx 32rpx 0 0;
   z-index: 21;
   display: flex;
@@ -826,7 +920,7 @@ export default {
 
 .sheet-close {
   font-size: 32rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   padding: 0 8rpx;
 }
 
@@ -841,7 +935,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 8rpx;
-  border-bottom: 2rpx solid var(--tf-line);
+  border-bottom: 2rpx solid var(--tf-line-soft);
 }
 
 .school-main {
@@ -876,7 +970,7 @@ export default {
   display: block;
   padding: 32rpx 0;
   font-size: 25rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   text-align: center;
 }
 </style>

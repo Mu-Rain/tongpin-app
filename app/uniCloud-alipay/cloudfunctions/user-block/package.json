@@ -1,0 +1,6 @@
+{
+  "name": "user-block",
+  "version": "1.0.0",
+  "description": "Block / unblock a user (one-way blacklist)",
+  "main": "index.js"
+}

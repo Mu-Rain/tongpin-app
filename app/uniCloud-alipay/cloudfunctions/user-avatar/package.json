@@ -1,0 +1,6 @@
+{
+  "name": "user-avatar",
+  "version": "1.0.0",
+  "description": "设置我的头像",
+  "main": "index.js"
+}

@@ -21,14 +21,23 @@
  *   审核页不用重写，只是多显示一段 AI 建议。
  *
  * action:
- *   'submit'  提交认证申请 { token, mode, school_id, real_name, student_no, grade?, photo_file_id, chsi_file_id? }
+ *   'submit'  提交认证申请 { token, mode, school_id, real_name, student_no, grade?, photo_file_id, chsi_file_id?, change_school? }
+ *             change_school = true 表示"已认证用户申请更换学校"：走独立配额、不清 is_verified
  *   'status'  查自己的认证状态 { token }
+ *             出参：status / verified / school / school_id / attempts / max_attempts / can_submit / last
+ *                   + can_change_school / change_pending / change_school_name
  *
  * 状态机（verify_status）：
  *   'none'     没提交过
- *   'pending'  审核中（此时不能再提交）
+ *   'pending'  审核中（此时不能再提交；换校审核期间也是 pending，但 is_verified 不动）
  *   'approved' 已通过
  *   'rejected' 被拒（可以重新提交，最多 MAX_ATTEMPTS 次）
+ *
+ * 为什么要单独一套换校逻辑（用户原话：转校了也得重新认证一次，但入口不该显眼）：
+ *   1) 普通配额 MAX_ATTEMPTS 是按全部 verify_requests 计的。一个材料被拒过两次的正常用户，
+ *      再拿普通配额去算转校就直接卡死了 —— 所以换校只数 kind='change_school' 的条数。
+ *   2) 换校审核期间不能清 is_verified：用户确实还是在校学生，同校频道突然把他锁回门外
+ *      是最难受的体验。所以这里只把 verify_status 置 pending，徽章相关字段一个都不动。
  */
 
 const db = uniCloud.database()
@@ -40,6 +49,7 @@ const DB_SCHOOLS = 'schools'
 
 const MODE_ENUM = ['card', 'chsi']
 const MAX_ATTEMPTS = 3          // 最多提交 3 次，防止拿认证入口反复试假图
+const MAX_CHANGES = 3           // 换学校独立配额：与 MAX_ATTEMPTS 互不影响（被拒过两次的人照样能转校）
 const MAX_NAME = 20
 const MAX_STUDENT_NO = 30
 
@@ -104,6 +114,21 @@ exports.main = async (event, context) => {
         .where({ user_id: me._id })
         .count()
 
+      // 换校配额单独统计，和认证据数互不干扰（见文件头注释）
+      const changeRes = await db
+        .collection(DB_VERIFY)
+        .where({ user_id: me._id, kind: 'change_school' })
+        .count()
+
+      // 只有一条申请能处于 pending（submit 里拦着），所以最近一条就是那条
+      const hasPending = !!(last && last.status === 'pending')
+      const changePending = !!(
+        verified &&
+        last &&
+        last.kind === 'change_school' &&
+        last.status === 'pending'
+      )
+
       let status = 'none'
       if (verified) status = 'approved'
       else if (last && last.status === 'pending') status = 'pending'
@@ -120,6 +145,10 @@ exports.main = async (event, context) => {
           attempts: attemptRes.total,
           max_attempts: MAX_ATTEMPTS,
           can_submit: !verified && status !== 'pending' && attemptRes.total < MAX_ATTEMPTS,
+          // 已认证 + 没有在审的申请 + 换校次数没用完，才给那行小字
+          can_change_school: !!(verified && !hasPending && changeRes.total < MAX_CHANGES),
+          change_pending: changePending,
+          change_school_name: changePending ? last.school_name || '' : '',
           last: last
             ? {
                 _id: last._id,
@@ -136,7 +165,11 @@ exports.main = async (event, context) => {
 
     // ============ 提交申请 ============
     if (action === 'submit') {
-      if (isVerified(me)) fail('你已经通过认证了，不需要重复提交')
+      // 低版本端偶尔把布尔序列化成字符串，'true' 也认，否则换校会被当成"重复提交"挡掉
+      const changeSchool = event.change_school === true || event.change_school === 'true'
+      if (isVerified(me) && !changeSchool) fail('你已经通过认证了，不需要重复提交')
+      // 换校的前提是有一个正在生效的学校，否则没有"从哪换到哪"可言
+      if (changeSchool && !me.school_id) fail('你还没有通过认证，请先完成认证')
 
       const mode = String(event.mode || '')
       if (MODE_ENUM.indexOf(mode) < 0) fail('请选择认证方式')
@@ -149,6 +182,8 @@ exports.main = async (event, context) => {
       const chsiFileId = String(event.chsi_file_id || '').trim()
 
       if (!schoolId) fail('请选择你的学校')
+      // 选回原学校等于什么都没改，直接拦掉，别白占一次人工审核
+      if (changeSchool && schoolId === me.school_id) fail('这就是你现在认证的学校，不用更换')
       if (!realName) fail('请填写真实姓名')
       if (realName.length > MAX_NAME) fail('姓名太长了')
       if (!studentNo) fail('请填写学号')
@@ -177,16 +212,30 @@ exports.main = async (event, context) => {
         .count()
       if (pendingRes.total > 0) fail('你有一份认证申请正在审核中，请等待结果')
 
-      // 次数上限
-      const attemptRes = await db.collection(DB_VERIFY).where({ user_id: me._id }).count()
-      if (attemptRes.total >= MAX_ATTEMPTS) {
-        fail('认证提交次数已用完（最多 ' + MAX_ATTEMPTS + ' 次），如有疑问请联系管理员')
+      // 次数上限：换校只数 change_school，普通认证只数全部（两者互不占用）
+      if (changeSchool) {
+        const changeRes = await db
+          .collection(DB_VERIFY)
+          .where({ user_id: me._id, kind: 'change_school' })
+          .count()
+        if (changeRes.total >= MAX_CHANGES) {
+          fail('更换学校次数已用完（最多 ' + MAX_CHANGES + ' 次），如有疑问请联系管理员')
+        }
+      } else {
+        const attemptRes = await db.collection(DB_VERIFY).where({ user_id: me._id }).count()
+        if (attemptRes.total >= MAX_ATTEMPTS) {
+          fail('认证提交次数已用完（最多 ' + MAX_ATTEMPTS + ' 次），如有疑问请联系管理员')
+        }
       }
 
       const now = Date.now()
       const addRes = await db.collection(DB_VERIFY).add({
         user_id: me._id,
         nickname: me.nickname || '',
+        // 区分"首次认证"与"换学校"：配额和后台展示都靠它；历史数据没这个字段，按 first 看待
+        kind: changeSchool ? 'change_school' : 'first',
+        // 记下来是为了后台审核时能看到"从这个学校换过去"，也方便出问题回溯
+        from_school_id: changeSchool ? me.school_id || '' : '',
         mode: mode,
         school_id: schoolId,
         school_name: school.name || '',
@@ -208,6 +257,8 @@ exports.main = async (event, context) => {
       })
 
       // 用户表同步状态，方便列表页/卡片页直接读，不用联查 verify_requests
+      // 换校期间刻意不写 is_verified / schoolVerified：用户还是在校学生，
+      // 同校频道不能因为一次换校审核突然把他锁回去
       await db.collection(DB_USERS).doc(me._id).update({
         verify_status: 'pending',
         verify_updated_at: now
