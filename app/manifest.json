@@ -2,8 +2,8 @@
     "name" : "同频",
     "appid" : "__UNI__20CB151",
     "description" : "校园搭子 App —— 找到同频的人",
-    "versionName" : "0.1.0.0.1",
-    "versionCode" : "101",
+    "versionName" : "1.0.0",
+    "versionCode" : "1",
     "transformPx" : false,
     "app-plus" : {
         "usingComponents" : true,
@@ -12,12 +12,20 @@
         "splashscreen" : {
             "alwaysShowBeforeRender" : true,
             "waiting" : true,
-            "autoclose" : true,
-            "delay" : 0
+            "autoclose" : false,
+            "delay" : 0,
+            "android" : {
+                "hdpi" : "static/splash-hdpi.png",
+                "xhdpi" : "static/splash-xhdpi.png",
+                "xxhdpi" : "static/splash-xxhdpi.png"
+            },
+            "ios" : "static/splash.jpg"
         },
         "modules" : {
             "Camera" : {},
-            "Gallery" : {}
+            "Gallery" : {},
+            "Geolocation" : {},
+            "Push" : {}
         },
         "distribute" : {
             "android" : {
@@ -30,13 +38,54 @@
                     "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"/>",
                     "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"/>",
                     "<uses-permission android:name=\"android.permission.VIBRATE\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_FINE_LOCATION\"/>",
+                    "<uses-permission android:name=\"android.permission.ACCESS_COARSE_LOCATION\"/>",
                     "<uses-feature android:name=\"android.hardware.camera\" android:required=\"false\"/>"
                 ]
             },
             "ios" : {
                 "dSYMs" : false
             },
-            "sdkConfigs" : {}
+            "sdkConfigs" : {
+                "push" : {
+                    "unipush" : {
+                        "version" : "2",
+                        "offline" : false
+                    }
+                }
+            },
+            "icons" : {
+                "android" : {
+                    "hdpi" : "static/icons/app/icon-72.png",
+                    "xhdpi" : "static/icons/app/icon-96.png",
+                    "xxhdpi" : "static/icons/app/icon-144.png",
+                    "xxxhdpi" : "static/icons/app/icon-192.png"
+                },
+                "ios" : {
+                    "appstore" : "static/icons/app/icon-1024.png",
+                    "iphone" : {
+                        "app@2x" : "static/icons/app/icon-120.png",
+                        "app@3x" : "static/icons/app/icon-180.png",
+                        "spotlight@2x" : "static/icons/app/icon-80.png",
+                        "spotlight@3x" : "static/icons/app/icon-120.png",
+                        "settings@2x" : "static/icons/app/icon-58.png",
+                        "settings@3x" : "static/icons/app/icon-87.png",
+                        "notification@2x" : "static/icons/app/icon-40.png",
+                        "notification@3x" : "static/icons/app/icon-60.png"
+                    },
+                    "ipad" : {
+                        "app" : "static/icons/app/icon-76.png",
+                        "app@2x" : "static/icons/app/icon-152.png",
+                        "proapp@2x" : "static/icons/app/icon-167.png",
+                        "spotlight" : "static/icons/app/icon-40.png",
+                        "spotlight@2x" : "static/icons/app/icon-80.png",
+                        "settings" : "static/icons/app/icon-29.png",
+                        "settings@2x" : "static/icons/app/icon-58.png",
+                        "notification" : "static/icons/app/icon-20.png",
+                        "notification@2x" : "static/icons/app/icon-40.png"
+                    }
+                }
+            }
         }
     },
     "quickapp" : {},

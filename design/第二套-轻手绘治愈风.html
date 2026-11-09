@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>同频 · 第二份 UI 效果图 · 轻手绘治愈风</title>
+<style>
+/* ==========================================================================
+   第二套视觉方案：轻手绘治愈风
+   --------------------------------------------------------------------------
+   和第一套（液态玻璃 / 冷调靛蓝 / 规整几何）的区别：
+   - 背景：浅青蓝柔和渐变，不是冷灰蓝
+   - 卡片：磨砂玻璃 + **不规则圆角**（每个角半径不同）+ 微旋转，模拟手绘纸片
+   - 描边：极淡的青灰线，不是白色高光边
+   - 投影：大面积柔和弥散，不是实心偏移
+   - 强调色：柔和的杏橙点缀（手账感），不是靛蓝
+   ========================================================================== */
+
+:root{
+  /* 浅青蓝底 */
+  --bg-1:#EEF7FA;
+  --bg-2:#E4F1F4;
+  --bg-3:#DDEDE9;
+
+  /* 玻璃卡 */
+  --card:rgba(255,255,255,.66);
+  --card-solid:rgba(255,255,255,.84);
+  --line:rgba(58,110,126,.10);
+  --line-soft:rgba(58,110,126,.07);
+
+  /* 文字：深青灰，不用纯黑 */
+  --ink:#2A3D45;
+  --ink-2:rgba(42,61,69,.62);
+  --ink-3:rgba(42,61,69,.44);
+
+  /* 主色：青蓝 */
+  --teal:#3E7B8C;
+  --teal-deep:#2E6474;
+  --teal-soft:rgba(62,123,140,.10);
+
+  /* 强调：手账杏橙 */
+  --apricot:#E9A87E;
+  --apricot-deep:#D98E5F;
+  --apricot-soft:rgba(233,168,126,.16);
+
+  /* 雾绿（正向 / 标签） */
+  --mist:#CFE4D8;
+  --mist-deep:#5E8F79;
+
+  --r-lg:30px;
+  --r-md:22px;
+  --r-sm:16px;
+
+  --shadow:0 14px 34px rgba(58,110,126,.10), 0 2px 6px rgba(58,110,126,.05);
+  --shadow-sm:0 8px 20px rgba(58,110,126,.08);
+  --blur:blur(22px) saturate(1.25);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#DCE8EC}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;justify-content:center;padding:40px 0;
+}
+
+/* 手机框 */
+.phone{
+  width:390px;height:844px;border-radius:44px;overflow:hidden;position:relative;
+  box-shadow:0 30px 70px rgba(46,100,116,.22);
+  background:var(--bg-2);
+}
+
+/* 背景：浅青蓝渐变 + 柔和光斑 */
+.screen{
+  width:100%;height:100%;position:relative;overflow:hidden;
+  background:
+    radial-gradient(120% 80% at 8% -8%, #F7FCFD 0%, rgba(247,252,253,0) 58%),
+    radial-gradient(90% 60% at 98% 2%, #E9F5F7 0%, rgba(233,245,247,0) 62%),
+    radial-gradient(100% 70% at 92% 102%, #D6EAE4 0%, rgba(214,234,228,0) 66%),
+    radial-gradient(85% 60% at 0% 96%, #E6F2F5 0%, rgba(230,242,245,0) 64%),
+    linear-gradient(168deg, #F2FAFC 0%, #E6F2F4 46%, #DEEDE9 100%);
+}
+
+/* 极淡的纸纹：细点阵，模拟手绘纸 */
+.screen::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(rgba(58,110,126,.055) 1px, transparent 1px);
+  background-size:5px 5px;
+  mix-blend-mode:multiply;
+}
+
+/* 状态栏 */
+.statusbar{
+  position:relative;z-index:5;height:46px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 26px;font-size:14px;font-weight:600;color:var(--ink);letter-spacing:.01em;
+}
+.statusbar .right{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2)}
+.bars{display:flex;align-items:flex-end;gap:2px;height:10px}
+.bars i{width:3px;background:var(--ink-2);border-radius:1px;display:block}
+.bars i:nth-child(1){height:4px}.bars i:nth-child(2){height:6px}
+.bars i:nth-child(3){height:8px}.bars i:nth-child(4){height:10px}
+.batt{width:22px;height:11px;border:1.2px solid var(--ink-2);border-radius:3px;position:relative}
+.batt::after{content:"";position:absolute;left:1.5px;top:1.5px;bottom:1.5px;right:5px;background:var(--ink-2);border-radius:1.5px}
+
+/* 内容区 */
+.content{
+  position:relative;z-index:3;height:calc(844px - 46px - 96px);
+  overflow:hidden;padding:6px 22px 0;
+  display:flex;flex-direction:column;gap:14px;
+}
+
+/* ============================ 1. 头部问候 ============================ */
+.greet{display:flex;align-items:flex-start;justify-content:space-between;padding:4px 2px 2px}
+.greet h1{font-size:23px;font-weight:700;color:var(--ink);letter-spacing:-.01em;line-height:1.25}
+.greet p{margin-top:5px;font-size:12.5px;color:var(--ink-2);letter-spacing:.01em}
+.avatar{
+  width:44px;height:44px;border-radius:50%;flex:none;
+  background:linear-gradient(150deg,#8FC3CE,#4E8C9E);
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;color:#fff;letter-spacing:.02em;
+  box-shadow:0 6px 16px rgba(62,123,140,.26), inset 0 1px 0 rgba(255,255,255,.5);
+  border:2px solid rgba(255,255,255,.8);
+}
+
+/* ============================ 2. 主邀约卡（手账氛围） ============================ */
+.hero{
+  position:relative;padding:19px 18px 15px;
+  /* 不规则圆角：手绘纸片感 */
+  border-radius:34px 30px 36px 28px;
+  transform:rotate(-.35deg);
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(255,255,255,.92) 0%, rgba(255,255,255,.62) 55%, rgba(255,255,255,.5) 100%);
+  border:1.4px solid rgba(58,110,126,.12);
+  box-shadow:0 18px 40px rgba(58,110,126,.13), 0 3px 8px rgba(58,110,126,.06);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+}
+/* 左上角的柔和杏色光，模拟手账纸的暖调 */
+.hero::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(70% 90% at 100% 0%, rgba(233,168,126,.18) 0%, rgba(233,168,126,0) 62%);
+}
+.hero-title{
+  position:relative;font-size:20px;font-weight:700;color:var(--ink);
+  line-height:1.34;letter-spacing:-.01em;padding-right:8px;
+}
+.hero-chips{position:relative;display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{
+  padding:7px 15px;font-size:12px;font-weight:600;color:var(--teal-deep);
+  background:rgba(255,255,255,.78);border:1.2px solid rgba(62,123,140,.16);
+  border-radius:14px 16px 13px 15px;
+}
+.chip--warm{color:var(--apricot-deep);background:var(--apricot-soft);border-color:rgba(217,142,95,.24)}
+.chip--mist{color:var(--mist-deep);background:rgba(207,228,216,.5);border-color:rgba(94,143,121,.22)}
+.hero-hint{
+  position:relative;margin-top:11px;font-size:11px;color:var(--ink-3);letter-spacing:.01em;
+}
+.hero-btn{
+  position:relative;margin-top:11px;height:44px;border-radius:19px;
+  background:rgba(255,255,255,.94);
+  border:1.4px solid rgba(58,110,126,.10);
+  box-shadow:0 6px 16px rgba(58,110,126,.10);
+  display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 18px;
+}
+.hero-btn span.txt{font-size:14px;font-weight:700;color:var(--teal-deep);letter-spacing:.01em}
+.hero-btn .arrow{
+  width:32px;height:32px;border-radius:11px;flex:none;
+  background:linear-gradient(150deg,#4E8C9E,#3E7B8C);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;
+  box-shadow:0 4px 10px rgba(62,123,140,.28);
+}
+
+/* ============================ 3~6. 通用卡片 ============================ */
+.card{
+  position:relative;border-radius:var(--r-lg);
+  background:var(--card);
+  border:1.3px solid var(--line);
+  box-shadow:var(--shadow);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+}
+
+/* 3. 搭子大厅（整行） */
+.row{
+  display:flex;align-items:center;gap:12px;padding:13px 15px;
+  border-radius:28px 32px 27px 31px;
+  transform:rotate(.25deg);
+}
+.ico{
+  width:48px;height:48px;flex:none;border-radius:16px 18px 15px 17px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.82);
+  border:1.2px solid rgba(58,110,126,.10);
+  box-shadow:0 4px 12px rgba(58,110,126,.08);
+}
+.ico img{width:30px;height:30px;display:block}
+.ico--warm{background:var(--apricot-soft);border-color:rgba(217,142,95,.18)}
+.ico--mist{background:rgba(207,228,216,.46);border-color:rgba(94,143,121,.18)}
+.row-main{flex:1;min-width:0}
+.row-main h3{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em}
+.row-main p{margin-top:3px;font-size:11.5px;color:var(--ink-2);letter-spacing:.01em}
+.row .chev{flex:none;font-size:17px;color:var(--ink-3);padding-left:4px}
+
+/* 4. 双列并排 */
+.duo{display:flex;gap:12px}
+.duo .card{
+  flex:1;padding:13px 13px 12px;display:flex;flex-direction:column;
+  min-height:102px;
+}
+.duo .card:first-child{border-radius:30px 26px 31px 27px;transform:rotate(-.3deg)}
+.duo .card:last-child{border-radius:27px 31px 26px 30px;transform:rotate(.3deg)}
+.duo .ico{margin-bottom:9px}
+.duo h3{font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:.01em}
+.duo p{margin-top:4px;font-size:10.5px;line-height:1.5;color:var(--ink-2);letter-spacing:.01em}
+
+/* 5. 我的搭子 */
+.mybuddy{border-radius:32px 27px 30px 28px;transform:rotate(-.2deg)}
+
+/* 6. 每日百科 */
+.wiki{padding:15px 17px 14px;border-radius:29px 33px 28px 31px;transform:rotate(.18deg)}
+.wiki-head{display:flex;align-items:center;justify-content:space-between}
+.wiki-head h3{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:.01em}
+.wiki-tag{
+  padding:4px 11px;font-size:10.5px;font-weight:600;color:var(--mist-deep);
+  background:rgba(207,228,216,.55);border:1.2px solid rgba(94,143,121,.2);
+  border-radius:11px 13px 10px 12px;
+}
+.wiki-body{
+  margin-top:8px;font-size:11.5px;line-height:1.66;color:var(--ink-2);letter-spacing:.01em;
+}
+.wiki-foot{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--ink-3)}
+.wiki-foot .dot{width:3px;height:3px;border-radius:50%;background:var(--ink-3)}
+
+/* ============================ 7. 底部导航 ============================ */
+.tabbar{
+  position:absolute;left:18px;right:18px;bottom:22px;height:66px;z-index:20;
+  border-radius:26px;
+  background:rgba(255,255,255,.78);
+  border:1.4px solid rgba(255,255,255,.9);
+  box-shadow:0 14px 32px rgba(58,110,126,.16), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter:blur(24px) saturate(1.3);-webkit-backdrop-filter:blur(24px) saturate(1.3);
+  display:flex;align-items:center;
+}
+/* 选中态滑块：手绘感的不规则胶囊，凸出上下 */
+.tab-pill{
+  position:absolute;top:-6px;height:78px;width:calc(100% / 4);left:0;
+  border-radius:30px 32px 29px 31px;
+  background:rgba(255,255,255,.92);
+  border:1.4px solid rgba(255,255,255,.98);
+  box-shadow:0 10px 24px rgba(58,110,126,.16), inset 0 2px 0 rgba(255,255,255,1);
+  transform:translateX(0);
+  transition:transform 520ms cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;
+}
+.tab{
+  position:relative;z-index:2;flex:1;height:66px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+}
+.tab img{width:22px;height:22px;display:block;opacity:.62}
+.tab span{font-size:9.5px;font-weight:600;color:var(--ink-3);letter-spacing:.02em}
+.tab.on img{opacity:1}
+.tab.on span{color:var(--teal-deep)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+
+    <!-- 状态栏 -->
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="right">
+        <span class="bars"><i></i><i></i><i></i><i></i></span>
+        <span style="margin-left:3px">5G</span>
+        <span class="batt"></span>
+      </span>
+    </div>
+
+    <div class="content">
+
+      <!-- 1 · 头部问候 -->
+      <header class="greet">
+        <div>
+          <h1>早上好，Mu-Rain</h1>
+          <p>今天想找点什么搭子？</p>
+        </div>
+        <div class="avatar">M</div>
+      </header>
+
+      <!-- 2 · 主邀约卡（手账氛围） -->
+      <section class="hero">
+        <div class="hero-title">今天，找个人一起做点什么</div>
+        <div class="hero-chips">
+          <span class="chip">学习</span>
+          <span class="chip chip--mist">健身</span>
+          <span class="chip chip--warm">吃饭</span>
+          <span class="chip">散步</span>
+        </div>
+        <p class="hero-hint">登录后就能看到今天谁跟你同频</p>
+        <div class="hero-btn">
+          <span class="txt">看看谁跟我同频</span>
+          <span class="arrow">›</span>
+        </div>
+      </section>
+
+      <!-- 3 · 搭子大厅 -->
+      <section class="card row">
+        <div class="ico"><img src="../app/static/icons/buddy.png" alt=""></div>
+        <div class="row-main">
+          <h3>搭子大厅</h3>
+          <p>发布需求 · 找同频的人</p>
+        </div>
+        <span class="chev">›</span>
+      </section>
+
+      <!-- 4 · 双列：学习 / 健身 -->
+      <div class="duo">
+        <section class="card">
+          <div class="ico"><img src="../app/static/icons/book.png" alt=""></div>
+          <h3>学习</h3>
+          <p>番茄钟 · 自习记录</p>
+        </section>
+        <section class="card">
+          <div class="ico ico--mist"><img src="../app/static/icons/leaf.png" alt=""></div>
+          <h3>健身</h3>
+          <p>动作库 · 计划 · 训练记录</p>
+        </section>
+      </div>
+
+      <!-- 5 · 我的搭子 -->
+      <section class="card row mybuddy">
+        <div class="ico ico--warm"><img src="../app/static/icons/tag.png" alt=""></div>
+        <div class="row-main">
+          <h3>我的搭子</h3>
+          <p>给搭子起专属称呼</p>
+        </div>
+        <span class="chev">›</span>
+      </section>
+
+      <!-- 6 · 每日百科 -->
+      <section class="card wiki">
+        <div class="wiki-head">
+          <h3>每日百科</h3>
+          <span class="wiki-tag">学习</span>
+        </div>
+        <p class="wiki-body">番茄钟：25 分钟专注 + 5 分钟起身。</p>
+        <div class="wiki-foot">
+          <span>展开全文</span><span class="dot"></span><span>10-26</span>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 7 · 底部导航（4 tab，滑块在「首页」） -->
+    <nav class="tabbar">
+      <div class="tab-pill"></div>
+      <div class="tab on">
+        <img src="../app/static/icons/home.png" alt=""><span>首页</span>
+      </div>
+      <div class="tab">
+        <img src="../app/static/icons/globe.png" alt=""><span>同频圈</span>
+      </div>
+      <div class="tab">
+        <img src="../app/static/icons/chat.png" alt=""><span>消息</span>
+      </div>
+      <div class="tab">
+        <img src="../app/static/icons/user.png" alt=""><span>我的</span>
+      </div>
+    </nav>
+
+  </div>
+</div>
+</body>
+</html>

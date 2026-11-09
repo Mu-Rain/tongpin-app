@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>同频 · 发布搭子需求</title>
+<link rel="stylesheet" href="journal-base.css">
+<style>
+/* ==================== 发布需求 ==================== */
+/* 类型选择：4 个小纸片横排 */
+.types{display:flex;gap:7px;margin-top:4px}
+.types .t{
+  flex:1;padding:9px 4px 8px;border-radius:14px 16px 13px 15px;
+  background:var(--paper);border:1.2px solid var(--line-soft);
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  box-shadow:0 4px 10px rgba(150,128,104,.08);
+}
+.types .t .ic{width:26px;height:26px;flex:none}
+.types .t .ic img{width:100%;height:100%;display:block}
+.types .t span{font-size:9.5px;font-weight:700;color:var(--ink-2)}
+.types .t.on{
+  background:linear-gradient(150deg,var(--green-1),var(--green-2));
+  border-color:rgba(111,143,104,.28);
+  box-shadow:0 5px 14px rgba(140,163,126,.16);
+}
+.types .t.on span{color:var(--green-text);font-weight:800}
+
+/* 表单块 */
+.form{margin-top:12px;border-radius:18px 20px 17px 19px;overflow:hidden}
+.fld{padding:13px 13px;border-bottom:1px solid var(--line-soft)}
+.fld:last-child{border-bottom:none}
+.fld .lb{font-size:9.5px;font-weight:800;color:var(--ink-2);letter-spacing:.04em}
+.fld .val{margin-top:4px;font-size:12.5px;font-weight:600;color:var(--ink)}
+.fld .ph{color:var(--ink-3);font-weight:400}
+/* 多行描述 */
+.fld .area{margin-top:5px;font-size:11.5px;line-height:1.6;color:var(--ink);
+  min-height:52px}
+.fld .cnt{margin-top:5px;text-align:right;font-size:9px;color:var(--ink-3)}
+
+/* 三行元信息：图标 + 标签 + 值 + 箭头 */
+.meta-row{display:flex;align-items:center;gap:10px;padding:12px 13px;
+  border-bottom:1px solid var(--line-soft)}
+.meta-row:last-child{border-bottom:none}
+.meta-row .ico{width:26px;height:26px}
+.meta-row .tx{flex:1;min-width:0}
+.meta-row .tx .lb{font-size:9px;color:var(--ink-3)}
+.meta-row .tx .val{margin-top:1px;font-size:11.5px;font-weight:700;color:var(--ink)}
+.meta-row .go{font-size:14px;color:var(--ink-3);flex:none}
+
+/* 标签选择 */
+.tagpick{margin-top:12px;padding:11px 13px;border-radius:18px 20px 17px 19px}
+.tagpick .lb{font-size:9.5px;font-weight:800;color:var(--ink-2);letter-spacing:.04em}
+.tagpick .row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tagpick .tg{padding:4px 11px;border-radius:11px;font-size:10px;font-weight:700;
+  background:var(--cream);color:#8A7358;border:1.1px solid rgba(190,150,110,.24)}
+.tagpick .tg.on{background:var(--green-pill);color:var(--green-text);
+  border-color:rgba(111,143,104,.28)}
+.tagpick .add{padding:4px 11px;border-radius:11px;font-size:10px;font-weight:700;
+  color:var(--ink-3);border:1.1px dashed rgba(178,158,132,.40);background:transparent}
+
+/* 底部发布条 */
+.pubbar{
+  position:absolute;left:18px;right:18px;bottom:84px;z-index:15;
+  height:46px;border-radius:23px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;letter-spacing:.04em;
+}
+/* 提示小字 */
+.tip{margin-top:10px;font-size:9.5px;line-height:1.6;color:var(--ink-3);
+  text-align:center;letter-spacing:.01em}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+
+    <div class="statusbar">
+      <span>11:47</span>
+      <span class="r">
+        <span style="font-size:9px">149 KB/s</span>
+        <span class="bars"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="batt"></span>
+      </span>
+    </div>
+
+    <div class="content">
+
+      <div class="app-title">发布搭子需求</div>
+
+      <!-- 类型 -->
+      <div class="types">
+        <div class="t on">
+          <div class="ic"><img src="icons-journal/out/book.png" alt=""></div>
+          <span>学习</span>
+        </div>
+        <div class="t">
+          <div class="ic"><img src="icons-journal/out/avocado.png" alt=""></div>
+          <span>运动</span>
+        </div>
+        <div class="t">
+          <div class="ic"><img src="icons-journal/out/tag.png" alt=""></div>
+          <span>吃饭</span>
+        </div>
+        <div class="t">
+          <div class="ic"><img src="icons-journal/out/bulb.png" alt=""></div>
+          <span>看展</span>
+        </div>
+      </div>
+
+      <!-- 标题与描述 -->
+      <div class="form paper">
+        <div class="fld">
+          <div class="lb">一句话说清你想做什么</div>
+          <div class="val">找个人一起去五楼自习，互相盯着别玩手机</div>
+        </div>
+        <div class="fld">
+          <div class="lb">补充说明</div>
+          <div class="area">每天晚上 7 点半到 10 点，我刷题节奏有点慢，希望有人一起。带两杯咖啡，谁先走谁请客。</div>
+          <div class="cnt">62 / 200</div>
+        </div>
+      </div>
+
+      <!-- 时间 / 地点 / 人数 -->
+      <div class="form paper">
+        <div class="meta-row">
+          <div class="ico"><img src="icons-journal/out/plus.png" alt=""></div>
+          <div class="tx">
+            <div class="lb">什么时候</div>
+            <div class="val">今天 19:30 — 22:00</div>
+          </div>
+          <span class="go">›</span>
+        </div>
+        <div class="meta-row">
+          <div class="ico"><img src="icons-journal/out/buddy.png" alt=""></div>
+          <div class="tx">
+            <div class="lb">在哪里</div>
+            <div class="val">图书馆五层 · 社科区</div>
+          </div>
+          <span class="go">›</span>
+        </div>
+        <div class="meta-row">
+          <div class="ico"><img src="icons-journal/out/heart.png" alt=""></div>
+          <div class="tx">
+            <div class="lb">想找几个人</div>
+            <div class="val">1 人 · 男女不限</div>
+          </div>
+          <span class="go">›</span>
+        </div>
+      </div>
+
+      <!-- 标签 -->
+      <div class="tagpick paper">
+        <div class="lb">加几个标签，更容易被匹配到</div>
+        <div class="row">
+          <span class="tg on">自习搭子</span>
+          <span class="tg on">考研</span>
+          <span class="tg">图书馆</span>
+          <span class="tg">不喝奶茶</span>
+          <span class="tg add">+ 添加</span>
+        </div>
+      </div>
+
+      <p class="tip">发布后会出现在搭子大厅，同校的人都能看到</p>
+
+    </div>
+
+    <!-- 发布按钮：压在 tabBar 之上 -->
+    <div class="pubbar btn">发 布</div>
+
+    <nav class="tabbar">
+      <div class="tab"><img src="icons-journal/out/home.png" alt=""></div>
+      <div class="tab on"><img src="icons-journal/out/globe.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/chat.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/user.png" alt=""></div>
+    </nav>
+
+  </div>
+</div>
+</body>
+</html>

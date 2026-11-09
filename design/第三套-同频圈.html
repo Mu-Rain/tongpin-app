@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>同频 · 同频圈</title>
+<link rel="stylesheet" href="journal-base.css">
+<style>
+/* ==================== 同频圈 ==================== */
+/* 三栏切换 */
+.seg{
+  display:flex;padding:3px;border-radius:16px;margin-top:2px;
+  background:rgba(178,158,132,.13);
+  border:1.1px solid var(--line-soft);
+}
+.seg .s{
+  flex:1;height:28px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--ink-2);
+}
+.seg .s.on{
+  background:var(--paper);color:var(--ink);
+  box-shadow:0 2px 6px rgba(150,128,104,.13);
+}
+
+/* 动态卡 */
+.posts{display:flex;flex-direction:column;gap:10px;margin-top:11px}
+.post{
+  position:relative;padding:12px;border-radius:18px 20px 17px 19px;
+  background:var(--paper);border:1.2px solid var(--line-soft);
+  box-shadow:0 6px 16px rgba(150,128,104,.10);
+}
+.post:nth-child(odd){transform:rotate(-.22deg)}
+.post:nth-child(even){transform:rotate(.22deg)}
+
+.p-top{display:flex;align-items:center;gap:9px}
+.p-ava{width:32px;height:32px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#fff;
+  border:1.8px solid var(--paper);box-shadow:0 3px 8px rgba(150,128,104,.18)}
+.p-who{flex:1;min-width:0}
+.p-who h3{font-size:12.5px;font-weight:800;color:var(--ink)}
+.p-who p{margin-top:1px;font-size:9px;color:var(--ink-3)}
+.p-follow{flex:none;padding:4px 10px;border-radius:10px;font-size:9.5px;font-weight:800;
+  color:#7A5A3C;background:linear-gradient(150deg,var(--btn-1),var(--btn-2));
+  border:1px solid rgba(190,160,125,.28)}
+
+.p-text{margin-top:9px;font-size:11.5px;line-height:1.62;color:var(--ink)}
+.p-text em{font-style:normal;color:var(--green-text);font-weight:700}
+
+/* 配图：三格拼图 */
+.p-imgs{display:flex;gap:5px;margin-top:9px}
+.p-imgs .ph{
+  flex:1;height:82px;border-radius:11px;
+  background:linear-gradient(150deg,#F4F8EE,#E7EFDE);
+  border:1px solid var(--line-soft);
+  display:flex;align-items:center;justify-content:center;
+}
+/* 照片占位符：一个空心方框 + 斜线，比 emoji 稳（不依赖彩色字体） */
+.p-imgs .ph::after{
+  content:"";width:26px;height:20px;border:1.4px solid rgba(140,163,126,.42);
+  border-radius:3px;
+  background:linear-gradient(135deg,transparent 46%,rgba(140,163,126,.30) 47%,rgba(140,163,126,.30) 53%,transparent 54%);
+}
+
+.p-foot{display:flex;align-items:center;gap:14px;margin-top:10px;
+  padding-top:9px;border-top:1px solid var(--line-soft)}
+.p-act{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink-2)}
+.p-act.on{color:#B0733C;font-weight:700}
+.p-act .n{font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+
+    <div class="statusbar">
+      <span>11:47</span>
+      <span class="r">
+        <span style="font-size:9px">149 KB/s</span>
+        <span class="bars"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="batt"></span>
+      </span>
+    </div>
+
+    <div class="content">
+
+      <div class="app-title">同频圈</div>
+
+      <!-- 三栏 -->
+      <div class="seg">
+        <div class="s on">同校</div>
+        <div class="s">地区</div>
+        <div class="s">发现</div>
+      </div>
+
+      <!-- 动态 -->
+      <div class="posts">
+
+        <section class="post">
+          <div class="p-top">
+            <div class="p-ava" style="background:linear-gradient(150deg,#C3D4DE,#93AEBD)">柚</div>
+            <div class="p-who">
+              <h3>小柚</h3>
+              <p>新闻传播学院 · 3 小时前</p>
+            </div>
+            <span class="p-follow">已关注</span>
+          </div>
+          <p class="p-text">在图书馆五楼蹲到一张靠窗的位置，阳光正好。今天的目标是把第三章看完，<em>#自习搭子</em> 有一起的吗？</p>
+          <div class="p-imgs">
+            <div class="ph"></div>
+            <div class="ph"></div>
+            <div class="ph"></div>
+          </div>
+          <div class="p-foot">
+            <div class="p-act on"><span>♥</span><span class="n">24</span></div>
+            <div class="p-act"><span>💬</span><span class="n">6</span></div>
+            <div class="p-act"><span>↗</span><span>分享</span></div>
+          </div>
+        </section>
+
+        <section class="post">
+          <div class="p-top">
+            <div class="p-ava" style="background:linear-gradient(150deg,#CBDCC1,#A3BE96)">泽</div>
+            <div class="p-who">
+              <h3>阿泽</h3>
+              <p>体育学院 · 5 小时前</p>
+            </div>
+            <span class="p-follow">关注</span>
+          </div>
+          <p class="p-text">今天操场跑了五公里，配速 6'20"。跑完在食堂碰到两个也在跑步的同学，聊了半小时。<em>#运动搭子</em></p>
+          <div class="p-foot">
+            <div class="p-act on"><span>♥</span><span class="n">41</span></div>
+            <div class="p-act"><span>💬</span><span class="n">12</span></div>
+            <div class="p-act"><span>↗</span><span>分享</span></div>
+          </div>
+        </section>
+
+        <section class="post">
+          <div class="p-top">
+            <div class="p-ava" style="background:linear-gradient(150deg,#E3CDB8,#C9AC92)">饭</div>
+            <div class="p-who">
+              <h3>饭搭子小队</h3>
+              <p>昨天 18:40</p>
+            </div>
+            <span class="p-follow">关注</span>
+          </div>
+          <p class="p-text">二食堂新出的糖醋排骨真的可以，八块钱一大盘。我们仨吃了两盘，明天还来。<em>#组队干饭</em></p>
+          <div class="p-imgs">
+            <div class="ph"></div>
+            <div class="ph"></div>
+          </div>
+          <div class="p-foot">
+            <div class="p-act on"><span>♥</span><span class="n">18</span></div>
+            <div class="p-act"><span>💬</span><span class="n">3</span></div>
+            <div class="p-act"><span>↗</span><span>分享</span></div>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+    <nav class="tabbar">
+      <div class="tab"><img src="icons-journal/out/home.png" alt=""></div>
+      <div class="tab on"><img src="icons-journal/out/globe.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/chat.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/user.png" alt=""></div>
+    </nav>
+
+  </div>
+</div>
+</body>
+</html>

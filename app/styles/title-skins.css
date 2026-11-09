@@ -1,0 +1,332 @@
+/* ==========================================================================
+   称号皮肤 —— 轮廓固定，内部自由
+   --------------------------------------------------------------------------
+   用户要求：每个称号「除了外部轮廓，其他样式都可改变」。
+   所以 .tt 只负责轮廓（胶囊、高度、内边距、溢出裁切），
+   每个 .tt--xxx 只改：底色、描边、字色、字体、字重、字距、大小写、图标色。
+
+   为什么放全局而不是各页 scoped：
+   称号墙（pages/title）和资料卡（pages/mine、pages/user）要用同一套皮肤，
+   抄三份必然漂。全局样式在 App.vue 里 @import 一次，所有页面都能用。
+
+   ★ 不要给这些类加 width/height 覆盖 —— 轮廓统一是前提。
+   ========================================================================== */
+
+.tt {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 84rpx;
+  padding: 0 22rpx;
+  border-radius: 42rpx;
+  box-sizing: border-box;
+  overflow: hidden;
+  max-width: 100%;
+  /* 父级是 flex-column 时不被拉伸成整行 */
+  align-self: flex-start;
+  background: #F2F4F7;
+  border: 2rpx solid transparent;
+}
+
+/* 资料卡里的小号：轮廓仍是胶囊，只是等比缩小 */
+.tt--sm {
+  height: 56rpx;
+  padding: 0 18rpx;
+  border-radius: 28rpx;
+  gap: 6rpx;
+}
+
+.tt-name {
+  font-size: 24rpx;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tt--sm .tt-name {
+  font-size: 21rpx;
+}
+
+.tt-ico {
+  font-size: 26rpx;
+  line-height: 1;
+  opacity: 0.92;
+}
+.tt--sm .tt-ico {
+  font-size: 21rpx;
+}
+
+.tt-arrow {
+  font-size: 22rpx;
+  line-height: 1;
+  margin-left: 4rpx;
+  opacity: 0.5;
+}
+
+/* 称号墙里要占满一格 */
+.badge .tt {
+  width: 100%;
+}
+
+/* —— 未获得：整枚灰度 + 半透明，但轮廓不变 —— */
+.badge--off .tt {
+  filter: grayscale(1);
+  /* 0.34 太淡了：深色皮肤（霓虹、紫金）灰掉之后几乎读不出名字，抬到 0.46 */
+  opacity: 0.46;
+}
+
+/* ==========================================================================
+   15 种皮肤
+   ========================================================================== */
+
+/* 1. 金 · 典藏：衬线 + 宽字距，最"贵"的一枚 */
+.tt--gold {
+  background: linear-gradient(140deg, #FFF6D8 0%, #F9D038 100%);
+  border-color: #E8B820;
+  box-shadow: 0 6rpx 18rpx rgba(232, 184, 32, 0.26);
+}
+.tt--gold .tt-name {
+  font-family: "Songti SC", "SimSun", serif;
+  font-weight: 600;
+  color: #6B4200;
+  letter-spacing: 0.14em;
+}
+.tt--gold .tt-ico {
+  color: #8A5A00;
+}
+
+/* 2. 墨 · 手写：楷体斜体，像写在宣纸上 */
+.tt--ink {
+  background: #F7F4EE;
+  border-color: #2E2A26;
+}
+.tt--ink .tt-name {
+  font-family: "Kaiti SC", "STKaiti", cursive;
+  font-style: italic;
+  font-weight: 500;
+  color: #2E2A26;
+  letter-spacing: 0.12em;
+}
+.tt--ink .tt-ico {
+  color: #2E2A26;
+}
+
+/* 3. 霓虹：黑底青字 + 发光，等宽字体 */
+.tt--neon {
+  background: #14161C;
+  border-color: #7DF9FF;
+  box-shadow: 0 0 14rpx rgba(125, 249, 255, 0.5);
+}
+.tt--neon .tt-name {
+  font-family: "SF Mono", Menlo, "Courier New", monospace;
+  font-weight: 900;
+  color: #7DF9FF;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.tt--neon .tt-ico {
+  color: #7DF9FF;
+}
+
+/* 4. 像素：条纹底 + 4rpx 硬边，像 8bit 游戏 */
+.tt--pixel {
+  background: repeating-linear-gradient(90deg, #E8F0FF 0 6rpx, #DCE8FF 6rpx 12rpx);
+  border: 4rpx solid #1A1A1A;
+}
+.tt--pixel .tt-name {
+  font-family: "SF Mono", Menlo, "Courier New", monospace;
+  font-weight: 900;
+  color: #1A1A1A;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.tt--pixel .tt-ico {
+  color: #1A1A1A;
+}
+
+/* 5. 极简：纯黑底白字，超宽字距 */
+.tt--mono {
+  background: #111111;
+  border-color: #111111;
+}
+.tt--mono .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  color: #FFFFFF;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+.tt--mono .tt-ico {
+  color: #FFFFFF;
+}
+
+/* 6. 樱：粉白渐变 + 明朝体 */
+.tt--sakura {
+  background: linear-gradient(140deg, #FFF1F5 0%, #FFD9E4 100%);
+  border-color: #F3A9C0;
+  box-shadow: 0 6rpx 18rpx rgba(243, 169, 192, 0.28);
+}
+.tt--sakura .tt-name {
+  font-family: "Songti SC", "YuMincho", serif;
+  font-weight: 600;
+  color: #A83A5A;
+  letter-spacing: 0.1em;
+}
+.tt--sakura .tt-ico {
+  color: #C4527A;
+}
+
+/* 7. 赛博：深蓝底 + 青色描边 + 斜体 */
+.tt--cyber {
+  background: linear-gradient(120deg, #0B1020 0%, #1B2A4A 100%);
+  border-color: #59E3C8;
+}
+.tt--cyber .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-style: italic;
+  font-weight: 900;
+  color: #59E3C8;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.tt--cyber .tt-ico {
+  color: #59E3C8;
+}
+
+/* 8. 牛皮纸：虚线描边，像手作标签 */
+.tt--kraft {
+  background: #E8D9BF;
+  border: 2rpx dashed #8A6A42;
+}
+.tt--kraft .tt-name {
+  font-family: "Kaiti SC", "STKaiti", cursive;
+  font-weight: 700;
+  color: #5A4228;
+  letter-spacing: 0.1em;
+}
+.tt--kraft .tt-ico {
+  color: #8A6A42;
+}
+
+/* 9. 冰：浅蓝渐变 + 细字重，很安静 */
+.tt--ice {
+  background: linear-gradient(140deg, #EAF7FF 0%, #C9E8FF 100%);
+  border-color: #A9D6F5;
+}
+.tt--ice .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 300;
+  color: #1E5A8A;
+  letter-spacing: 0.2em;
+}
+.tt--ice .tt-ico {
+  color: #4A8FC4;
+}
+
+/* 10. 焰：橙红渐变 + 超粗黑体 */
+.tt--flame {
+  background: linear-gradient(140deg, #FFD3A8 0%, #F97A3C 100%);
+  border-color: #E56A2E;
+  box-shadow: 0 6rpx 18rpx rgba(249, 122, 60, 0.3);
+}
+.tt--flame .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  color: #6B2400;
+  letter-spacing: 0.02em;
+}
+.tt--flame .tt-ico {
+  color: #6B2400;
+}
+
+/* 11. 森：草木绿渐变 + 宋体 */
+.tt--forest {
+  background: linear-gradient(140deg, #E9F4DC 0%, #C3DDA6 100%);
+  border-color: #9CC47A;
+}
+.tt--forest .tt-name {
+  font-family: "Songti SC", "SimSun", serif;
+  font-weight: 600;
+  color: #33540F;
+  letter-spacing: 0.08em;
+}
+.tt--forest .tt-ico {
+  color: #4A6B22;
+}
+
+/* 12. 糖：粉蓝双色渐变 + 圆润粗体 */
+.tt--candy {
+  background: linear-gradient(120deg, #FFE0F0 0%, #D8E4FF 100%);
+  border-color: #E8B6DC;
+}
+.tt--candy .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 800;
+  color: #7A3A8A;
+  letter-spacing: 0.06em;
+}
+.tt--candy .tt-ico {
+  color: #9A4AAA;
+}
+
+/* 13. 紫金：深紫底 + 描金边 + 衬线 */
+.tt--royal {
+  background: linear-gradient(140deg, #3A2A6B 0%, #1E1440 100%);
+  border-color: #C9A44A;
+  box-shadow: 0 6rpx 18rpx rgba(58, 42, 107, 0.32);
+}
+.tt--royal .tt-name {
+  font-family: "Songti SC", "SimSun", serif;
+  font-weight: 700;
+  color: #F0D07A;
+  letter-spacing: 0.12em;
+}
+.tt--royal .tt-ico {
+  color: #F0D07A;
+}
+
+/* 14. 复古：斜条纹底 + 焦糖色 */
+.tt--retro {
+  background: repeating-linear-gradient(45deg, #F6E7C1 0 10rpx, #EED9A8 10rpx 20rpx);
+  border-color: #B8894A;
+}
+.tt--retro .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 800;
+  color: #6B3A1A;
+  letter-spacing: 0.06em;
+}
+.tt--retro .tt-ico {
+  color: #8A5024;
+}
+
+/* 15. 纸：米白 + 虚线，最轻的一枚 */
+.tt--paper {
+  background: #FFFDF8;
+  border: 2rpx dashed #B9AFA3;
+}
+.tt--paper .tt-name {
+  font-family: "Songti SC", "SimSun", serif;
+  font-weight: 600;
+  color: #5A5048;
+  letter-spacing: 0.1em;
+}
+.tt--paper .tt-ico {
+  color: #8A7E72;
+}
+
+/* 空态：还没佩戴时的占位，也走胶囊轮廓 */
+.tt--ghost {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(120, 130, 180, 0.2);
+}
+.tt--ghost .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 700;
+  color: #5A5A88;
+}
+.tt--ghost .tt-ico {
+  color: #8A8AB0;
+}

@@ -1,0 +1,2757 @@
+/* ==========================================================================
+   同频 · 暖光玻璃 (Warm Glass) · UI/UX 效果图样式
+   --------------------------------------------------------------------------
+   与 prototype/style.css（新粗野主义）是两套并行的视觉方案，互不影响。
+   设计基调：暖橙到蜜桃的柔和渐变底 + 半透明白玻璃卡片 + 深暖墨色文字。
+   玻璃占比克制：文字永远在玻璃上，渐变只负责呼吸感，不承担正文承载。
+   ========================================================================== */
+
+:root {
+  /* ================= 雾蓝清透 · 设计令牌 =================
+     两条主色各有分工，不是换色，是换叙事：
+       #1F5CAC 深靛蓝 = 你主动去做的事（发布 / 我想搭 / 发送）
+       #C9DDC4 雾绿   = 系统替你匹配的结果、正向状态（同频 / 已认证）
+     底色走高调冷白，玻璃更白更冷 —— 「清透」来自高调，不来自颜色浅。
+     ====================================================== */
+
+  /* —— 墨与纸（冷调）—— */
+  --ink: #16212e;              /* 暖黑 → 冷墨，在雾蓝底上不发脏 */
+  --ink-2: rgba(22, 33, 46, 0.60);
+  --ink-3: rgba(22, 33, 46, 0.40);
+  --ink-4: rgba(22, 33, 46, 0.22);
+
+  /* —— 主色 —— */
+  --brand: #1f5cac;
+  --brand-deep: #174a8c;
+  --brand-soft: rgba(31, 92, 172, 0.10);
+  --brand-soft-2: rgba(31, 92, 172, 0.18);
+
+  /* —— 雾绿 —— */
+  --mist: #c9ddc4;
+  --mist-2: #a9c9b0;
+  --mist-ink: #37624a;
+  --mist-soft: rgba(201, 221, 196, 0.32);
+
+  /* —— 语义色（旧变量名保留，语义已重定向）—— */
+  --violet: #37624a;           /* 匹配 / AI → 雾绿墨 */
+  --mint: #2f7d63;             /* 已认证 / 信誉正向 */
+  --gold: #7f9cb4;             /* 称号 → 雾蓝银 */
+  --danger: #b04a4a;
+
+  /* —— 液态玻璃（规格 a 逐条落地）——
+     旧版是「白 58%~78%」的磨砂膜，那是雾面玻璃，不是液态玻璃：
+     它把背后内容洗白了，所以画面发灰。新规格只有 10% 纯白，
+     全靠 blur + saturate 把背后内容「透上来」，这才是通透。
+     所有玻璃面都吃这几个变量，改一处全站生效。 */
+  --glass: rgba(255, 255, 255, 0.10);          /* ② 10% 纯白底 */
+  --glass-strong: rgba(255, 255, 255, 0.13);
+  --glass-faint: rgba(255, 255, 255, 0.07);
+  --glass-line: rgba(255, 255, 255, 0.85);     /* ③ 1px 高亮白边 */
+  --glass-line-soft: rgba(255, 255, 255, 0.62);
+  /* 内阴影 = 玻璃厚度：上缘最亮、下缘稍暗，中间一圈极淡的内发光 */
+  --glass-shadow:
+    0 10px 30px rgba(31, 92, 172, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 0 12px 0 rgba(255, 255, 255, 0.28);
+  --glass-shadow-lg:
+    0 18px 44px rgba(31, 92, 172, 0.17),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.44),
+    inset 0 0 18px 1px rgba(255, 255, 255, 0.32);
+  /* ① 大半径模糊 + 拉高饱和度（避免画面发灰）+ 轻微提亮 */
+  --blur: blur(26px) saturate(1.9) brightness(1.04);
+
+  /* —— 圆角 —— */
+  --r-sm: 14px;
+  --r-md: 20px;
+  --r-lg: 26px;
+  --r-xl: 32px;
+
+  /* —— 间距 —— */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 26px;
+  --s7: 34px;
+
+  /* —— 字体 —— */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+    "Microsoft YaHei", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* —— 动效 —— */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur: 260ms;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background: #eef3f6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ==========================================================================
+   一、画布：暖光渐变 + 漂浮光斑
+   ========================================================================== */
+
+/* 屏幕背景：把 gradient 收进变量。
+   玻璃内部要「复制同一份背景」来做折射，复制时两处必须逐字相同，
+   所以只能共享一份定义 —— 手写两遍迟早会不同步，折射就会对不上位。 */
+.mistblue {
+  position: relative;
+  overflow: hidden;
+  --bg-main:
+    radial-gradient(120% 90% at 6% -12%, #f8fcfb 0%, rgba(248, 252, 251, 0) 64%),
+    radial-gradient(95% 72% at 97% -8%, #d9e9f4 0%, rgba(217, 233, 244, 0) 60%),
+    radial-gradient(92% 74% at 94% 106%, #c9ddc4 0%, rgba(201, 221, 196, 0) 64%),
+    radial-gradient(88% 68% at -8% 104%, #d3e5ee 0%, rgba(211, 229, 238, 0) 62%),
+    linear-gradient(178deg, #f9fcfb 0%, #e9f2f3 48%, #dde8ef 100%);
+  --bg-base: #eef4f6;
+  /* 折射要看得见，备后必须「有细节」：纯平渐变无论怎么位移都看不出弯折。
+     这两道极淡的斜线是给折射用的“参照物”，肉眼几乎不察觉。 */
+  background-color: var(--bg-base);
+  /* 参照物只保留「极淡的一组斜线」，且只在中段出现（用 mask 收边）：
+     满屏铺会被看成格子纸，抢走卡片注意力；完全没有则折射无处可显。
+     这是「看得到弯折、又不会注意到它」的临界值。 */
+  background-image:
+    radial-gradient(70% 60% at 50% 55%, rgba(31, 92, 172, 0.055) 0%, rgba(31, 92, 172, 0) 72%),
+    repeating-linear-gradient(58deg, rgba(31, 92, 172, 0.030) 0 1.5px, rgba(31, 92, 172, 0) 1.5px 15px),
+    var(--bg-main);
+}
+
+/* 光斑：每屏 2 个，柔和到几乎看不出是一块，只让玻璃有东西可以“透” */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(42px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.blob--1 {
+  width: 230px;
+  height: 230px;
+  top: -76px;
+  right: -64px;
+  background: radial-gradient(circle at 35% 35%, #a8cbe0, rgba(168, 203, 224, 0));
+}
+
+.blob--2 {
+  width: 270px;
+  height: 270px;
+  bottom: 36px;
+  left: -116px;
+  background: radial-gradient(circle at 60% 40%, #c9ddc4, rgba(201, 221, 196, 0));
+  opacity: 0.46;
+}
+
+.blob--3 {
+  width: 190px;
+  height: 190px;
+  bottom: 176px;
+  right: -74px;
+  background: radial-gradient(circle at 50% 50%, #bcd6e8, rgba(188, 214, 232, 0));
+  opacity: 0.44;
+}
+
+/* ==========================================================================
+   二、手机壳 / 状态栏 / 底部导航
+   ========================================================================== */
+
+.screen {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: var(--ink);
+}
+
+.statusbar {
+  flex: none;
+  height: 44px;
+  padding: 0 24px 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  z-index: 6;
+}
+
+.statusbar__right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.statusbar svg {
+  display: block;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 20px 112px;   /* 底部留白给悬浮 tabbar 让位 */
+  scrollbar-width: none;
+}
+
+.body::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================================================
+   液态玻璃 · 核心（规格 a 五条逐条对应）
+     ① 大半径模糊 + 拉高饱和度 → .lg-core（blur 26px / saturate 1.9）
+     ② 10% 纯白底色              → .lg-tint
+     ③ 1px 高亮白边（物理厚度）  → border 1px rgba(255,255,255,.85)
+     ④ 边缘折射变形              → .lg-refract + SVG feDisplacementMap
+     ⑤ 通透感                    → 内部亮度略高于外部，但不加整体白膜
+   折射用「复制背景 + 位移图」实现：backdrop-filter 在 Chrome 不支持 url() 滤镜，
+   只能走这条。所以每块玻璃内部都放一份 --bg-main 的副本，靠负偏移对齐。
+   ========================================================================== */
+
+/* 玻璃容器：只负责裁切与投影 */
+.lg {
+  position: relative;
+  isolation: isolate;
+  border-radius: inherit;
+  box-shadow: 0 14px 34px rgba(31, 92, 172, 0.18);
+}
+
+/* ① 中心层：大半径模糊 + 饱和 + 微提亮（避免发灰） */
+.lg-core {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  overflow: hidden;
+  filter: blur(18px) saturate(1.9) brightness(1.04);
+}
+
+/* ④ 折射层：轻模糊 + 位移图。位移图用 SDF 法线生成（不是噪声），
+   所以弯折方向沿边缘法线 —— 看起来像透镜，而不是玻璃被揉皱。 */
+.lg-refract {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  overflow: hidden;
+  filter: blur(1.2px) saturate(1.85) brightness(1.05) url(#lensWarp);
+  /* 只在边缘环内生效：中间交给 .lg-core 做重度模糊 */
+  -webkit-mask: var(--edge-mask, none);
+  mask: var(--edge-mask, none);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+/* 背景副本：尺寸 = 屏幕，偏移 = 玻璃在屏幕中的位置 */
+.lg-core > i,
+.lg-refract > i {
+  position: absolute;
+  display: block;
+  width: 390px;
+  height: 844px;
+  left: var(--lens-x, 0px);
+  top: var(--lens-y, 0px);
+  background-color: var(--bg-base);
+  /* 参照物只保留「极淡的一组斜线」，且只在中段出现（用 mask 收边）：
+     满屏铺会被看成格子纸，抢走卡片注意力；完全没有则折射无处可显。
+     这是「看得到弯折、又不会注意到它」的临界值。 */
+  background-image:
+    radial-gradient(70% 60% at 50% 55%, rgba(31, 92, 172, 0.055) 0%, rgba(31, 92, 172, 0) 72%),
+    repeating-linear-gradient(58deg, rgba(31, 92, 172, 0.030) 0 1.5px, rgba(31, 92, 172, 0) 1.5px 15px),
+    var(--bg-main);
+}
+
+/* ② 10% 纯白底 */
+.lg-tint {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.10);
+}
+
+/* ③ 1px 高亮白边 + 内侧厚度：玻璃的物理边界 */
+.lg-edge {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1.5px 0 rgba(255, 255, 255, 0.42),
+    inset 0 0 14px 1px rgba(255, 255, 255, 0.30);
+}
+
+/* 液面反光：左上斜向高光，一条就够，多了像塑料 */
+.lg-edge::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    126deg,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0) 74%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  mix-blend-mode: screen;
+}
+
+/* —— 悬浮 tabbar：底槽是薄玻璃，滑块是厚玻璃胶囊 —— */
+.tabbar-slot {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 22px;
+  height: 62px;
+  z-index: 8;
+  /* 外层只做定位与溢出可见：滑块要凸到栏外，所以裁切不能发生在这里 */
+  overflow: visible;
+}
+
+/* 底槽玻璃：单独一层，只负责「托住」四个 tab 的视觉重量。
+   注意它必须和文字层分开 —— backdrop-filter 会创建新的层叠上下文，
+   若文字和它在同一个元素里，文字再高的 z-index 也压不过外面的滑块。 */
+.tabbar-tray {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(26px) saturate(1.9) brightness(1.04);
+  -webkit-backdrop-filter: blur(26px) saturate(1.9) brightness(1.04);
+  /* 底槽用「柔边」：它是容器，不该跟滑块抢白边。
+     两道同样亮的 1px 白边挨在一起会被看成画错；一强一弱才读成深度。 */
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  box-shadow:
+    0 14px 34px rgba(31, 92, 172, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.24);
+  z-index: 0;
+}
+
+/* 文字层：无背景、无 backdrop-filter，所以不与任何东西争层叠上下文，
+   只靠 z-index 稳稳压在滑块之上。
+   padding 必须为 0：滑块也在同一个四等分网格上（left:0, width:25%），
+   两者基准一致，滑块才会精确落在 tab 正中。之前滑块 1px / 文字 7px，
+   差 6px —— 就是那个「总差一点点」的来源。 */
+.tabbar {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  z-index: 3;
+}
+
+/* 滑块：独立于底槽之外的一层，因为要凸出栏外，
+   放在底槽内部会被它的 1px 边框和圆角裁掉 —— 这正是「双层边」的来源。 */
+.lg-lens {
+  position: absolute;
+  /* 相对 .tabbar-slot 定位；7px = 底槽的 padding + 边框，
+     让滑块的左右行程与 tab 的左右行程完全一致 */
+  /* 与文字层共用同一个四等分网格：从 0 起、各占 1/4。
+     这样滑块天然盖住底槽两端，且精确落在 tab 正中，不需要任何补偿值。 */
+  left: 0;
+  top: -5px;
+  height: 72px;
+  width: calc(100% / 4);
+  /* 半径按高度比例放大（底槽 62/24 = 0.387，滑块 72px → 28px），
+     比例一致两条弧才平行；照抄同一个数字会让弧线交叉。 */
+  border-radius: 28px;
+  z-index: 2;          /* tray(0) 之上、文字(3) 之下 */
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.11);
+  backdrop-filter: blur(22px) saturate(1.95) brightness(1.06);
+  -webkit-backdrop-filter: blur(22px) saturate(1.95) brightness(1.06);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 10px 24px rgba(31, 92, 172, 0.20),
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 -1.5px 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 16px 1px rgba(255, 255, 255, 0.34);
+  transition: transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+  transform: translateX(calc(var(--i, 0) * var(--step, 0px)));
+}
+
+/* 滑块内壁的液面反光 */
+.lg-lens::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    122deg,
+    rgba(255, 255, 255, 0.66) 0%,
+    rgba(255, 255, 255, 0) 34%,
+    rgba(255, 255, 255, 0) 76%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  mix-blend-mode: screen;
+}
+
+/* 按下的那一瞬玻璃轻微“挤压”，松开回弹 —— 液体被指腹压到的感觉 */
+.lg-lens.is-press {
+  transform: translateX(calc(var(--i, 0) * var(--step, 0px))) scale(1.05, 0.93);
+  transition: transform 140ms cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.tab {
+  flex: 1;
+  height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 18px;
+  color: var(--ink-3);
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+.tab__label {
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+
+.tab.is-on {
+  color: var(--brand-deep);
+  background: rgba(31, 92, 172, 0.1);
+}
+
+.tab.is-on .tab__label {
+  font-weight: 650;
+}
+
+/* 消息红点：绝对定位在图标右上，用轮廓色描一圈，压在玻璃上也分得开 */
+.tab__dot {
+  position: absolute;
+  transform: translate(12px, -9px);
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 9px;
+  line-height: 15px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+/* ==========================================================================
+   三、通用组件
+   ========================================================================== */
+
+.glass {
+  position: relative;
+  border-radius: var(--r-lg);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+/* 文字承载：液态玻璃只有 10% 白，正文直接压上去会花。
+   所以给「含长文本」的玻璃卡加一层 55% 的雾面内衬 —— 只压暗文字区域，
+   不改变玻璃外缘的透亮，观感仍是通透的，但每个字都读得清。 */
+.dcard,
+.enc,
+.infoblock,
+.overlap,
+.rel,
+.common,
+.recruit,
+.detail__hero,
+.uphead,
+.profile,
+.modlist,
+.msgrow .bubble--in {
+  background-color: rgba(255, 255, 255, 0.55);
+}
+
+.glass--strong {
+  background: var(--glass-strong);
+}
+
+.glass--flat {
+  box-shadow: 0 6px 18px rgba(31, 92, 172, 0.09), 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+}
+
+/* 顶部标题区 */
+.pagehead {
+  padding: 2px 4px 13px;
+}
+
+.pagehead__kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.pagehead__title {
+  margin-top: 4px;
+  font-size: 25px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pagehead__sub {
+  margin-top: 7px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  letter-spacing: 0.01em;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row--between {
+  justify-content: space-between;
+}
+
+.gap2 { gap: 8px; }
+.gap3 { gap: 12px; }
+.gap4 { gap: 16px; }
+
+/* 小节标题 */
+.sechead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4px 6px 10px;
+}
+
+.sechead__title {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.sechead__more {
+  font-size: 12px;
+  color: var(--brand-deep);
+  font-weight: 550;
+}
+
+/* 头像
+   冷调头像靠「同明度带的浅色相」区分人，不靠深色坨坨。
+   统一明度带：L 60–72%，饱和度压到 30% 以下 —— 这样四五个头像叠在一起
+   是「几片雾」，不是「几块石头」。白字在浅底上读不清 → 改用深墨色字。 */
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #1b3a4f;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: linear-gradient(140deg, #cfe2ee, #a8c4de 100%);
+  box-shadow: 0 6px 16px rgba(31, 92, 172, 0.16), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+.avatar--sm { width: 34px; height: 34px; font-size: 13px; }
+.avatar--md { width: 44px; height: 44px; font-size: 16px; }
+.avatar--lg { width: 64px; height: 64px; font-size: 23px; }
+.avatar--xl { width: 78px; height: 78px; font-size: 28px; }
+
+/* 雾绿档：配深绿字，落在白玻璃上够读 */
+.avatar--violet {
+  color: #2c5a43;
+  background: linear-gradient(140deg, #dcecd8, #a9c9b0 100%);
+  box-shadow: 0 6px 16px rgba(95, 130, 108, 0.18), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+/* 雾蓝档偏灰，做第三个人 */
+.avatar--mint {
+  color: #2b4a5e;
+  background: linear-gradient(140deg, #e0eef1, #bcd6e8 100%);
+  box-shadow: 0 6px 16px rgba(95, 130, 160, 0.16), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+/* 灰蓝档：最浅的一个，给人多的场合留退路 */
+.avatar--gold {
+  color: #3c5162;
+  background: linear-gradient(140deg, #eef4f7, #cfdde8 100%);
+  box-shadow: 0 6px 16px rgba(127, 156, 180, 0.16), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+/* 本人：唯一有权用深色实心的头像 —— 得好找得到自己 */
+.avatar--photo {
+  color: #fff;
+  background:
+    radial-gradient(circle at 62% 26%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 52%),
+    linear-gradient(150deg, #4a86c0, #1f5cac 55%, #174a8c);
+  box-shadow: 0 6px 16px rgba(31, 92, 172, 0.28), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+/* 认证标 */
+.verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px 2px 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #24634d;
+  background: rgba(47, 125, 99, 0.14);
+  border: 1px solid rgba(47, 125, 99, 0.22);
+}
+
+/* 小胶囊标签 */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 13px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--glass-line-soft);
+  white-space: nowrap;
+}
+
+.chip--on {
+  color: #fff;
+  background: linear-gradient(140deg, #3674c2, #1f5cac);
+  border-color: transparent;
+  box-shadow: 0 6px 14px rgba(31, 92, 172, 0.3);
+}
+
+/* 与我重合的标签：浅橙底 + 小圆点，不抢主色 —— 复用现有 tag--hit 的语义 */
+.chip--hit {
+  color: #37624a;
+  background: rgba(201, 221, 196, 0.46);
+  border-color: rgba(95, 130, 108, 0.26);
+  font-weight: 550;
+}
+
+.chip--hit::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4d7f5e;
+}
+
+.chip--plain {
+  background: rgba(255, 255, 255, 0.42);
+}
+
+/* 类型标（学习 / 健身…） */
+.type {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #1b4a72;
+  background: rgba(31, 92, 172, 0.12);
+}
+
+/* 三个类型各给一档色相内的不同深浅，不做彩虹 —— 冷调里靠明度分层更高级 */
+.type--study { color: #2f5f45; background: rgba(201, 221, 196, 0.52); }
+.type--fit   { color: #24634d; background: rgba(47, 125, 99, 0.14); }
+.type--meal  { color: #46617a; background: rgba(127, 156, 180, 0.22); }
+
+/* 按钮 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.btn--primary {
+  color: #fff;
+  background: linear-gradient(140deg, #3d78c6 0%, #1f5cac 52%, #174a8c 100%);
+  box-shadow: 0 10px 24px rgba(31, 92, 172, 0.32), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+
+.btn--primary:hover { transform: translateY(-1px); }
+
+.btn--ghost {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 6px 16px rgba(31, 92, 172, 0.08);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+.btn--block { width: 100%; }
+
+.btn--sm {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+}
+
+/* 分段控件（同校 / 附近 / 城市）：底槽玻璃 + 滑块纯白 */
+.seg {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 4px;
+  height: 44px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--glass-line-soft);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+.seg__item {
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--ink-2);
+  transition: color var(--dur) var(--ease);
+}
+
+.seg__item.is-on {
+  color: var(--ink);
+  font-weight: 650;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(31, 92, 172, 0.14);
+}
+
+/* 横向滚动槽 */
+.scrollx {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 4px 2px 0;
+}
+
+.scrollx::-webkit-scrollbar { display: none; }
+
+/* 分割细线 */
+.hair {
+  height: 1px;
+  background: rgba(22, 33, 46, 0.09);
+  margin: 0 4px;
+}
+
+/* 空状态 */
+.empty {
+  padding: 30px 20px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ==========================================================================
+   四、屏 01 · 首页
+   ========================================================================== */
+
+.home__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0 4px 13px;
+}
+
+.home__hello {
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.22;
+}
+
+.home__hello em {
+  font-style: normal;
+  color: var(--brand-deep);
+}
+
+.home__sub {
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.home__ava {
+  position: relative;
+  margin-top: 2px;
+}
+
+.home__bell {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand-deep);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 4px 10px rgba(31, 92, 172, 0.14);
+}
+
+.home__bell i {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 1.5px #fff;
+}
+
+/* 今日同频：整屏唯一的主卡，深靛蓝实色 —— 与「找搭子」的主动行为区分开 */
+.matchcard {
+  position: relative;
+  overflow: hidden;
+  padding: 17px 19px 16px;
+  border-radius: var(--r-xl);
+  /* 主卡也走玻璃语言，只是「染色更重」：
+     深蓝玻璃（62% 深蓝 + 大半径模糊 + 白边），既保住一屏一主卡的重量，
+     又和周围的浅玻璃同属一个质感体系 —— 之前用实色，质感是断的。 */
+  background:
+    radial-gradient(120% 130% at 96% -8%, rgba(210, 226, 240, 0.34) 0%, rgba(210, 226, 240, 0) 58%),
+    linear-gradient(152deg, rgba(52, 112, 170, 0.88) 0%, rgba(31, 92, 172, 0.90) 50%, rgba(23, 74, 140, 0.92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  box-shadow:
+    0 18px 44px rgba(23, 74, 140, 0.30),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 20px 1px rgba(255, 255, 255, 0.14);
+  color: #fff;
+  backdrop-filter: blur(18px) saturate(1.5) brightness(1.02);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5) brightness(1.02);
+}
+
+.matchcard::after {
+  /* 右上角一道高光，玻璃质感靠它 */
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 65%);
+}
+
+.matchcard__kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.matchcard__title {
+  margin-top: 9px;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.26;
+  letter-spacing: -0.015em;
+}
+
+.matchcard__title b {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+  padding: 0 2px;
+}
+
+.matchcard__row {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stack {
+  display: flex;
+}
+
+.stack .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+  margin-left: -9px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.stack .avatar:first-child { margin-left: 0; }
+
+.stack__more {
+  width: 30px;
+  height: 30px;
+  margin-left: -9px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10.5px;
+  font-weight: 650;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+.matchcard__meta {
+  font-size: 12.5px;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.matchcard__cta {
+  margin-top: 13px;
+  height: 40px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 0 16px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #174a8c;
+  font-size: 14px;
+  font-weight: 650;
+  box-shadow: 0 8px 20px rgba(23, 74, 140, 0.18);
+}
+
+.matchcard__cta span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  color: #fff;
+  /* CTA 是用户动作 → 走深靛蓝，不跟着主卡变绿 */
+  background: linear-gradient(140deg, #3674c2, #174a8c);
+}
+
+/* 便当格 */
+.bento {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tile {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 15px 13px;
+  border-radius: var(--r-lg);
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+  min-height: 86px;
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--dur) var(--ease);
+}
+
+.tile:hover { transform: translateY(-2px); }
+
+.tile--wide {
+  grid-column: 1 / -1;
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 17px;
+}
+
+/* 便当格图标：浅色玻璃底 + 深色描边图标。
+   实心饱和块在「清透」语境里是最刺眼的东西 —— 它们会把视线从标题上拽走。 */
+.tile__ico {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #174a8c;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.92), rgba(207, 226, 238, 0.88));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 14px rgba(31, 92, 172, 0.10), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.tile__ico--violet {
+  color: #23503a;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.92), rgba(201, 221, 196, 0.85));
+  box-shadow: 0 6px 14px rgba(95, 130, 108, 0.12), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.tile__ico--mint {
+  color: #1f5a45;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.92), rgba(224, 238, 231, 0.88));
+  box-shadow: 0 6px 14px rgba(47, 125, 99, 0.12), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.tile__main { flex: 1; min-width: 0; }
+
+.tile__title {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.tile__desc {
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.tile--tall .tile__title {
+  margin-top: auto;
+  font-size: 16px;
+}
+
+.tile--tall .tile__desc {
+  margin-top: 5px;
+}
+
+.tile__badge {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+.tile__spark {
+  position: absolute;
+  right: -18px;
+  bottom: -22px;
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(159, 192, 220, 0.26), rgba(159, 192, 220, 0) 68%);
+}
+
+/* 每日百科：细长条，不跟主卡抢位置 */
+.enc {
+  margin-top: 10px;
+  padding: 14px 16px 13px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line-soft);
+}
+
+.enc__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.enc__kicker {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.enc__cat {
+  padding: 2px 8px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #2f5f45;
+  background: rgba(201, 221, 196, 0.12);
+}
+
+.enc__title {
+  margin-top: 7px;
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.enc__body {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.enc__foot {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.enc__past {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(22, 33, 46, 0.07);
+  color: var(--ink-2);
+}
+
+/* ==========================================================================
+   五、屏 02 · 搭子大厅
+   ========================================================================== */
+
+.hall__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 14px;
+}
+
+.hall__title {
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hall__icons {
+  display: flex;
+  gap: 8px;
+}
+
+.iconbtn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--glass-line-soft);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+/* 发布条：大厅页唯一的主视觉，比筛选高一级 */
+.publishbar {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 16px;
+  border-radius: var(--r-lg);
+  color: #fff;
+  background:
+    radial-gradient(90% 140% at 100% 0%, rgba(201, 221, 196, 0.4), rgba(201, 221, 196, 0) 55%),
+    linear-gradient(135deg, #3d78c6 0%, #1c55a0 55%, #21599f 100%);
+  box-shadow: 0 14px 30px rgba(31, 92, 172, 0.3);
+}
+
+.publishbar__plus {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset;
+}
+
+.publishbar__main { flex: 1; min-width: 0; }
+
+.publishbar__title {
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+.publishbar__sub {
+  margin-top: 3px;
+  font-size: 11.5px;
+  opacity: 0.86;
+}
+
+.publishbar__quota {
+  padding: 3px 9px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  background: rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+}
+
+.hall__seg {
+  margin-top: 16px;
+}
+
+.hall__chips {
+  margin-top: 12px;
+}
+
+/* 一键匹配：紫调，和发布条的橙分开，避免两个主按钮互抢 */
+.matchbar {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  background: rgba(201, 221, 196, 0.09);
+  border: 1px solid rgba(201, 221, 196, 0.18);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+/* 一键匹配的图标：浅雾绿底 + 深绿闪电。
+   不用饱和墨绿实心 —— 那在浅底上是一块「污渍」，而这是「系统给你的建议」。 */
+.matchbar__ico {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #2c5a43;
+  background: linear-gradient(140deg, #e2f0dd, #c9ddc4);
+  box-shadow: 0 6px 14px rgba(95, 130, 108, 0.16), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.matchbar__title {
+  font-size: 14px;
+  font-weight: 650;
+  color: #23503a;
+}
+
+.matchbar__sub {
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: #4a6f57;
+}
+
+.matchbar__go {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #37624a;
+  white-space: nowrap;
+}
+
+/* 降级提示条：浅黄，只在真降级时出现 */
+.degrade {
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 13px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: #46617a;
+  background: rgba(127, 156, 180, 0.20);
+  border: 1px solid rgba(95, 130, 160, 0.26);
+}
+
+/* 搭子卡片 */
+.dcard {
+  margin-top: 12px;
+  padding: 15px 16px 13px;
+  border-radius: var(--r-lg);
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+.dcard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.dcard__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dcard__who { flex: 1; min-width: 0; }
+
+.dcard__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.dcard__meta {
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.dcard__title {
+  margin-top: 12px;
+  font-size: 15.5px;
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+
+.dcard__desc {
+  margin-top: 5px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dcard__tags {
+  margin-top: 11px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dcard__foot {
+  margin-top: 12px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(22, 33, 46, 0.07);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.dcard__foot .dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* “同频 N 个”是卡片上唯一有权用强调色的数字 */
+.sync {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 650;
+  color: #37624a;
+  background: rgba(201, 221, 196, 0.46);
+}
+
+.sync b {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dcard__mine {
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 9.5px;
+  color: var(--ink-2);
+  background: rgba(22, 33, 46, 0.06);
+}
+
+.loadmore {
+  margin: 18px 0 6px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+/* ==========================================================================
+   六、屏 03 · 搭子详情
+   ========================================================================== */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0 14px;
+}
+
+.topbar__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.backbtn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--glass-line-soft);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+.detail__hero {
+  padding: 17px 19px 15px;
+  border-radius: var(--r-xl);
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.detail__row1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail__title {
+  margin-top: 10px;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+}
+
+.detail__desc {
+  margin-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.66;
+  color: var(--ink-2);
+}
+
+.detail__owner {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(22, 33, 46, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.detail__owner-main { flex: 1; min-width: 0; }
+
+.detail__owner-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.detail__owner-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail__owner-go {
+  flex: none;               /* 不能被名字挤走 —— 挤走就会叠到文字上 */
+  white-space: nowrap;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--brand-deep);
+}
+
+/* 信息行 */
+.infoblock {
+  margin-top: 10px;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-line-soft);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+.infoblock__row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 5px 0;
+}
+
+.infoblock__row + .infoblock__row {
+  border-top: 1px solid rgba(22, 33, 46, 0.06);
+}
+
+.infoblock__ico {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--brand-deep);
+  background: rgba(31, 92, 172, 0.1);
+}
+
+.infoblock__label {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.infoblock__value {
+  margin-top: 1px;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+/* 重合标签区 */
+.overlap {
+  margin-top: 10px;
+  padding: 13px 16px 14px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-line-soft);
+}
+
+.overlap__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #37624a;
+}
+
+.overlap__title b {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.overlap__tags {
+  margin-top: 11px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+/* 已有多少人想搭 */
+.want {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px dashed rgba(22, 33, 46, 0.14);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+/* 底部操作条：贴在 tabbar 位置，玻璃 + 主按钮 */
+.actionbar {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 22px;
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.76);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 16px 36px rgba(31, 92, 172, 0.18);
+  z-index: 8;
+}
+
+.actionbar .btn--ghost {
+  flex: 0 0 116px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.actionbar .btn--primary {
+  flex: 1;
+}
+
+/* ==========================================================================
+   七、屏 04 · 我的
+   ========================================================================== */
+
+.profile {
+  position: relative;
+  overflow: hidden;
+  padding: 17px 19px 14px;
+  border-radius: var(--r-xl);
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.profile__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile__main { flex: 1; min-width: 0; }
+
+.profile__name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.profile__school {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile__tags {
+  margin-top: 11px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 称号 chip：金调，属于“荣誉”，不能和品牌橙混用 */
+.titlechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  border-radius: 13px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #2f4f66;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.92) 0%, rgba(201, 221, 196, 0.58) 100%);
+  border: 1px solid rgba(95, 130, 160, 0.24);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+/* 信誉分：用 conic-gradient 画环，不引第三方图表库。
+   环色用「雾绿 → 深雾绿」的渐变而不是单一墨绿：墨绿在这套冷色里太重，
+   会显得像另一套色板；渐变让环自己带一点光，才跟玻璃对得上。 */
+.credit {
+  position: relative;
+  flex: none;
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -92deg,
+    #8fbf9d 0deg,
+    #5d9770 210deg,
+    #3f7a58 345deg,
+    rgba(127, 166, 140, 0.20) 345deg 360deg
+  );
+}
+
+.credit::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 12px rgba(31, 92, 172, 0.1) inset;
+}
+
+.credit__in {
+  position: relative;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.credit__num {
+  font-size: 21px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #1c3d2e;
+}
+
+.credit__label {
+  margin-top: 1px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #3f7a58;
+}
+
+.credit__cap {
+  margin-top: 3px;
+  font-size: 9px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+/* 统计三格 */
+.stats {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 12px 4px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid var(--glass-line-soft);
+}
+
+.stat {
+  text-align: center;
+  position: relative;
+}
+
+.stat + .stat::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: rgba(22, 33, 46, 0.08);
+}
+
+.stat__num {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.stat__num span {
+  margin-left: 1px;
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--ink-3);
+}
+
+.stat__label {
+  margin-top: 3px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+/* 模块行 */
+.modlist {
+  margin-top: 12px;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow);
+}
+
+.mod {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  position: relative;
+}
+
+.mod + .mod::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 0;
+  height: 1px;
+  background: rgba(22, 33, 46, 0.07);
+}
+
+.mod__ico {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--brand-deep);
+  background: rgba(31, 92, 172, 0.1);
+}
+
+.mod__ico--violet { color: #2f5f45; background: rgba(201, 221, 196, 0.11); }
+.mod__ico--mint { color: #24634d; background: rgba(47, 125, 99, 0.12); }
+.mod__ico--gold { color: #33556f; background: rgba(127, 156, 180, 0.14); }
+
+.mod__main { flex: 1; min-width: 0; }
+
+.mod__title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mod__desc {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.mod__val {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.mod__arrow {
+  color: var(--ink-4);
+  display: grid;
+  place-items: center;
+}
+
+/* 管理员卡：唯一有权用红调的地方 */
+.admincard {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: rgba(191, 68, 56, 0.07);
+  border: 1px dashed rgba(191, 68, 56, 0.28);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admincard__main { flex: 1; min-width: 0; }
+
+.admincard__title {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: #8f3d3d;
+}
+
+.admincard__sub {
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: rgba(143, 61, 61, 0.72);
+}
+
+.footlinks {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* ==========================================================================
+   八、屏 05 · 个人主页（他人）
+   ========================================================================== */
+
+.uphead {
+  position: relative;
+  overflow: hidden;
+  margin-top: 4px;
+  padding: 22px 19px 18px;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(110% 120% at 100% 0%, rgba(201, 221, 196, 0.7), rgba(201, 221, 196, 0) 58%),
+    var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.uphead__ava {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.uphead__main { flex: 1; min-width: 0; }
+
+.uphead__name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.uphead__real {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.uphead__school {
+  margin-top: 7px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.uphead__credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;               /* 不跟着学校名一起收缩 —— 收缩就会被折成两行 */
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #24634d;
+  background: rgba(47, 125, 99, 0.13);
+}
+
+.uphead__bio {
+  margin-top: 14px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+
+.uphead__titles {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+/* 关系卡 */
+.rel {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-line-soft);
+}
+
+.rel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rel__title {
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.rel__count {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.rel__row {
+  margin-top: 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+/* 搭子标签：上帝给的唯一“闪亮色”位置 —— 用渐变+高光，跟品牌橙分开 */
+.buddytag {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  height: 27px;
+  padding: 0 12px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #16212e;
+  background-color: #dbe9dd;
+  background-image: linear-gradient(115deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0) 38%);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.12), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+}
+
+.buddytag--violet { background-color: #cfe3ce; color: #1f4433; }
+.buddytag--mint { background-color: #a8d4b6; color: #1b4a37; }
+.buddytag--blue { background-color: #b9d4e8; color: #1b4a72; }
+
+.buddytag--unnamed {
+  color: var(--ink-3);
+  background-color: rgba(255, 255, 255, 0.5);
+  background-image: none;
+  border: 1px dashed rgba(22, 33, 46, 0.24);
+  font-weight: 550;
+}
+
+.rel__since {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.rel__cat {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+/* 共同标签 */
+.common {
+  margin-top: 12px;
+  padding: 14px 16px 15px;
+  border-radius: var(--r-md);
+  background: rgba(201, 221, 196, 0.30);
+  border: 1px solid rgba(95, 130, 108, 0.20);
+}
+
+.common__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #37624a;
+}
+
+.common__title b {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.common__tags {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+/* 正在招搭子 */
+.recruit {
+  margin-top: 12px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-line-soft);
+}
+
+.recruit__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  position: relative;
+}
+
+.recruit__row + .recruit__row::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  right: 15px;
+  top: 0;
+  height: 1px;
+  background: rgba(22, 33, 46, 0.07);
+}
+
+.recruit__title {
+  font-size: 13px;
+  font-weight: 550;
+}
+
+/* 双按钮操作区 */
+.upactions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+}
+
+.upactions .btn--ghost { flex: 0 0 130px; }
+.upactions .btn--primary { flex: 1; }
+
+/* 三点菜单按钮 */
+.more {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: var(--ink-2);
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--glass-line-soft);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+/* ==========================================================================
+   九、屏 06 · 聊天
+   ========================================================================== */
+
+.chathead {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 2px 2px 14px;
+}
+
+.chathead__main { flex: 1; min-width: 0; }
+
+.chathead__name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15.5px;
+  font-weight: 650;
+}
+
+.chathead__sub {
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.chathead__sub em {
+  font-style: normal;
+  color: #24634d;
+  font-weight: 600;
+}
+
+.msgtime {
+  margin: 6px 0 14px;
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.msgtime span {
+  padding: 3px 9px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.bubble {
+  position: relative;
+  max-width: 268px;
+  padding: 11px 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  letter-spacing: 0.005em;
+}
+
+.bubble--in {
+  border-radius: 18px 18px 18px 6px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 6px 18px rgba(31, 92, 172, 0.1);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+
+.bubble--out {
+  margin-left: auto;
+  border-radius: 18px 18px 6px 18px;
+  color: #fff;
+  background: linear-gradient(140deg, #3674c2 0%, #1f5cac 60%, #16457f 100%);
+  box-shadow: 0 10px 24px rgba(31, 92, 172, 0.28), 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+.msgrow {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.msgrow--out {
+  flex-direction: row-reverse;
+}
+
+.msgrow__meta {
+  font-size: 9.5px;
+  color: var(--ink-3);
+  padding-bottom: 3px;
+  white-space: nowrap;
+}
+
+/* 聊天里外链的搭子卡 */
+.linkcard {
+  margin-top: 8px;
+  padding: 11px 13px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--glass-line-soft);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.linkcard__ico {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: #2c5a43;
+  background: linear-gradient(140deg, #e2f0dd, #c9ddc4);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.linkcard__title {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.linkcard__sub {
+  margin-top: 1px;
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+/* 输入条 */
+.inputbar {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 20px;
+  height: 58px;
+  padding: 0 8px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+  box-shadow: 0 16px 34px rgba(31, 92, 172, 0.2);
+  z-index: 8;
+}
+
+.inputbar__field {
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  color: var(--ink-3);
+  background: rgba(22, 33, 46, 0.045);
+}
+
+.inputbar__icon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  color: var(--ink-2);
+}
+
+.inputbar__send {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(140deg, #3674c2, #1f5cac);
+  box-shadow: 0 8px 18px rgba(31, 92, 172, 0.32);
+}
+
+/* ==========================================================================
+   十、展示台（效果图总览）—— 只在桌面看，手机端自动隐藏
+   ========================================================================== */
+
+.board {
+  min-height: 100vh;
+  padding: 46px 40px 60px;
+  display: flex;
+  gap: 42px;
+  align-items: flex-start;
+  justify-content: center;
+  background:
+    radial-gradient(90% 70% at 8% 0%, #f4f9f7 0%, rgba(244, 249, 247, 0) 60%),
+    radial-gradient(80% 60% at 100% 100%, #dfeaf3 0%, rgba(223, 234, 243, 0) 62%),
+    #eef3f6;
+}
+
+.specsheet {
+  width: 330px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 8px;
+}
+
+.specsheet h1 {
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 750;
+}
+
+.specsheet h1 span {
+  background: linear-gradient(135deg, #1f5cac, #37624a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.specsheet__note {
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: #46586a;
+}
+
+.specblock {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 26px rgba(31, 92, 172, 0.1);
+}
+
+.specblock__kicker {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8b9aa8;
+  margin-bottom: 10px;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+}
+
+.swatch {
+  text-align: center;
+}
+
+.swatch i {
+  display: block;
+  height: 34px;
+  border-radius: 10px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 4px 10px rgba(0, 0, 0, 0.07);
+}
+
+.swatch span {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  color: #7d8d9c;
+}
+
+.typerow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(22, 33, 46, 0.06);
+}
+
+.typerow:last-child { border-bottom: 0; }
+
+.typerow b { font-weight: 700; letter-spacing: -0.02em; }
+.typerow em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: #8b9aa8;
+}
+
+.rules {
+  font-size: 11.5px;
+  line-height: 1.85;
+  color: #46586a;
+}
+
+.rules b { color: #16212e; }
+
+.frames {
+  display: flex;
+  gap: 34px;
+  align-items: flex-start;
+}
+
+.frame {
+  flex: none;
+}
+
+.frame__cap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 6px 12px;
+}
+
+.frame__no {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #a9b6c2;
+}
+
+.frame__name {
+  font-size: 13px;
+  font-weight: 650;
+  color: #22303f;
+}
+
+.frame__shell {
+  position: relative;
+  border-radius: 44px;
+  padding: 9px;
+  background: linear-gradient(160deg, #ffffff 0%, #eaf0f4 55%, #dbe5ec 100%);
+  box-shadow:
+    0 30px 60px rgba(31, 92, 172, 0.22),
+    0 2px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.06) inset;
+}
+
+.frame__shell .screen {
+  border-radius: 36px;
+}
+
+.frame__shell::after {
+  /* 刘海：只画一颗，别做成 iPhone 16 那种药丸 —— 造型越具体越容易过时 */
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92px;
+  height: 24px;
+  border-radius: 14px;
+  background: #101820;
+  z-index: 9;
+}
+
+.mobile-only { display: none; }
+
+/* ==========================================================================
+   十一、单屏模式（?s=home）：给截图用，无壳无标题
+   ========================================================================== */
+
+body.single-mode {
+  background: #fff;
+}
+
+body.single-mode .board {
+  display: block;
+  padding: 0;
+  min-height: 0;
+  background: none;
+}
+
+body.single-mode .specsheet,
+body.single-mode .frame__cap,
+body.single-mode .frame:not(.is-target) {
+  display: none;
+}
+
+/* 注意：.frames 是目标屏的父节点，不能一起 display:none —— 会连同那一屏一起消失，
+   截图就会得到一张干净的白图（踩过一次）。这里只把容器摊平。 */
+body.single-mode .frames {
+  display: block;
+}
+
+body.single-mode .frame.is-target {
+  display: block;
+}
+
+body.single-mode .frame__shell {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+body.single-mode .frame__shell .screen {
+  border-radius: 0;
+}
+
+body.single-mode .frame__shell::after {
+  display: none;
+}
+
+/* ==========================================================================
+   十二、窄屏（真机/微信打开）：直接把帧摊平，一张一张往下排
+   ========================================================================== */
+
+@media (max-width: 1000px) {
+  .board {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0 40px;
+    gap: 26px;
+  }
+
+  .specsheet {
+    width: min(94vw, 420px);
+    padding: 0 16px;
+  }
+
+  .frames {
+    flex-direction: column;
+    align-items: center;
+    gap: 26px;
+  }
+
+  .frame__shell {
+    border-radius: 30px;
+    padding: 6px;
+    box-shadow: 0 14px 30px rgba(31, 92, 172, 0.18);
+  }
+
+  .frame__shell .screen {
+    border-radius: 24px;
+    transform-origin: top left;
+  }
+}
+
+@media (max-width: 420px) {
+  .frame__shell {
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .frame__shell .screen {
+    border-radius: 0;
+  }
+
+  .frame__shell::after {
+    display: none;
+  }
+
+  .frame__cap {
+    padding-left: 16px;
+  }
+}
+
+/* ==========================================================================
+   液态玻璃 · 动效层
+   ========================================================================== */
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.994);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* 主卡呼吸：只改外发光，不动位移 —— 位移会让人以为界面在抖 */
+@keyframes breathe {
+  0%, 100% {
+    box-shadow:
+      0 18px 44px rgba(23, 74, 140, 0.26),
+      0 1px 0 rgba(255, 255, 255, 0.45) inset;
+  }
+  50% {
+    box-shadow:
+      0 22px 54px rgba(23, 74, 140, 0.34),
+      0 1px 0 rgba(255, 255, 255, 0.52) inset;
+  }
+}
+
+.matchcard.is-breathe {
+  animation: breathe 7.5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+/* 滑块的位置由 --i 驱动。
+   滑块位置见 .lg-lens 定义处（transform + --step）。 */
+/* tab 文字随滑块到位一起「沉下去」一点，像压在湿玻璃上 */
+.tab {
+  position: relative;
+  z-index: 3;          /* 文字永远在玻璃之上 —— 被玻璃盖住的字是 bug，不是设计 */
+  transition:
+    color 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tab.is-on {
+  color: var(--brand-deep);
+}
+
+.tab.is-on .tab__label {
+  font-weight: 700;
+}
+
+.tab:not(.is-on) .tab__label {
+  font-weight: 500;
+}
+
+/* 系统开了「减少动态效果」时，全部退化为静态 */
+@media (prefers-reduced-motion: reduce) {
+  .lg-lens {
+    transition: none;
+  }
+  .matchcard.is-breathe {
+    animation: none;
+  }
+  .frame * {
+    animation: none !important;
+  }
+}
+
+/* —— 滑块内部：真实折射 ——
+   滑块背后是滚动内容（卡片边缘、文字），直线多，弯折最容易看出来。
+   这里不是 backdrop-filter（它不支持 url() 滤镜），而是
+   「复制屏幕背景 → 用 SDF 位移图推开 → 裁到滑块圆角内」。
+
+   注意结构：.lens-bg 自己就是承载背景的那一层，不再嵌套子元素。
+   背景用 background-position 做对齐（比绝对定位的子元素省一层），
+   偏移由 JS 实测写进 --lens-bx / --lens-by。 */
+.lens-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: 0;
+  /* ④ 边缘折射：SDF 位移图沿法线推开背后的线，直线因此弯折 */
+  filter: blur(1.2px) saturate(1.9) brightness(1.06) url(#lensWarp);
+  /* 只在边缘环内折射：中心区域交给滑块自身的 backdrop-filter 做大半径模糊，
+     否则大模糊会把折射抹平（这是物理矛盾，苹果同样分区处理） */
+  -webkit-mask: var(--edge-mask, none);
+  mask: var(--edge-mask, none);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+
+  /* 背景副本：与屏幕背景同一份定义（--bg-main），只靠 position 对齐 */
+  background-color: var(--bg-base, #eef4f6);
+  background-image:
+    radial-gradient(70% 60% at 50% 55%, rgba(31, 92, 172, 0.055) 0%, rgba(31, 92, 172, 0) 72%),
+    repeating-linear-gradient(58deg, rgba(31, 92, 172, 0.030) 0 1.5px, rgba(31, 92, 172, 0) 1.5px 15px),
+    var(--bg-main, linear-gradient(#eef4f6, #eef4f6));
+  /* 关键：gradient 的百分比是相对「元素自身盒子」算的，
+     只改 background-position 移不动它 —— 放大就是一块错位的亮斑。
+     显式给 390×844（手机屏尺寸）当画布，再靠 position 平移，
+     副本才真正与屏幕背景逐像素重合。 */
+  background-size: 390px 844px, 390px 844px, 390px 844px;
+  background-position: var(--lens-bx, 0px) var(--lens-by, 0px);
+  background-repeat: no-repeat;
+}
+
+/* 边缘亮层：压在折射之上，保证 1px 白边不被折射搅糊 */
+.lens-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 -1.5px 0 rgba(255, 255, 255, 0.52),
+    inset 0 0 14px 1px rgba(255, 255, 255, 0.30);
+}
+
+/* 滑块内的元素都要在折射层之上 */
+.lg-lens { isolation: isolate; }
+

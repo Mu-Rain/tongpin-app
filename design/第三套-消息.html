@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>同频 · 消息</title>
+<link rel="stylesheet" href="journal-base.css">
+<style>
+/* ==================== 消息 ==================== */
+.search{
+  display:flex;align-items:center;gap:8px;height:36px;padding:0 13px;
+  border-radius:18px;background:var(--paper);
+  border:1.2px solid var(--line-soft);
+  box-shadow:0 4px 12px rgba(150,128,104,.08);
+}
+.search .mag{font-size:13px;color:var(--ink-3);flex:none}
+.search .ph{flex:1;font-size:11.5px;color:var(--ink-3)}
+
+/* 顶部分组标题 */
+.grp{display:flex;align-items:center;justify-content:space-between;
+  margin:14px 2px 8px}
+.grp h2{font-size:11px;font-weight:800;color:var(--ink-2);letter-spacing:.06em}
+.grp .cnt{font-size:9.5px;color:var(--ink-3)}
+
+/* 会话列表：一张纸，分行 */
+.convos{border-radius:18px 20px 17px 19px;overflow:hidden}
+.convo{display:flex;align-items:center;gap:11px;padding:13px 13px;
+  border-bottom:1px solid var(--line-soft);position:relative}
+.convo:last-child{border-bottom:none}
+.convo.unread{background:rgba(250,230,210,.30)}
+
+.c-ava{
+  width:40px;height:40px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;color:#fff;
+  border:1.8px solid var(--paper);
+  box-shadow:0 3px 9px rgba(150,128,104,.18);
+  position:relative;
+}
+/* 搭子标签：跟在昵称后面。
+   之前用绝对定位钉在头像右下角，会被列表的 overflow:hidden 裁掉一半。 */
+.c-tag{
+  display:inline-block;margin-left:5px;padding:1px 6px;border-radius:7px;
+  font-size:8px;font-weight:800;vertical-align:middle;
+  background:var(--green-pill);color:var(--green-text);
+  border:1px solid rgba(111,143,104,.26);
+  white-space:nowrap;
+}
+.c-tag.warm{background:var(--orange-pale);color:#8C6B4A;border-color:rgba(200,140,80,.26)}
+
+.c-main{flex:1;min-width:0}
+.c-main .top{display:flex;align-items:baseline;gap:6px}
+.c-main h3{font-size:13px;font-weight:800;color:var(--ink);flex:none}
+.c-main .time{margin-left:auto;font-size:9px;color:var(--ink-3);flex:none}
+.c-main .msg{margin-top:3px;font-size:10.5px;color:var(--ink-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.convo.unread .c-main .msg{color:var(--ink);font-weight:600}
+
+/* 未读红点 */
+.dot-un{
+  flex:none;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+  background:linear-gradient(150deg,#F0B98C,#E19A5F);
+  color:#fff;font-size:9px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 5px rgba(200,150,100,.30);
+}
+
+/* 底部提示 */
+.the-end{margin-top:14px;text-align:center;font-size:9.5px;color:var(--ink-3);
+  letter-spacing:.04em}
+.the-end::before,.the-end::after{content:"—";margin:0 6px;opacity:.5}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+
+    <div class="statusbar">
+      <span>11:47</span>
+      <span class="r">
+        <span style="font-size:9px">149 KB/s</span>
+        <span class="bars"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="batt"></span>
+      </span>
+    </div>
+
+    <div class="content">
+
+      <div class="app-title">消息</div>
+
+      <div class="search">
+        <span class="mag">⌕</span>
+        <span class="ph">搜聊天记录</span>
+      </div>
+
+      <!-- 搭子 -->
+      <div class="grp">
+        <h2>我的搭子</h2>
+        <span class="cnt">2 位</span>
+      </div>
+
+      <div class="convos paper">
+        <div class="convo unread">
+          <div class="c-ava" style="background:linear-gradient(150deg,#C3D4DE,#93AEBD)">柚</div>
+          <div class="c-main">
+            <div class="top">
+              <h3>小柚<span class="c-tag">自习搭子</span></h3>
+              <span class="time">19:12</span>
+            </div>
+            <div class="msg">五楼社科区还行，靠窗那排空着，你上来吧</div>
+          </div>
+          <span class="dot-un">2</span>
+        </div>
+
+        <div class="convo">
+          <div class="c-ava" style="background:linear-gradient(150deg,#CBDCC1,#A3BE96)">泽</div>
+          <div class="c-main">
+            <div class="top">
+              <h3>阿泽<span class="c-tag warm">夜跑搭子</span></h3>
+              <span class="time">昨天</span>
+            </div>
+            <div class="msg">明天五点半操场见？我带水</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 其他 -->
+      <div class="grp">
+        <h2>其他消息</h2>
+        <span class="cnt">3 条</span>
+      </div>
+
+      <div class="convos paper">
+        <div class="convo unread">
+          <div class="c-ava" style="background:linear-gradient(150deg,#E3CDB8,#C9AC92)">系</div>
+          <div class="c-main">
+            <div class="top">
+              <h3>系统通知</h3>
+              <span class="time">昨天</span>
+            </div>
+            <div class="msg">你有 1 条新的搭子申请，去看看吧</div>
+          </div>
+          <span class="dot-un">1</span>
+        </div>
+
+        <div class="convo">
+          <div class="c-ava" style="background:linear-gradient(150deg,#D6CDBE,#B7A995)">饭</div>
+          <div class="c-main">
+            <div class="top">
+              <h3>饭搭子小队</h3>
+              <span class="time">10-24</span>
+            </div>
+            <div class="msg">这周五还去二食堂吗</div>
+          </div>
+        </div>
+
+        <div class="convo">
+          <div class="c-ava" style="background:linear-gradient(150deg,#CFD8CE,#A9B8A8)">情</div>
+          <div class="c-main">
+            <div class="top">
+              <h3>情绪引导</h3>
+              <span class="time">10-23</span>
+            </div>
+            <div class="msg">上次聊完感觉怎么样？随时可以再聊</div>
+          </div>
+        </div>
+
+        <div class="convo">
+          <div class="c-ava" style="background:linear-gradient(150deg,#D3D9E0,#AAB4BE)">展</div>
+          <div class="c-main">
+            <div class="top">
+              <h3>看展搭子</h3>
+              <span class="time">10-22</span>
+            </div>
+            <div class="msg">美术馆那个展延期了，要不要改下周</div>
+          </div>
+        </div>
+
+        <div class="convo">
+          <div class="c-ava" style="background:linear-gradient(150deg,#E0D5C4,#C0AF98)">验</div>
+          <div class="c-main">
+            <div class="top">
+              <h3>认证审核</h3>
+              <span class="time">10-20</span>
+            </div>
+            <div class="msg">你的学生认证已通过，现在可以进同校频道了</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="the-end">没有更多了</div>
+
+    </div>
+
+    <nav class="tabbar">
+      <div class="tab"><img src="icons-journal/out/home.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/globe.png" alt=""></div>
+      <div class="tab on"><img src="icons-journal/out/chat.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/user.png" alt=""></div>
+    </nav>
+
+  </div>
+</div>
+</body>
+</html>

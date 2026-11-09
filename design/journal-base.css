@@ -1,0 +1,160 @@
+/* ==========================================================================
+   同频 · 手账治愈风 · 基础样式
+   --------------------------------------------------------------------------
+   这是「第三套视觉」的共享底座，五个页面共用。
+   从首页抽出来，包含：彩铅色板、纸纹背景、纸卡、标签胶囊、按钮、浅绿卡、底部导航。
+
+   ★ 彩铅配色的铁律：饱和度 S 超过 40% 就不是彩铅了。
+     彩铅是半透明颜料，纸的白会透上来，所以彩铅色永远不会饱和。
+     当前所有色都在 S 14~22% 区间。
+   ========================================================================== */
+
+:root{
+  /* —— 纸 —— */
+  --paper:#FEFFF9;          /* 主纸色，取自插画背景色，插画可无缝叠上 */
+  --paper-2:#FBFCF2;
+  --paper-3:#F7F9EC;
+
+  /* —— 墨（中褐，不是深棕：压太深就成马克笔了）—— */
+  --ink:#6B5B4A;
+  --ink-2:#9A8A78;
+  --ink-3:rgba(107,91,74,.38);
+  --line:rgba(178,158,132,.34);
+  --line-soft:rgba(178,158,132,.19);
+
+  /* —— 彩铅橙 S≈19% —— */
+  --orange:#EFCDA8;
+  --orange-deep:#DFB183;
+  --orange-pale:#F8EBD8;
+  --cream:#F7F1E2;
+  --btn-1:#FAE6D2;
+  --btn-2:#F1D4B6;
+
+  /* —— 彩铅绿 S≈14% —— */
+  --green-1:#F7FBF2;
+  --green-2:#EDF4E6;
+  --green-text:#8CA37E;
+  --green-pill:#EFF5E7;
+
+  /* —— 灰蓝（头像等）—— */
+  --blue-1:#A8BDCB;
+  --blue-2:#7C97A8;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#E9E4D8}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;justify-content:center;padding:40px 0;
+}
+
+.phone{width:390px;height:844px;border-radius:46px;overflow:hidden;position:relative;
+  box-shadow:0 30px 70px rgba(74,55,40,.22);}
+
+/* 桌面：奶油纸 + 极淡纸纹 */
+.screen{width:100%;height:100%;position:relative;overflow:hidden;
+  background:
+    radial-gradient(120% 60% at 10% -8%, #FFFEFB 0%, rgba(255,254,251,0) 58%),
+    radial-gradient(90% 56% at 96% 2%, #FDFAF1 0%, rgba(253,250,241,0) 62%),
+    linear-gradient(176deg, #FEFDF8 0%, #FCF9F0 52%, #F8F4E8 100%);
+}
+.screen::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.24;
+  /* 双层错位颗粒：3px + 7px，单层会像屏幕噪点 */
+  background-image:
+    radial-gradient(rgba(170,148,120,.075) 1px, transparent 1px),
+    radial-gradient(rgba(170,148,120,.05) 1px, transparent 1px);
+  background-size:3px 3px, 7px 7px;
+  background-position:0 0, 1px 2px;
+  mix-blend-mode:multiply;
+}
+
+/* 状态栏 */
+.statusbar{position:relative;z-index:6;height:44px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 24px;font-size:13.5px;font-weight:600;color:var(--ink);}
+.statusbar .r{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-2)}
+.bars{display:flex;align-items:flex-end;gap:1.5px;height:9px}
+.bars i{width:2.6px;background:var(--ink-2);border-radius:1px;display:block}
+.bars i:nth-child(1){height:3px}.bars i:nth-child(2){height:5px}
+.bars i:nth-child(3){height:7px}.bars i:nth-child(4){height:9px}
+.batt{width:21px;height:10px;border:1.2px solid var(--ink-2);border-radius:3px;position:relative}
+.batt::after{content:"";position:absolute;left:1.5px;top:1.5px;bottom:1.5px;right:5px;
+  background:var(--ink-2);border-radius:1.5px}
+
+/* 内容区（不含底部导航） */
+.content{position:relative;z-index:3;height:calc(844px - 44px - 78px);overflow:hidden;padding:0 18px;}
+
+/* 居中页面标题 */
+.app-title{text-align:center;font-size:17px;font-weight:800;color:var(--ink);
+  letter-spacing:.06em;padding:2px 0 8px;}
+
+/* ==================== 纸卡 ==================== */
+/* 单张纸 */
+.paper{
+  position:relative;background:var(--paper);
+  border:1.3px solid var(--line);
+  box-shadow:0 10px 26px rgba(150,128,104,.12);
+}
+/* 多层纸堆叠：外层 .stack 内放 .paper-bg x N + .paper */
+.stack{position:relative}
+.paper-bg{position:absolute;border-radius:18px 20px 17px 19px;
+  background:var(--paper-3);border:1.2px solid var(--line-soft);}
+.paper-bg.b3{left:10px;right:-3px;top:11px;bottom:0;transform:rotate(2.2deg);background:#F7F1E4}
+.paper-bg.b2{left:6px;right:0;top:7px;bottom:4px;transform:rotate(1.3deg);background:var(--paper-3)}
+.paper-bg.b1{left:2px;right:3px;top:3px;bottom:7px;transform:rotate(-.8deg);background:var(--paper-2)}
+
+/* 胶带 */
+.tape{position:absolute;width:62px;height:23px;z-index:4;background:rgba(226,213,180,.78);
+  box-shadow:0 2px 5px rgba(92,61,46,.10);
+  clip-path:polygon(0 8%,6% 0,94% 3%,100% 12%,99% 88%,93% 100%,6% 97%,0 92%);}
+.tape.l{left:26px;transform:rotate(-7deg)}
+.tape.r{right:26px;transform:rotate(6deg)}
+
+/* ==================== 标签胶囊 ==================== */
+.pill{padding:3px 9px;font-size:9.5px;font-weight:700;border-radius:10px;
+  border:1.1px solid transparent;letter-spacing:-.01em;white-space:nowrap;}
+.pill--cream{background:var(--cream);color:#8A7358;border-color:rgba(190,150,110,.24)}
+.pill--green{background:var(--green-pill);color:var(--green-text);border-color:rgba(111,143,104,.24)}
+.pill--orange{background:var(--orange-pale);color:#8C6B4A;border-color:rgba(200,140,80,.26)}
+
+/* ==================== 按钮 ==================== */
+.btn{display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,var(--btn-1),var(--btn-2));
+  border:1.2px solid rgba(190,160,125,.30);
+  box-shadow:0 3px 8px rgba(205,175,140,.18), inset 0 1.2px 0 rgba(255,255,255,.6);
+  color:#7A5A3C;font-weight:800;letter-spacing:.03em;}
+.btn--ghost{background:rgba(255,255,255,.72);border-color:rgba(178,158,132,.26);
+  box-shadow:none;color:#7A6A55;}
+
+/* ==================== 浅绿卡（四卡那种） ==================== */
+.gcard{flex:1;min-width:0;padding:7px 10px 7px;
+  border-radius:19px 21px 18px 20px;
+  background:linear-gradient(150deg,var(--green-1),var(--green-2));
+  border:1.2px solid rgba(111,143,104,.20);
+  box-shadow:0 6px 16px rgba(140,163,126,.13);
+  display:flex;flex-direction:column;position:relative;}
+.gcard:nth-child(odd){transform:rotate(-.4deg)}
+.gcard:nth-child(even){transform:rotate(.4deg)}
+.gcard .ttl{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.01em;line-height:1.3}
+.gcard .desc{margin-top:5px;font-size:9.5px;line-height:1.4;color:#7E8A72;flex:1;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+
+/* 图标容器 */
+.ico{flex:none;display:flex;align-items:center;justify-content:center}
+.ico img{width:100%;height:100%;display:block}
+
+/* 区块标题 */
+.sec-title{font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.01em;}
+
+/* ==================== 底部导航（4 tab，无 fab） ==================== */
+.tabbar{position:absolute;left:14px;right:14px;bottom:14px;height:56px;z-index:20;
+  border-radius:24px 26px 23px 25px;
+  background:rgba(254,255,249,.92);
+  border:1.4px solid var(--line-soft);
+  box-shadow:0 10px 26px rgba(150,128,104,.11);
+  display:flex;align-items:center;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.tab{flex:1;height:56px;display:flex;align-items:center;justify-content:center;position:relative;z-index:21}
+.tab img{width:22px;height:22px;display:block;opacity:.6}
+.tab.on img{opacity:1}

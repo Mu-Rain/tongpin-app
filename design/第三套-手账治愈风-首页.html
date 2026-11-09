@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>同频 · 首页（手账治愈风 · 一比一）</title>
+<style>
+/* ==========================================================================
+   一比一复刻参考图。关键还原点：
+   1. 「同频」居中标题 与「早上好」问候行 是**两层**，不是一行
+   2. 手账卡是**多层纸堆叠**，右侧和下方能看到 3 层纸边
+   3. 标签云是**两行彩色胶囊**，颜色随机分布（不是统一色）
+   4. 四卡是**浅绿渐变底**，不是白卡
+   5. 底部是 4 图标 + 中间凸起橙色铅笔
+   ========================================================================== */
+:root{
+  /* ============================================================
+     彩铅配色：所有颜色都往灰里压、往亮里提。
+     彩铅是半透明颜料，纸的白会透上来 —— 所以彩铅色**永远不会饱和**。
+     判断标准：把色值丢进 HSB，饱和度（S）超过 40% 就不是彩铅了。
+     之前 #DCEBCF 的 S=38% 但明度不够、#EFA463 的 S=58% —— 都太艳。
+     ============================================================ */
+  /* 纸卡取插画背景色 #FEFFF9（实测四角均值），这样插画不用去背、边缘无缝 */
+  --paper:#FEFFF9;
+  --paper-2:#FBFCF2;
+  --paper-3:#F7F9EC;
+
+  /* 线条用「中褐」不用深棕：彩铅的线是浅的，压太深就成马克笔了 */
+  --ink:#6B5B4A;
+  --ink-2:#9A8A78;
+  --ink-3:rgba(107,91,74,.38);
+  --line:rgba(178,158,132,.34);
+  --line-soft:rgba(178,158,132,.19);
+
+  /* 彩铅橙：S≈31%，明度 82% */
+  --orange:#EFCDA8;
+  --orange-deep:#DFB183;
+  --orange-pale:#F8EBD8;
+  --cream:#F7F1E2;
+
+  /* 彩铅绿：S≈22%，明度 95% */
+  --green-card-1:#F7FBF2;
+  --green-card-2:#EDF4E6;
+  --green-text:#8CA37E;
+  --green-pill:#EFF5E7;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#E9E4D8}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;justify-content:center;padding:40px 0;
+}
+
+.phone{width:390px;height:844px;border-radius:46px;overflow:hidden;position:relative;
+  box-shadow:0 30px 70px rgba(74,55,40,.24);}
+
+.screen{width:100%;height:100%;position:relative;overflow:hidden;
+  background:
+    radial-gradient(120% 60% at 10% -8%, #FFFEFB 0%, rgba(255,254,251,0) 58%),
+    radial-gradient(90% 56% at 96% 2%, #FDFAF1 0%, rgba(253,250,241,0) 62%),
+    linear-gradient(176deg, #FEFDF8 0%, #FCF9F0 52%, #F8F4E8 100%);
+}
+.screen::after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.24;
+  /* 双层颗粒：3px 细点 + 7px 错位点，叠出纸的「粗糙感」。
+     单层点阵看起来像屏幕噪点，双层错位才像纸。 */
+  background-image:
+    radial-gradient(rgba(170,148,120,.075) 1px, transparent 1px),
+    radial-gradient(rgba(170,148,120,.05) 1px, transparent 1px);
+  background-size:3px 3px, 7px 7px;
+  background-position:0 0, 1px 2px;
+  mix-blend-mode:multiply;
+}
+
+/* 状态栏 */
+.statusbar{position:relative;z-index:6;height:44px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 24px;font-size:13.5px;font-weight:600;color:var(--ink);}
+.statusbar .r{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-2)}
+.bars{display:flex;align-items:flex-end;gap:1.5px;height:9px}
+.bars i{width:2.6px;background:var(--ink-2);border-radius:1px;display:block}
+.bars i:nth-child(1){height:3px}.bars i:nth-child(2){height:5px}
+.bars i:nth-child(3){height:7px}.bars i:nth-child(4){height:9px}
+.batt{width:21px;height:10px;border:1.2px solid var(--ink-2);border-radius:3px;position:relative}
+.batt::after{content:"";position:absolute;left:1.5px;top:1.5px;bottom:1.5px;right:5px;
+  background:var(--ink-2);border-radius:1.5px}
+
+/* 滚动内容 */
+.content{position:relative;z-index:3;height:calc(844px - 44px - 92px);overflow:hidden;
+  padding:0 18px;}
+
+/* 「同频」居中标题 */
+.app-title{
+  text-align:center;font-size:17px;font-weight:800;color:var(--ink);
+  letter-spacing:.06em;padding:2px 0 8px;
+}
+
+/* 问候行 */
+.greet{display:flex;align-items:flex-start;justify-content:space-between;padding:0 2px 10px}
+.greet h1{font-size:19px;font-weight:800;color:var(--ink);line-height:1.25;letter-spacing:-.01em}
+.avatar{
+  width:42px;height:42px;border-radius:50%;flex:none;
+  background:linear-gradient(150deg,#A8BDCB,#7C97A8);
+  display:flex;align-items:center;justify-content:center;
+  font-size:7.5px;font-weight:700;color:#fff;letter-spacing:0;line-height:1.1;
+  text-align:center;padding:0 3px;
+  border:2px solid var(--paper);
+  box-shadow:0 4px 10px rgba(70,100,130,.22);
+}
+
+/* ==================== 手账主卡（多层纸堆叠） ==================== */
+.hero-wrap{position:relative;padding:0 3px 9px 0}
+.paper-bg{position:absolute;border-radius:18px 20px 17px 19px;
+  background:var(--paper-3);border:1.2px solid var(--line-soft);}
+.paper-bg.b3{left:10px;right:-3px;top:11px;bottom:0;transform:rotate(2.2deg);background:#F7F1E4}
+.paper-bg.b2{left:6px;right:0;top:7px;bottom:4px;transform:rotate(1.3deg);background:var(--paper-3)}
+.paper-bg.b1{left:2px;right:3px;top:3px;bottom:7px;transform:rotate(-.8deg);background:var(--paper-2)}
+
+.hero{
+  position:relative;padding:11px 13px 10px;
+  border-radius:18px 20px 17px 19px;
+  background:var(--paper);
+  border:1.3px solid var(--line);
+  box-shadow:0 10px 26px rgba(150,128,104,.12);
+}
+.hero-top{display:flex;align-items:flex-start;gap:4px}
+.hero-art{width:144px;height:144px;flex:none;margin:-8px 0 -12px -13px}
+.hero-art img{
+  width:100%;height:100%;display:block;
+  /* 插画已去背（从边缘泛洪，保留书页等内部白色），直接叠在纸上即可。
+     不要再加 mix-blend-mode: multiply —— 透明图相乘会把线条染黄。 */
+}
+.hero-copy{flex:1;min-width:0;padding-top:10px;margin-left:-2px}
+.hero-copy h2{
+  font-size:20px;font-weight:800;color:var(--ink);line-height:1.26;letter-spacing:-.01em;
+}
+.hero-copy p{margin-top:6px;font-size:11.5px;color:var(--ink-2);line-height:1.5}
+
+/* 橙色「去发布」：右侧，不是全宽 */
+.hero-btn{
+  margin:8px 0 0 auto;width:100px;height:32px;border-radius:16px;
+  background:linear-gradient(160deg,#FAE6D2,#F1D4B6);
+  border:1.3px solid rgba(190,120,55,.30);
+  box-shadow:0 3px 8px rgba(205,175,140,.18), inset 0 1.2px 0 rgba(255,255,255,.6);
+  display:flex;align-items:center;justify-content:center;
+}
+.hero-btn span{font-size:13px;font-weight:800;color:#7A5A3C;letter-spacing:.04em}
+
+/* 4 个标签胶囊 */
+.hero-tags{display:flex;gap:5px;margin-top:9px}
+.hero-tags .t{
+  flex:1;height:24px;border-radius:12px;
+  background:#FBF6E9;border:1.1px solid rgba(190,150,110,.26);
+  display:flex;align-items:center;justify-content:center;gap:3px;
+}
+.hero-tags .t .d{
+  width:5px;height:5px;flex:none;background:var(--orange);
+  transform:rotate(45deg);border-radius:1px;
+}
+.hero-tags .t span{font-size:9.5px;font-weight:700;color:#8A7358;letter-spacing:-.01em}
+
+/* ==================== 搭子大厅 · 标签云 ==================== */
+.sec-head{display:flex;align-items:center;gap:9px;margin-top:7px}
+.sec-head h2{font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.01em;flex:none}
+/* 标签云：两行，颜色随机分布 */
+.cloud{flex:1;display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.cloud .p{
+  padding:3px 9px;font-size:9.5px;font-weight:700;border-radius:10px;
+  border:1.1px solid transparent;letter-spacing:-.01em;white-space:nowrap;
+}
+.p.c-cream{background:var(--cream);color:#8A7358;border-color:rgba(190,150,110,.24)}
+.p.c-green{background:var(--green-pill);color:var(--green-text);border-color:rgba(111,143,104,.24)}
+.p.c-orange{background:var(--orange-pale);color:#8C6B4A;border-color:rgba(200,140,80,.26)}
+
+/* ==================== 一键匹配条 ==================== */
+.match{display:flex;align-items:center;gap:9px;margin-top:7px}
+.match h2{font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.01em;flex:none}
+.match-bar{
+  flex:1;height:40px;border-radius:20px;
+  background:linear-gradient(120deg,#F5F9EE,#EAF2E2);
+  border:1.2px solid rgba(111,143,104,.22);
+  box-shadow:0 4px 10px rgba(111,143,104,.10);
+  display:flex;align-items:center;gap:8px;padding:0 6px 0 12px;
+}
+.match-bar .pill{
+  flex:none;padding:4px 11px;border-radius:10px;
+  background:rgba(255,255,255,.72);border:1.1px solid rgba(111,143,104,.22);
+  font-size:10.5px;font-weight:800;color:var(--green-text);
+}
+.match-bar .desc{flex:1;min-width:0;font-size:9.5px;line-height:1.35;color:#8A9682}
+.match-bar .start{
+  flex:none;width:52px;height:32px;border-radius:16px;
+  background:linear-gradient(160deg,#FAE6D2,#F1D4B6);
+  border:1.2px solid rgba(190,120,55,.28);
+  box-shadow:0 2px 6px rgba(205,175,140,.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11.5px;font-weight:800;color:#7A5A3C;
+}
+
+/* ==================== 四卡 2x2（浅绿渐变底） ==================== */
+.grid2{display:flex;gap:8px;margin-top:7px}
+.grid2 + .grid2{margin-top:6px}
+.gcard{
+  flex:1;min-width:0;padding:7px 10px 7px;
+  border-radius:19px 21px 18px 20px;
+  background:linear-gradient(150deg,var(--green-card-1),var(--green-card-2));
+  border:1.2px solid rgba(111,143,104,.20);
+  box-shadow:0 6px 16px rgba(140,163,126,.13);
+  display:flex;flex-direction:column;position:relative;
+}
+.gcard:nth-child(odd){transform:rotate(-.4deg)}
+.gcard:nth-child(even){transform:rotate(.4deg)}
+/* 情绪引导卡：暖米底，和绿卡区分开，但同样是彩铅浓度 */
+.gcard--warm{
+  background:linear-gradient(150deg,#FDF6EC,#F6E8D6);
+  border-color:rgba(178,158,132,.26);
+}
+.gcard--warm .desc{color:#8C7A62}
+.gcard--warm .tag{background:#F3E2CC;border-color:rgba(190,160,125,.26);color:#8C6B4A}
+
+/* 卡头：标题 + 右侧小字/图标 */
+.gcard .hd{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.gcard .hd .ttl{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.01em;line-height:1.3}
+.gcard .hd .meta{font-size:9px;color:rgba(74,55,40,.42);flex:none;padding-top:1px}
+.gcard .hd .ic{width:30px;height:30px;flex:none;margin-top:-2px}
+.gcard .hd .ic img{width:100%;height:100%;display:block}
+
+/* 卡内小标签 */
+.gcard .tag{
+  align-self:flex-start;margin-top:6px;padding:2px 8px;border-radius:8px;
+  background:var(--orange-pale);border:1px solid rgba(200,140,80,.24);
+  font-size:9px;font-weight:800;color:#8C6B4A;
+}
+.gcard .desc{margin-top:5px;font-size:9.5px;line-height:1.4;color:#7E8A72;flex:1;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+
+/* 加入按钮 */
+.gcard .join{
+  align-self:flex-end;margin-top:6px;width:54px;height:24px;border-radius:12px;
+  background:linear-gradient(160deg,#FAE6D2,#F1D4B6);
+  border:1.1px solid rgba(190,120,55,.26);
+  box-shadow:0 2px 6px rgba(205,175,140,.18);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:800;color:#7A5A3C;
+}
+
+/* ==================== 情绪引导卡（新增） ==================== */
+.mood{
+  display:flex;align-items:center;gap:10px;margin-top:7px;
+  padding:8px 11px;border-radius:17px 19px 16px 18px;
+  background:linear-gradient(140deg,#FDF4E8,#F8E9D6);
+  border:1.2px solid rgba(200,150,100,.24);
+  box-shadow:0 6px 16px rgba(200,165,125,.14);
+  transform:rotate(.3deg);
+}
+.mood .ic{width:34px;height:34px;flex:none}
+.mood .ic img{width:100%;height:100%;display:block}
+.mood .tx{flex:1;min-width:0}
+.mood .tx h3{font-size:12.5px;font-weight:800;color:#8C6B4A}
+.mood .tx p{margin-top:2px;font-size:9.5px;line-height:1.4;color:#9C856A}
+.mood--wiki{
+  background:linear-gradient(140deg,#FAF5EA,#F2EBDC);
+  border-color:rgba(178,158,132,.24);
+  box-shadow:0 6px 16px rgba(170,150,120,.13);
+}
+.mood--wiki .tx h3{color:#6B5B4A}
+.mood--wiki .tx p{color:#9A8A78}
+.mood--wiki .go{color:#7A6A55;border-color:rgba(178,158,132,.30)}
+.mood .go{
+  flex:none;padding:6px 12px;border-radius:12px;
+  background:rgba(255,255,255,.78);border:1.1px solid rgba(200,150,100,.28);
+  font-size:10.5px;font-weight:800;color:#8C6B4A;
+}
+
+/* ==================== 底部导航 ==================== */
+.tabbar{
+  position:absolute;left:14px;right:14px;bottom:14px;height:56px;z-index:20;
+  border-radius:24px 26px 23px 25px;
+  background:rgba(255,253,248,.92);
+  border:1.4px solid var(--line-soft);
+  box-shadow:0 10px 26px rgba(150,128,104,.11);
+  display:flex;align-items:center;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.tab{flex:1;height:56px;display:flex;align-items:center;justify-content:center;position:relative;z-index:21}
+.tab img{width:22px;height:22px;display:block;opacity:.62}
+.tab.on img{opacity:1}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+
+    <div class="statusbar">
+      <span>11:47</span>
+      <span class="r">
+        <span style="font-size:9px">149 KB/s</span>
+        <span class="bars"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="batt"></span>
+      </span>
+    </div>
+
+    <div class="content">
+
+      <!-- 居中标题 -->
+      <div class="app-title">同频</div>
+
+      <!-- 问候行 -->
+      <div class="greet">
+        <h1>早上好，Mu-Rain</h1>
+        <div class="avatar">Mu-Rain</div>
+      </div>
+
+      <!-- 手账主卡 -->
+      <div class="hero-wrap">
+        <div class="paper-bg b3"></div>
+        <div class="paper-bg b2"></div>
+        <div class="paper-bg b1"></div>
+
+        <section class="hero">
+          <div class="hero-top">
+            <div class="hero-art"><img src="icons-journal/out/hero-art-trim.png" alt=""></div>
+            <div class="hero-copy">
+              <h2>今天，和谁一起？</h2>
+              <p>找到同频搭子，把日常变有趣</p>
+            </div>
+          </div>
+          <div class="hero-btn"><span>去发布</span></div>
+          <div class="hero-tags">
+            <div class="t"><i class="d"></i><span>自习搭子</span></div>
+            <div class="t"><i class="d"></i><span>运饭搭子</span></div>
+            <div class="t"><i class="d"></i><span>看展搭子</span></div>
+            <div class="t"><i class="d"></i><span>散步搭子</span></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 搭子大厅 · 标签云 -->
+      <div class="sec-head">
+        <h2>搭子大厅</h2>
+        <div class="cloud">
+          <span class="p c-cream">饭饭搭子</span>
+          <span class="p c-green">运动搭子</span>
+          <span class="p c-cream">看展搭子</span>
+          <span class="p c-orange">散步搭子</span>
+          <span class="p c-cream">自习搭子</span>
+          <span class="p c-orange">一饭搭子</span>
+        </div>
+      </div>
+
+      <!-- 一键匹配 -->
+      <div class="match">
+        <h2>搭子大厅</h2>
+        <div class="match-bar">
+          <span class="pill">一键匹配</span>
+          <span class="desc">按标签找出最合拍需求</span>
+          <span class="start">开始</span>
+        </div>
+      </div>
+
+      <!-- 四卡 2x2（内容已替换为应用真实功能） -->
+      <div class="grid2">
+        <section class="gcard">
+          <div class="hd">
+            <div class="ttl">番茄钟自习</div>
+            <div class="meta">学习</div>
+          </div>
+          <span class="tag">25 分钟专注</span>
+          <p class="desc">记录每一次自习，看自己的专注时长</p>
+          <div class="join">去学习</div>
+        </section>
+        <section class="gcard">
+          <div class="hd">
+            <div class="ttl">训练计划</div>
+            <div class="ic"><img src="icons-journal/out/avocado.png" alt=""></div>
+          </div>
+          <p class="desc">动作库 + 计划，记下每次训练</p>
+          <div class="join">去健身</div>
+        </section>
+      </div>
+
+      <div class="grid2">
+        <section class="gcard">
+          <div class="hd">
+            <div class="ttl">我的搭子</div>
+            <div class="ic"><img src="icons-journal/out/tag.png" alt=""></div>
+          </div>
+          <span class="tag">专属称呼</span>
+          <p class="desc">给每个搭子起一个只有你懂的名字</p>
+          <div class="join">去管理</div>
+        </section>
+        <section class="gcard gcard--warm">
+          <div class="hd">
+            <div class="ttl">今天心情还好吗</div>
+            <div class="ic"><img src="icons-journal/out/heart.png" alt=""></div>
+          </div>
+          <span class="tag">情绪引导</span>
+          <p class="desc">找个人说说话，不用组织语言</p>
+          <div class="join">聊一聊</div>
+        </section>
+      </div>
+
+      <!-- 每日百科（与情绪引导互换位置） -->
+      <section class="mood mood--wiki">
+        <div class="ic"><img src="icons-journal/out/bulb.png" alt=""></div>
+        <div class="tx">
+          <h3>每日百科 · 学习</h3>
+          <p>番茄钟：25 分钟专注 + 5 分钟起身</p>
+        </div>
+        <span class="go">展开</span>
+      </section>
+
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="tabbar">
+      <div class="tab on"><img src="icons-journal/out/home.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/globe.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/chat.png" alt=""></div>
+      <div class="tab"><img src="icons-journal/out/user.png" alt=""></div>
+    </nav>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>同频 · 聊天（手账换肤）</title>
+<link rel="stylesheet" href="journal-base.css">
+<style>
+/* ==========================================================================
+   聊天详情 —— 只换肤，不改结构
+   原结构：顶部会话条（返回/头像/名字/学校/搭子标签）+ 消息区 + 输入区
+   换肤要点：气泡改成「便利贴」质感，自己=浅绿贴纸，对方=米白纸片
+   ========================================================================== */
+:root{
+  --o-line:#E8A85C;
+  --o-line-soft:#EFC08A;
+  --bub-other:#FDF7E8;
+  --bub-me:#EAF2DE;
+}
+
+/* ==================== 顶部会话条 ==================== */
+.chat-bar{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 12px 9px;border-radius:18px;
+  background:var(--paper);
+  border:1.4px solid var(--o-line-soft);
+  box-shadow:0 5px 14px rgba(200,165,125,.14);
+}
+.bar-back{font-size:20px;color:#7A5A3C;line-height:1;padding:0 2px;flex:none}
+.bar-left{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.c-ava{
+  width:36px;height:36px;border-radius:50%;flex:none;
+  background:linear-gradient(150deg,#C3D4DE,#93AEBD);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;color:#fff;
+  border:1.8px solid #fff;box-shadow:0 3px 8px rgba(150,128,104,.20);
+}
+.bar-main{flex:1;min-width:0}
+.convo-name{display:block;font-size:13.5px;font-weight:800;color:#3D2E20}
+.bar-sub{display:block;margin-top:1px;font-size:9px;color:var(--ink-2)}
+.chat-tag{
+  flex:none;padding:2px 8px;border-radius:8px;font-size:8.5px;font-weight:800;
+  background:var(--green-pill);color:var(--green-text);
+  border:1px solid rgba(111,143,104,.26);
+}
+
+/* ==================== 消息区 ==================== */
+.chat-scroll{position:relative;margin-top:10px;
+  height:calc(844px - 44px - 52px - 64px - 24px);
+  overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:2px 0}
+
+/* 时间分隔 */
+.time-sep{align-self:center;font-size:9px;color:var(--ink-3);
+  background:rgba(178,158,132,.12);padding:3px 10px;border-radius:9px}
+
+.msg-row{display:flex;gap:7px;align-items:flex-start}
+.msg-row.is-me{flex-direction:row-reverse}
+
+/* 消息头像 */
+.m-ava{
+  width:28px;height:28px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:#fff;
+  border:1.5px solid #fff;box-shadow:0 2px 6px rgba(150,128,104,.18);
+}
+.m-ava.me{background:linear-gradient(150deg,#C3D4DE,#93AEBD)}
+.m-ava.peer{background:linear-gradient(150deg,#CBDCC1,#A3BE96)}
+
+/* 气泡列 */
+.bubble-col{max-width:236px;display:flex;flex-direction:column;gap:3px}
+.is-me .bubble-col{align-items:flex-end}
+
+/* 气泡：便利贴质感 */
+.bubble{
+  position:relative;padding:9px 12px;
+  border-radius:16px 18px 15px 4px;
+  background:var(--bub-other);
+  border:1.3px solid var(--o-line-soft);
+  box-shadow:0 4px 10px rgba(200,165,125,.16);
+  font-size:11.5px;line-height:1.6;color:#4A3828;
+}
+/* 自己的：浅绿便利贴，圆角方向相反 */
+.is-me .bubble{
+  border-radius:18px 16px 4px 15px;
+  background:var(--bub-me);
+  border-color:rgba(111,143,104,.26);
+  box-shadow:0 4px 10px rgba(140,163,126,.16);
+}
+
+/* 气泡时间 */
+.bubble-time{font-size:8.5px;color:var(--ink-3);padding:0 3px}
+/* 已读 */
+.bubble-read{font-size:8.5px;color:var(--green-text);padding:0 3px;font-weight:700}
+
+/* 语音气泡 */
+.bubble--voice{display:flex;align-items:center;gap:6px;min-width:74px}
+.voice-icon{font-size:10px;color:#7A5A3C}
+.voice-dur{font-size:10.5px;color:#5C4634}
+
+/* 撤回 */
+.recall-row{align-self:center;font-size:9px;color:var(--ink-3);
+  background:rgba(178,158,132,.10);padding:3px 10px;border-radius:9px}
+
+/* ==================== 输入区 ==================== */
+.chat-input{
+  position:absolute;left:14px;right:14px;bottom:16px;z-index:20;
+  height:52px;border-radius:26px;
+  display:flex;align-items:center;gap:8px;padding:0 8px 0 14px;
+  background:var(--paper);
+  border:1.4px solid var(--o-line-soft);
+  box-shadow:0 8px 20px rgba(200,165,125,.18);
+}
+.pic-btn{font-size:15px;flex:none;opacity:.7}
+.input{
+  flex:1;min-width:0;height:34px;border:none;background:transparent;outline:none;
+  font-size:12px;color:#3D2E20;font-family:inherit;
+}
+.input::placeholder{color:var(--ink-3)}
+.send-btn{
+  flex:none;width:56px;height:34px;border-radius:17px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11.5px;font-weight:800;color:#7A5A3C;
+  background:linear-gradient(150deg,#F7D9BC,#EFC198);
+  border:1.2px solid rgba(200,160,120,.32);
+  box-shadow:0 3px 8px rgba(205,175,140,.20);
+}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="screen">
+
+    <div class="statusbar">
+      <span>11:47</span>
+      <span class="r">
+        <span style="font-size:9px">149 KB/s</span>
+        <span class="bars"><i></i><i></i><i></i><i></i></span>
+        <span>5G</span>
+        <span class="batt"></span>
+      </span>
+    </div>
+
+    <div class="content" style="height:calc(844px - 44px - 18px);padding:0 14px;">
+
+      <!-- 顶部会话条 -->
+      <div class="chat-bar">
+        <span class="bar-back">‹</span>
+        <div class="bar-left">
+          <div class="c-ava">柚</div>
+          <div class="bar-main">
+            <span class="convo-name">小柚</span>
+            <span class="bar-sub">南湖大学 · 新闻传播学院</span>
+          </div>
+        </div>
+        <span class="chat-tag">自习搭子</span>
+      </div>
+
+      <!-- 消息区 -->
+      <div class="chat-scroll">
+
+        <div class="time-sep">今天 19:08</div>
+
+        <!-- 对方 -->
+        <div class="msg-row">
+          <div class="m-ava peer">柚</div>
+          <div class="bubble-col">
+            <div class="bubble">你到图书馆了吗？我在五楼社科区靠窗这边</div>
+            <span class="bubble-time">19:08</span>
+          </div>
+        </div>
+
+        <!-- 自己 -->
+        <div class="msg-row is-me">
+          <div class="m-ava me">M</div>
+          <div class="bubble-col">
+            <div class="bubble">刚上来，在电梯口。哪一排？</div>
+            <span class="bubble-time">19:09</span>
+            <span class="bubble-read">已读</span>
+          </div>
+        </div>
+
+        <!-- 对方 -->
+        <div class="msg-row">
+          <div class="m-ava peer">柚</div>
+          <div class="bubble-col">
+            <div class="bubble">最里面那排，有个绿色的杯子放在桌上，很好认</div>
+            <span class="bubble-time">19:09</span>
+          </div>
+        </div>
+
+        <!-- 自己：语音 -->
+        <div class="msg-row is-me">
+          <div class="m-ava me">M</div>
+          <div class="bubble-col">
+            <div class="bubble bubble--voice">
+              <span class="voice-icon">▶</span>
+              <span class="voice-dur">0:06</span>
+            </div>
+            <span class="bubble-time">19:10</span>
+          </div>
+        </div>
+
+        <!-- 对方 -->
+        <div class="msg-row">
+          <div class="m-ava peer">柚</div>
+          <div class="bubble-col">
+            <div class="bubble">哈哈听到了，你慢慢来。我先看第三章</div>
+            <span class="bubble-time">19:10</span>
+          </div>
+        </div>
+
+        <!-- 撤回 -->
+        <div class="recall-row">你撤回了一条消息</div>
+
+        <!-- 自己 -->
+        <div class="msg-row is-me">
+          <div class="m-ava me">M</div>
+          <div class="bubble-col">
+            <div class="bubble">到了，坐你斜对面。带了两杯咖啡，一杯给你</div>
+            <span class="bubble-time">19:12</span>
+            <span class="bubble-read">已读</span>
+          </div>
+        </div>
+
+        <!-- 对方 -->
+        <div class="msg-row">
+          <div class="m-ava peer">柚</div>
+          <div class="bubble-col">
+            <div class="bubble">谢谢！那今天的目标是第三章看完，谁先摸手机谁请客</div>
+            <span class="bubble-time">19:12</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 输入区 -->
+      <div class="chat-input">
+        <span class="pic-btn">▣</span>
+        <span class="pic-btn">◉</span>
+        <input class="input" placeholder="说点什么…">
+        <span class="send-btn">发送</span>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

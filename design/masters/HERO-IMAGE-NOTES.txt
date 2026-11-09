@@ -1,0 +1,14 @@
+hero-catdog.jpg 处理记录（2026-11-03）
+
+源图（未裁切母版）：dazi-app/design/masters/hero-catdog-master.jpg  1920x1078
+现用图：本目录 hero-catdog.jpg  1832x990  439127 字节  JPEG q82 baseline subsampling=2
+
+为什么裁 44px：原插画自带一圈米白画纸边框（实测四边纸色占比 1.00），
+而首页 .hero 用的是 background cover，纵向刚好铺满 300px 高，
+上下两条 26px 的边框会原样出现在头图框的上下沿 —— 就是用户看到的白边。
+四边各裁 44px 后，四边纸色占比降到 0.02-0.12（剩下的只是浅色云朵/草地，不是边框）。
+
+改图片后必须同步：dazi-app/app/unpackage/dist/dev/app-plus/static/hero-catdog.jpg
+否则真机运行的是旧副本；并且要检查两边都不是 0 字节（曾因 HBuilderX 正在编译时覆盖得到 0 字节副本，头图整块空白）。
+
+同一张图还被 pages/login/login.vue 与 pages/register/register.vue 当背景用。
