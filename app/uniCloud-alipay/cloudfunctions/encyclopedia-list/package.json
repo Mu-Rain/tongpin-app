@@ -1,0 +1,7 @@
+{
+  "name": "encyclopedia-list",
+  "version": "1.0.0",
+  "description": "cloud function: encyclopedia-list",
+  "main": "index.js",
+  "dependencies": {}
+}

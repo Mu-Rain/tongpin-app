@@ -1,0 +1,6 @@
+{
+  "name": "admin-reports",
+  "version": "1.0.0",
+  "description": "Admin report queue and handling",
+  "main": "index.js"
+}

@@ -1,0 +1,6 @@
+{
+  "name": "admin-users",
+  "version": "1.0.0",
+  "description": "Admin user list, ban and unban",
+  "main": "index.js"
+}

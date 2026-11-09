@@ -27,6 +27,7 @@
       <view class="item" v-for="r in list" :key="r._id" @tap="openDetail(r)">
         <view class="item-head">
           <text class="item-name">{{ r.real_name || '未填姓名' }}</text>
+          <text class="item-badge" v-if="r.kind === 'change_school'">换校</text>
           <text class="item-mode">{{ r.mode === 'card' ? '学生证' : '学信网' }}</text>
         </view>
         <text class="item-school">{{ r.school_name }}</text>
@@ -57,6 +58,16 @@
           <view class="kv">
             <text class="k">学校</text>
             <text class="v">{{ detail.request.school_name }}</text>
+          </view>
+          <!-- 只有换校申请多这一行：审核员得知道用户原来在哪所学校，
+               否则会拿新材料当首次认证去核对。老数据没有 kind，这一行不渲染。 -->
+          <view class="kv" v-if="detail.request.kind === 'change_school'">
+            <text class="k">换校</text>
+            <text class="v"
+              >{{ detail.request.from_school_name
+                ? detail.request.from_school_name + ' → ' + detail.request.school_name
+                : detail.request.school_name }}</text
+            >
           </view>
           <view class="kv">
             <text class="k">学号</text>
@@ -203,10 +214,17 @@ export default {
 
     async pass() {
       if (this.acting) return;
+      const req = this.detail.request;
+      const isChange = req.kind === 'change_school';
+      // 换校通过的副作用是把用户的 school_id 直接换掉（同校频道归属会变），
+      // 所以弹窗必须点明"旧校 → 新校"，沿用首次认证那句措辞会让人看不出区别。
+      const content = isChange
+        ? `确认把「${req.real_name}」的认证学校从「${req.from_school_name || '（原学校未知）'}」换成「${req.school_name}」？通过后用户会转入新学校的同校频道。`
+        : `确认「${req.real_name}」是 ${req.school_name} 的在校学生？通过后会发认证徽章并解锁同校频道。`;
       const ok = await new Promise((resolve) => {
         uni.showModal({
-          title: '确认通过',
-          content: `确认「${this.detail.request.real_name}」是 ${this.detail.request.school_name} 的在校学生？通过后会发认证徽章并解锁同校频道。`,
+          title: isChange ? '确认更换学校' : '确认通过',
+          content,
           success: (res) => resolve(res.confirm)
         });
       });
@@ -269,7 +287,7 @@ export default {
   min-height: 100vh;
   padding: 24rpx 32rpx 80rpx;
   box-sizing: border-box;
-  background-color: var(--tf-bg);
+  background-color: transparent;
 }
 
 /* ---- 无权限 ---- */
@@ -309,7 +327,9 @@ export default {
 .tab {
   padding: 14rpx 32rpx;
   border-radius: 999rpx;
-  background-color: var(--tf-card);
+  background: var(--tf-card);
+  backdrop-filter: var(--tf-glass-blur);
+  -webkit-backdrop-filter: var(--tf-glass-blur);
 }
 
 .tab--on {
@@ -330,7 +350,7 @@ export default {
   display: block;
   padding: 60rpx 0;
   font-size: 25rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   text-align: center;
 }
 
@@ -339,7 +359,9 @@ export default {
   position: relative;
   padding: 26rpx;
   margin-bottom: 16rpx;
-  background-color: var(--tf-card);
+  background: var(--tf-card);
+  backdrop-filter: var(--tf-glass-blur);
+  -webkit-backdrop-filter: var(--tf-glass-blur);
   border-radius: 24rpx;
   display: flex;
   flex-direction: column;
@@ -367,6 +389,17 @@ export default {
   border-radius: 8rpx;
 }
 
+/* 「换校」标识：复用 .item-mode 那枚徽章的尺寸语言（同 padding/圆角/字号），
+   只把文字色压深一档，免得和学生证/学信网那枚看成一类信息。 */
+.item-badge {
+  padding: 4rpx 14rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: var(--tf-primary-deep);
+  background-color: var(--tf-primary-soft);
+  border-radius: 8rpx;
+}
+
 .item-school {
   font-size: 25rpx;
   color: var(--tf-text-2);
@@ -382,12 +415,12 @@ export default {
 
 .item-no {
   font-size: 22rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 
 .item-time {
   font-size: 22rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 
 .item-status {
@@ -427,7 +460,9 @@ export default {
   max-height: 86vh;
   padding: 32rpx 32rpx 40rpx;
   box-sizing: border-box;
-  background-color: var(--tf-card);
+  background: var(--tf-card);
+  backdrop-filter: var(--tf-glass-blur);
+  -webkit-backdrop-filter: var(--tf-glass-blur);
   border-radius: 32rpx 32rpx 0 0;
   z-index: 21;
   display: flex;
@@ -450,7 +485,7 @@ export default {
 
 .sheet-close {
   font-size: 32rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   padding: 0 8rpx;
 }
 
@@ -464,7 +499,7 @@ export default {
   flex-direction: row;
   justify-content: space-between;
   padding: 18rpx 0;
-  border-bottom: 2rpx solid var(--tf-line);
+  border-bottom: 2rpx solid var(--tf-line-soft);
 }
 
 .k {
@@ -496,7 +531,7 @@ export default {
   display: block;
   font-size: 22rpx;
   line-height: 1.7;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   margin-bottom: 16rpx;
 }
 
@@ -541,6 +576,6 @@ export default {
   display: block;
   padding: 24rpx 0;
   font-size: 24rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 </style>

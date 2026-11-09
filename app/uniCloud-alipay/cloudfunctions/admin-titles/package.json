@@ -1,0 +1,6 @@
+{
+  "name": "admin-titles",
+  "version": "1.0.0",
+  "description": "Admin title list and upsert",
+  "main": "index.js"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "encyclopedia-daily",
+  "version": "1.0.0",
+  "description": "cloud function: encyclopedia-daily",
+  "main": "index.js",
+  "dependencies": {}
+}

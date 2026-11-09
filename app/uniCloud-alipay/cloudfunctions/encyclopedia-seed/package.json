@@ -1,0 +1,7 @@
+{
+  "name": "encyclopedia-seed",
+  "version": "1.0.0",
+  "description": "cloud function: encyclopedia-seed",
+  "main": "index.js",
+  "dependencies": {}
+}

@@ -1,0 +1,6 @@
+{
+  "name": "admin-encyclopedia",
+  "version": "1.0.0",
+  "description": "Admin encyclopedia list, create, update and soft remove",
+  "main": "index.js"
+}
