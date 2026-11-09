@@ -1,0 +1,6 @@
+{
+  "name": "friend-unlink",
+  "version": "1.0.0",
+  "description": "Remove the friendship row between two users",
+  "main": "index.js"
+}

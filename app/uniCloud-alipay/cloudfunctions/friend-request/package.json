@@ -1,0 +1,6 @@
+{
+  "name": "friend-request",
+  "version": "1.0.0",
+  "description": "Friend requests: send/list/accept/reject/cancel with friendship and conversation bootstrap",
+  "main": "index.js"
+}

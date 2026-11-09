@@ -1,0 +1,6 @@
+{
+  "name": "title-equip",
+  "version": "1.0.0",
+  "description": "Equip or unequip one obtained title for the current user",
+  "main": "index.js"
+}

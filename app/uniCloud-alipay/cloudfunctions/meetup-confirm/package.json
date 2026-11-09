@@ -1,0 +1,6 @@
+{
+  "name": "meetup-confirm",
+  "version": "1.0.0",
+  "description": "约局确认状态机（accept / decline）",
+  "main": "index.js"
+}

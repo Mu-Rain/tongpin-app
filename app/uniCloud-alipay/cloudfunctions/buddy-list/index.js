@@ -3,7 +3,12 @@
 /**
  * 我的搭子列表 —— pages/buddy/buddy.vue 用
  *
- * 入参：{ token, status? }   status 不传默认只查 'active'
+ * 入参：{ token, status?, count_only? }
+ *   status     不传默认只查 'active'
+ *   count_only true 时只算个数（list 恒为空数组，total 是人数），首页数字卡用。
+ *              ★ 存在的意义：首页那个「我的搭子」必须和本列表的 total 同一个口径，
+ *              否则「已是好友不算搭子」这条规则就得在 home-summary 里再实现一遍，
+ *              两份实现迟早对不上（2026-11-02 首页显示 2、这里显示 1 就是这么来的）。
  * 出参：{ code, msg, data: { list: [人…], total } }
  *
  * ★★ 一条 list 项 = **一个人**，不是一条关系。
@@ -17,7 +22,8 @@
  *   / conversation_id                ← 一对人全局唯一，点卡片进这一个
  *   / last_text / last_at            ← 会话摘要
  *   / since                          ← 最早一段关系的建立时间
- *   / tags: [{relation_id, label, color, category, category_label, since}]
+ *   / tags: [{relation_id, label, color, category, category_label, since,
+ *             my_done, peer_done, done_count}]   ← 后三个是搭子完成态（按我的身份取）
  *                                    ← 我给他起的**全部**标签（每个都是一段关系）
  *   / tag_count
  *   —— 兼容字段：my_label / my_label_color / relation_id 取 tags[0]，
@@ -38,6 +44,8 @@ const dbCmd = db.command
 const DB_USERS = 'uni-id-users'
 const DB_RELATIONS = 'buddy_relations'
 const DB_CONVERSATIONS = 'conversations'
+const DB_REMARKS = 'user_remarks'
+const DB_FRIENDS = 'friendships'
 
 /** category → 中文名（与 card-publish 的 TYPE_ENUM 一致） */
 const CATEGORY_LABEL = {
@@ -71,6 +79,32 @@ async function getUserByToken(token) {
   return r.data[0]
 }
 
+/**
+ * 头像换临时链接：库里存 cloud:// fileID，<image> 只认 http。
+ * 一页一次批量换；失败保留原值，头像裂了不该让整页列表报错。
+ */
+async function resolveListAvatars(list) {
+  const ids = []
+  for (let i = 0; i < list.length; i++) {
+    const u = list[i].avatar
+    if (typeof u === 'string' && u.indexOf('cloud://') === 0 && ids.indexOf(u) < 0) ids.push(u)
+  }
+  if (!ids.length) return
+  try {
+    const res = await uniCloud.getTempFileURL({ fileList: ids })
+    const fl = (res && res.fileList) || []
+    const map = {}
+    for (let i = 0; i < fl.length; i++) {
+      if (fl[i] && fl[i].tempFileURL) map[fl[i].fileID] = fl[i].tempFileURL
+    }
+    for (let i = 0; i < list.length; i++) {
+      if (map[list[i].avatar]) list[i].avatar = map[list[i].avatar]
+    }
+  } catch (err) {
+    console.warn('[buddy-list] 头像换链失败', err && err.message)
+  }
+}
+
 exports.main = async (event) => {
   try {
     const me = await getUserByToken(str(event.token))
@@ -89,9 +123,58 @@ exports.main = async (event) => {
       .limit(200)
       .get()
 
-    const rels = relRes.data
+    let rels = relRes.data
     if (!rels.length) {
       return { code: 0, msg: 'ok', data: { list: [], total: 0 } }
+    }
+
+    // —— 1.5) ★ 已是好友的，搭子不再列出（设计规则，见 docs/03-database.md §2.3）——
+    // 好友关系比搭子更强，成为好友时搭子应当被收起来。
+    // friend-request 的 accept 分支会在成为好友那一刻把 active 搭子改成 ended，
+    // 但有两种顺序它会漏掉：① 先成为好友、之后才冒出搭子（老版本允许好友点邀请）；
+    // ② 搭子由别的路径在好友建立之后写进来。
+    // 数据层由 buddy-invite 的 repair 兜底清理，但那是要手动跑的运维动作；
+    // 这个列表必须**立刻正确**，所以在读的时候就剔掉。只剔返回值，不改数据库。
+    // 整段 try/catch：friendships 表还没建时当作"都不是好友"，列表照常返回。
+    try {
+      const frRes = await db
+        .collection(DB_FRIENDS)
+        .where(dbCmd.or([{ user_a_id: me._id }, { user_b_id: me._id }]))
+        .limit(200)
+        .get()
+      const friendSet = {}
+      ;(frRes.data || []).forEach(function (f) {
+        const o = f.user_a_id === me._id ? f.user_b_id : f.user_a_id
+        if (o) friendSet[o] = true
+      })
+      if (Object.keys(friendSet).length) {
+        rels = rels.filter(function (r) {
+          const o = r.user_a_id === me._id ? r.user_b_id : r.user_a_id
+          return !friendSet[o]
+        })
+        if (!rels.length) {
+          return { code: 0, msg: 'ok', data: { list: [], total: 0 } }
+        }
+      }
+    } catch (e) {
+      /* friendships 表不存在 / 查询失败：当作都不是好友，照常返回 */
+    }
+
+    // —— 1.6) 只要个数（首页数字卡）——
+    // 走的是和下面完全同一批 rels（已经剔掉"已是好友"的人），只是不取用户资料、
+    // 不查会话与备注。所以 首页那个数 === 这个列表的 total，不会再有第二种口径。
+    if (event && event.count_only === true) {
+      const seenPeer = {}
+      let n = 0
+      rels.forEach(function (r) {
+        const oid = r.user_a_id === me._id ? r.user_b_id : r.user_a_id
+        if (!oid) return
+        // 用 hasOwnProperty 而不是 if (seenPeer[oid])：id 撞上 Object 原型键名会被误跳过
+        if (Object.prototype.hasOwnProperty.call(seenPeer, oid)) return
+        seenPeer[oid] = 1
+        n++
+      })
+      return { code: 0, msg: 'ok', data: { list: [], total: n } }
     }
 
     // —— 2) 对方 id 一次性收集（按人去重；同一个人可能来自多条关系）——
@@ -120,6 +203,27 @@ exports.main = async (event) => {
       })
       .get()
     for (const u of uRes.data) userMap[u._id] = u
+
+    // —— 3.5) 用户备注：我给这些人各起过什么名字 ——
+    // ★ 与 my_label 是两回事：my_label 是"这段搭子关系叫什么"（一段关系一个），
+    //   remark 是"这个人叫什么"（一个人一个）。两个都要下发，前端各显示各的。
+    // ★ 整段 try/catch：user_remarks 是新集合，可能还没建（第一次写入才自动创建）。
+    //   查询失败绝不能把搭子列表打挂 —— 降级成"全部没有备注"即可。
+    const remarkMap = {}
+    try {
+      const rRes = await db
+        .collection(DB_REMARKS)
+        .where({ owner_id: me._id, target_user_id: dbCmd.in(otherIds) })
+        .limit(200)
+        .get()
+      for (const row of rRes.data) {
+        const t = str(row.target_user_id)
+        const text = str(row.remark)
+        if (t && text) remarkMap[t] = text
+      }
+    } catch (e) {
+      // 表不存在 / 查询报错：静默降级，一行都不影响
+    }
 
     // —— 4) 会话：★ 按「一对人」找，不按关系找 ——
     // 一对人全局只有一条 direct 会话（丙方案），它同时服务于这个人名下的所有关系。
@@ -257,13 +361,18 @@ exports.main = async (event) => {
         const created = r.created_at || 0
         if (created && (!since || created < since)) since = created
         // 没起过名字的关系也留一条占位，用户才知道"这段关系还没起名"
+        // 完成态必须按身份取：user_a_id < user_b_id 是入库约定，我可能是 a 也可能是 b，
+        // 写死 done_a 会让 b 侧用户永远看不到自己那一半（buddy-complete 各写自己那一位）。
         tags.push({
           relation_id: r._id,
           label: label,
           color: color,
           category: cat,
           category_label: CATEGORY_LABEL[cat] || '搭子',
-          since: created
+          since: created,
+          my_done: !!(g.iAmA ? r.done_a : r.done_b),
+          peer_done: !!(g.iAmA ? r.done_b : r.done_a),
+          done_count: pickInt(r.done_count, 0)
         })
       })
 
@@ -276,6 +385,8 @@ exports.main = async (event) => {
         // —— 人的信息 ——
         other_user_id: otherId,
         name: other.nickname || '同学',
+        // 我给这个人起的备注（不是搭子标签，没有就是空串）
+        remark: remarkMap[otherId] || '',
         avatar: other.avatar_url || other.avatar || '',
         school: other.school_name || other.school || '',
         credit: credit,
@@ -294,6 +405,8 @@ exports.main = async (event) => {
         my_label_color: first.color || ''
       }
     })
+
+    await resolveListAvatars(list)
 
     // 最近聊过的排前面，没聊过的按最早建立关系时间
     list.sort(function (a, b) {

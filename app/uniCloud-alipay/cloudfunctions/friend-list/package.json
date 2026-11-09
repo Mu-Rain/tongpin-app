@@ -1,0 +1,6 @@
+{
+  "name": "friend-list",
+  "version": "1.0.0",
+  "description": "Friend list with peer profile, conversation id and pending request count",
+  "main": "index.js"
+}

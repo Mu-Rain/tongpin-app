@@ -1,0 +1,6 @@
+{
+  "name": "buddy-unlink",
+  "version": "1.0.0",
+  "description": "End one buddy relation (either side can end it, second confirmation is on the client)",
+  "main": "index.js"
+}

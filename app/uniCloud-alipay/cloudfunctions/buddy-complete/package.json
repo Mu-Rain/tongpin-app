@@ -1,0 +1,6 @@
+{
+  "name": "buddy-complete",
+  "version": "1.0.0",
+  "description": "Both sides confirm a buddy relation is done (bilateral credit +2)",
+  "main": "index.js"
+}

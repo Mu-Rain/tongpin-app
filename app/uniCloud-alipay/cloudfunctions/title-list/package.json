@@ -1,0 +1,6 @@
+{
+  "name": "title-list",
+  "version": "1.0.0",
+  "description": "Title wall with auto-grant and newly earned list for the current user",
+  "main": "index.js"
+}

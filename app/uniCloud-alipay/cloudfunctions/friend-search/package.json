@@ -1,0 +1,6 @@
+{
+  "name": "friend-search",
+  "version": "1.0.0",
+  "description": "Search users by user_no or nickname with friend and request state",
+  "main": "index.js"
+}

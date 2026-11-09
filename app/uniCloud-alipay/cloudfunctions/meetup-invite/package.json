@@ -1,0 +1,6 @@
+{
+  "name": "meetup-invite",
+  "version": "1.0.0",
+  "description": "发起约局：发一张结构化卡片消息并建 meetup",
+  "main": "index.js"
+}

@@ -41,8 +41,8 @@
     <block v-else>
       <view class="card" v-for="c in list" :key="c.card_id" @tap="openDetail(c)">
         <view class="card-top">
-          <image class="avatar-img" v-if="c.owner.avatar" :src="c.owner.avatar" mode="aspectFill" />
-          <view class="avatar" v-else>{{ (c.owner.nickname || '同').slice(0, 1) }}</view>
+          <image class="avatar-img ava-fade" v-if="avaSrcOf('m' + c.card_id)" :class="{ 'ava-fade--in': avaReadyOf('m' + c.card_id) }" :src="avaSrcOf('m' + c.card_id)" mode="aspectFill" @load="avaOnLoad('m' + c.card_id)" @error="avaOnError('m' + c.card_id, c.owner && c.owner.avatar)" />
+          <view class="avatar-img" v-else />
           <view class="top-main">
             <view class="name-row">
               <text class="name">{{ c.owner.nickname }}</text>
@@ -81,6 +81,8 @@
 </template>
 
 <script>
+import { avatarFadeMixin } from '@/common/avatar/avatarCache.js'
+
 const TYPE_LABEL = {
   study: '学习',
   fitness: '健身',
@@ -94,6 +96,7 @@ const PAGE_LIMIT = 10
 const MAX_EXCLUDE = 200
 
 export default {
+  mixins: [avatarFadeMixin],
   data() {
     return {
       typeLabels: TYPE_LABEL,
@@ -187,6 +190,7 @@ export default {
         this.needTags = !!d.need_tags
         this.hint = d.hint || ''
         this.list = d.list || []
+        this.avaSync(this.list, (c) => 'm' + c.card_id, (c) => (c.owner && c.owner.avatar) || '')
       } catch (e) {
         this.list = []
         this.needTags = false
@@ -268,7 +272,7 @@ export default {
 .head-sub {
   display: block;
   font-size: 25rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   margin-top: 8rpx;
 }
 .head-note {
@@ -280,8 +284,12 @@ export default {
 
 /* —— 卡片 —— */
 .card {
-  background-color: var(--tf-card);
-  border-radius: 20rpx;
+  background: var(--tf-card);
+  border: 2rpx solid var(--tf-card-line);
+  border-radius: var(--tf-r-lg);
+  box-shadow: var(--tf-glass-shadow);
+  backdrop-filter: var(--tf-glass-blur);
+  -webkit-backdrop-filter: var(--tf-glass-blur);
   padding: 28rpx;
   margin-bottom: 20rpx;
 }
@@ -328,10 +336,12 @@ export default {
 }
 .verified {
   font-size: 20rpx;
-  color: var(--tf-success);
-  background-color: rgba(18, 183, 106, 0.1);
-  padding: 2rpx 10rpx;
-  border-radius: 6rpx;
+  font-weight: 600;
+  color: var(--tf-mint);
+  background-color: rgba(201, 221, 196, 0.46);
+  border: 2rpx solid rgba(95, 130, 108, 0.24);
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
   margin-right: 10rpx;
 }
 .same {
@@ -344,7 +354,7 @@ export default {
 .meta {
   display: block;
   font-size: 24rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   margin-top: 6rpx;
 }
 
@@ -364,7 +374,7 @@ export default {
 .score-label {
   display: block;
   font-size: 20rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   margin-top: 2rpx;
 }
 
@@ -392,7 +402,7 @@ export default {
 }
 .tags-label {
   font-size: 22rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   margin: 0 12rpx 12rpx 0;
 }
 .tag {
@@ -412,11 +422,11 @@ export default {
   justify-content: space-between;
   margin-top: 16rpx;
   padding-top: 18rpx;
-  border-top: 2rpx solid var(--tf-line);
+  border-top: 2rpx solid var(--tf-line-soft);
 }
 .foot-item {
   font-size: 23rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 .foot-item--go {
   color: var(--tf-primary);
@@ -424,7 +434,9 @@ export default {
 
 /* —— 状态框（加载中 / 无标签 / 失败 / 空结果）—— */
 .state-box {
-  background-color: var(--tf-card);
+  background: var(--tf-card);
+  backdrop-filter: var(--tf-glass-blur);
+  -webkit-backdrop-filter: var(--tf-glass-blur);
   border-radius: 20rpx;
   padding: 80rpx 40rpx;
   text-align: center;
@@ -439,7 +451,7 @@ export default {
 .state-hint {
   display: block;
   font-size: 26rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
   line-height: 1.6;
   margin-bottom: 36rpx;
 }
@@ -468,10 +480,19 @@ export default {
 }
 .more-text {
   font-size: 25rpx;
-  color: var(--tf-text-3);
+  color: var(--tf-text-2);
 }
 .more-text--tap {
   color: var(--tf-primary);
   font-weight: 600;
+}
+
+/* 头像淡入：解码完成（@load）后整体亮起。用同一个节点切 class，不摘挂 —— 摘挂会让头像位塌一下再回来 */
+.ava-fade {
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+}
+.ava-fade--in {
+  opacity: 1;
 }
 </style>

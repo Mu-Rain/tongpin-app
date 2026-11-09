@@ -16,6 +16,21 @@
  *   relations    我和他之间的全部 active 关系，每条带双方标签
  *   apply_state  我和他之间能不能再建一段新关系
  *   common       我们共同的标签，用来解释"为什么推荐你俩"
+ *
+ *   ★ 另有两个**顶层**字段（故意不塞进 apply_state，扁平好取）：
+ *     is_friend            布尔，我和对方是不是好友（语义与位置都不动）
+ *     friend_request_state "friend" | "out_pending" | "in_pending" | "none"
+ *     my_remark            我给对方起的备注，没有就是 ''
+ *     ★ relation_state     'friend' | 'unfriended' | 'none' —— is_friend 是二态，
+ *       分不出「从来不是好友」和「当过好友又解除」，这一项补第三态。
+ *       判定优先级：friendships 有行 → friend；否则 friend_unlinks 有行 →
+ *       unfriended；否则 none。查 friend_unlinks 失败（表还没建）一律降级 none。
+ *     看自己的主页时三者恒为 false / 'none' / ''。
+ *
+ *   ★ 黑名单两个**顶层**字段（契约 §4.4）：
+ *     is_blocked  我拉黑了他
+ *     blocked_me  他拉黑了我
+ *     查不到 user_blocks（表还没建）时都当 false。
  */
 
 const db = uniCloud.database()
@@ -29,6 +44,12 @@ const DB_CARDS = 'cards'
 const DB_APPLICATIONS = 'applications'
 const DB_USER_TAGS = 'user_tags'
 const DB_TAGS = 'tags'
+const DB_FRIENDS = 'friendships'
+const DB_UNLINKS = 'friend_unlinks'
+const DB_REQUESTS = 'friend_requests'
+const DB_REMARKS = 'user_remarks'
+const DB_BLOCKS = 'user_blocks'
+const DB_TITLES = 'titles'
 
 // ★ 公开资料白名单。加字段记得加在这里，
 //   同时要同步 user-login / user-me / card-detail / card-list 的返回。
@@ -49,6 +70,9 @@ const PUBLIC_FIELDS = {
   verify_status: true,
   credit: true,
   credit_score: true,
+  // ★ 契约 §3.3：白名单漏字段是本项目踩过的坑（05 文档踩坑记录第 8 条），
+  //   漏了这个，下面的 current_title 永远解析成 null。
+  current_title_id: true,
   titles: true,
   createTime: true
 }
@@ -61,6 +85,30 @@ const CATEGORY_LABEL = {
   meal: '吃饭',
   sport: '运动',
   other: '其他'
+}
+
+// 称号名解析的内置兜底（契约 §3.3）：titles 表查不到时用它，两边都没有才给 null。
+// 与 title-list 里那份内容相同 —— 云函数目录自包含，只能各存一份。
+// 与 title-list 的 DEFAULT_TITLES 同源：titles 表里没有这条时靠它把 code 翻成名字。
+// ★ 加称号时三处一起改：title-list（定义+条件）、title-equip、user-profile（名字兜底）。
+const TITLE_NAMES = {
+  profile_complete: '资料完整',
+  verify_pass: '学生已认证',
+  first_buddy: '第一次搭成',
+  tag_3: '标签新手',
+  tag_8: 'コレクター',
+  tag_10: 'DECATHLON',
+  card_1: '首发选手',
+  card_5: '大厅常客',
+  card_10: 'HEADLINER',
+  friend_1: 'はじまり',
+  friend_5: 'SQUAD',
+  post_1: '第一次冒泡',
+  post_10: 'CHATTERBOX',
+  credit_110: '信誉良好',
+  credit_130: 'GOLD STANDARD',
+  buddy_3: '搭子收割机',
+  buddy_10: 'LEGEND'
 }
 
 function fail(msg, code) {
@@ -83,6 +131,27 @@ async function getUserByToken(token) {
   return r.data.length ? r.data[0] : null
 }
 
+/**
+ * 按 code 解析佩戴中的称号：titles 表 → 内置 3 条 → null（契约 §3.3）。
+ * 查表失败（表还没建）只当查不到，绝不让整页主页报错。
+ */
+async function resolveCurrentTitle(code) {
+  const c = str(code)
+  if (!c) return null
+  try {
+    const r = await db.collection(DB_TITLES).where({ code: c }).limit(1).get()
+    const row = (r.data && r.data[0]) || null
+    if (row && row.active !== false) {
+      const name = str(row.name)
+      if (name) return { code: c, name: name }
+    }
+  } catch (e) {
+    /* titles 表还没建：落到内置 */
+  }
+  const name = TITLE_NAMES[c]
+  return name ? { code: c, name: name } : null
+}
+
 /** 别人的信誉分只给区间，不给精确值，避免"信誉分歧视" */
 function creditBand(c) {
   if (c >= 95) return '极好'
@@ -90,6 +159,23 @@ function creditBand(c) {
   if (c >= 70) return '良好'
   if (c >= 60) return '一般'
   return '较低'
+}
+
+/**
+ * 单个 fileID 换临时链接（头像用）。
+ * 换失败返回原值：头像裂了只是少张图，不值得让整个主页报错。
+ */
+async function toTempUrl(fileId) {
+  const id = str(fileId)
+  if (id.indexOf('cloud://') !== 0) return id
+  try {
+    const res = await uniCloud.getTempFileURL({ fileList: [id] })
+    const it = (res && res.fileList && res.fileList[0]) || {}
+    return it.tempFileURL || id
+  } catch (e) {
+    console.warn('[user-profile] 头像换链失败', e && e.message)
+    return id
+  }
 }
 
 exports.main = async (event) => {
@@ -112,10 +198,13 @@ exports.main = async (event) => {
     const credit = pickInt(u.credit_score, pickInt(u.credit, 80))
     const verified = !!(u.is_verified || u.schoolVerified || u.verify_status === 'approved')
 
+    // 库里存 fileID，<image> 只认 http 链接，这里换一次
+    const avatarUrl = await toTempUrl(str(u.avatar_url) || str(u.avatar))
+
     const user = {
       user_id: u._id,
       nickname: str(u.nickname) || '同学',
-      avatar: str(u.avatar_url) || str(u.avatar),
+      avatar: avatarUrl,
       school: str(u.school_name) || str(u.school),
       school_id: str(u.school_id),
       bio: str(u.bio),
@@ -127,11 +216,26 @@ exports.main = async (event) => {
       joined_at: u.createTime || 0
     }
 
+    // 佩戴中的称号（契约 §3.3）：只新增这一项，其余出参结构零改动。
+    // 看自己 / 看别人都是同一套逻辑 —— 读的都是被查看者的 current_title_id。
+    const currentTitle = await resolveCurrentTitle(u.current_title_id)
+
     // ============ 我和他之间的关系 ============
     const isMe = !!me && me._id === targetId
     let relations = []
     let conversationId = ''
     let applyState = { can_invite: false, reason: '', pending_invite_id: '' }
+
+    // 三个新增顶层字段的默认值：没登录 / 看自己主页 / 查询失败都落到这里。
+    // 前端拿到的一定是"确定的值"，不用再判 undefined。
+    let isFriend = false
+    // 三态：'friend' | 'unfriended' | 'none'。默认 none，查询失败也落这里
+    let relationState = 'none'
+    let friendRequestState = 'none'
+    let myRemark = ''
+    // 黑名单两个方向的默认值：没登录 / 看自己主页 / 查询失败都落到 false
+    let isBlocked = false
+    let blockedMe = false
 
     if (me && !isMe) {
       const ua = me._id < targetId ? me._id : targetId
@@ -194,6 +298,111 @@ exports.main = async (event) => {
         }
       })
 
+      // ============ 好友状态 / 备注 ============
+      // ★ 三段各自 try/catch：friendships / friend_requests / user_remarks
+      //   对新代码是既有表，但 user_remarks 是这次新建的集合 ——
+      //   表还没建（第一次写入才自动创建）时查询会报错，
+      //   绝不能因为一个备注把整页主页打挂。降级成默认值即可。
+      try {
+        const fRes = await db
+          .collection(DB_FRIENDS)
+          .where({ user_a_id: ua, user_b_id: ub })
+          .limit(1)
+          .get()
+        if (fRes.data.length) {
+          isFriend = true
+          relationState = 'friend'
+          friendRequestState = 'friend'
+        }
+      } catch (e) {
+        /* 表不存在 / 查询失败：当作不是好友，主页其余内容照常 */
+      }
+
+      // ★ 不是好友时才查 friend_unlinks：确认是「当过好友又解除」（三态的第三态）。
+      //   friendships 行被删掉之后就只剩这张表有痕迹，is_friend:false 说明不了什么。
+      // ★ 独立 try/catch：friend_unlinks 是这次新建的集合，表还没建时查询会报错，
+      //   降级为 'none'（当作从来不是好友），主页其余内容照常。
+      if (!isFriend) {
+        try {
+          const uRes = await db
+            .collection(DB_UNLINKS)
+            .where({ user_a_id: ua, user_b_id: ub })
+            .limit(1)
+            .get()
+          if (uRes.data.length) relationState = 'unfriended'
+        } catch (e) {
+          /* friend_unlinks 表不存在 / 查询失败：降级 none */
+        }
+      }
+
+      // ★ 已经是好友 → 把搭子关系从这页清空（设计规则：好友关系比搭子更强，
+      //   成为好友时搭子应当被收起来，见 docs/03-database.md §2.3）。
+      //   friend-request 的 accept 分支会在「成为好友」那一刻把 active 搭子改成 ended，
+      //   但有两种顺序它会漏掉：
+      //     ① 先成为好友，之后才冒出搭子关系（老版本允许好友之间点邀请，正是这个顺序）；
+      //     ② 搭子关系是在好友建立之后被别的路径写进来的。
+      //   数据层由 buddy-invite 的 repair 兜底清理，但那是要手动跑的运维动作；
+      //   这一页必须**立刻正确**，所以这里做展示层拦截 —— 不管库里还有没有脏关系，
+      //   好友之间这一页都不显示搭子。清的是返回值，不改数据库。
+      if (isFriend) {
+        relations = []
+      }
+
+      // 已经是好友就不用再查申请了；不是好友才需要分辨"谁在等谁"
+      if (!isFriend) {
+        try {
+          const outRes = await db
+            .collection(DB_REQUESTS)
+            .where({ from_user_id: me._id, to_user_id: targetId, status: 'pending' })
+            .limit(1)
+            .get()
+          if (outRes.data.length) {
+            friendRequestState = 'out_pending'
+          } else {
+            const inRes = await db
+              .collection(DB_REQUESTS)
+              .where({ from_user_id: targetId, to_user_id: me._id, status: 'pending' })
+              .limit(1)
+              .get()
+            if (inRes.data.length) friendRequestState = 'in_pending'
+          }
+        } catch (e) {
+          /* 同上：降级成 none，不影响主页 */
+        }
+      }
+
+      try {
+        const rRes = await db
+          .collection(DB_REMARKS)
+          .where({ owner_id: me._id, target_user_id: targetId })
+          .limit(1)
+          .get()
+        if (rRes.data.length) myRemark = str(rRes.data[0].remark)
+      } catch (e) {
+        /* user_remarks 是新集合，表还没建时留空串 */
+      }
+
+      // ============ 黑名单（单向，两个方向都要看）============
+      // ★ 整段 try/catch：user_blocks 是新集合，第一次写入才自动创建，
+      //   表还没建时查询会报错 —— 都当 false，主页其余内容照常显示。
+      try {
+        const blkMe = await db
+          .collection(DB_BLOCKS)
+          .where({ owner_id: me._id, target_id: targetId })
+          .limit(1)
+          .get()
+        if (blkMe.data.length) isBlocked = true
+
+        const blkHim = await db
+          .collection(DB_BLOCKS)
+          .where({ owner_id: targetId, target_id: me._id })
+          .limit(1)
+          .get()
+        if (blkHim.data.length) blockedMe = true
+      } catch (e) {
+        /* 表不存在 / 查询失败：两个方向都当没拉黑 */
+      }
+
       // ============ 还能不能再建一段 ============
       const myCredit = pickInt(me.credit_score, pickInt(me.credit, 80))
       const hisCredit = credit
@@ -208,7 +417,22 @@ exports.main = async (event) => {
         .limit(1)
         .get()
 
-      if (myCredit < 60) {
+      // ★ 判定顺序（契约 §4.4-4）：is_self → is_blocked → blocked_me
+      //   → isFriend → 信誉 → pendingInv → can_invite = true。
+      //   黑名单排在最前：拉黑了就不该再出现任何「邀请」入口，
+      //   否则用户点了按钮才被 buddy-invite 挡回来。
+      //
+      // ★ 好友优先判：已经是好友了就不该再邀请搭子。
+      //   好友关系比搭子更强，允许再挂一条只会在两个页面重复显示同一个人；
+      //   buddy-invite 的 invite 分支也有同样的拦截，两处都要有 ——
+      //   前端按钮听这个 can_invite，云函数还得能挡住直接构造的请求。
+      if (isBlocked) {
+        applyState.reason = '你已把对方加入黑名单'
+      } else if (blockedMe) {
+        applyState.reason = '对方不接收你的邀请'
+      } else if (isFriend) {
+        applyState.reason = '你们已经是好友了，不用再邀请搭子'
+      } else if (myCredit < 60) {
         applyState.reason = '你的信誉分低于 60，暂时不能邀请搭子'
       } else if (hisCredit < 60) {
         applyState.reason = '对方信誉分过低，暂不支持邀请'
@@ -332,7 +556,22 @@ exports.main = async (event) => {
         conversation_id: conversationId,
         apply_state: applyState,
         common: common,
-        cards: cards
+        cards: cards,
+        // ★ 三个**顶层**字段：故意不塞进 apply_state。
+        //   apply_state 是"能不能再建一段搭子关系"的开关集合，
+        //   而好友状态是整页的标题区要用的，扁平放更好取。
+        //   ★ my_remark 与 relations[].my_label 是两回事，别混：
+        //     my_label 是"这段搭子关系叫什么"，my_remark 是"这个人叫什么"。
+        is_friend: isFriend,
+        friend_request_state: friendRequestState,
+        my_remark: myRemark,
+        // ★ 黑名单两个方向（契约 §4.4-1）。看自己主页 / 没登录恒为 false
+        is_blocked: isBlocked,
+        blocked_me: blockedMe,
+        // ★ 契约 §3.3 唯一新增的顶层字段，追加在最后，既有字段顺序不动
+        current_title: currentTitle,
+        // ★ 三态好友关系，同样追加在最后：既有字段名/顺序/语义零改动
+        relation_state: relationState
       }
     }
   } catch (e) {

@@ -42,7 +42,8 @@ async function getUserByToken(db, token) {
   const user = res.data && res.data[0];
   if (!user) return null;
   if (user.tokenExpire && user.tokenExpire < Date.now()) return null;
-  if (user.status === 0) return null;
+  // 两种封禁口径都认：数字 0 是早期数据，'banned' 是 M4 后台写的（见 user-login:74）
+  if (user.status === 0 || user.status === 'banned') return null;
   return user;
 }
 

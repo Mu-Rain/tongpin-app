@@ -1,0 +1,6 @@
+{
+  "name": "credit-list",
+  "version": "1.0.0",
+  "description": "Credit score, level and event list for the current user",
+  "main": "index.js"
+}

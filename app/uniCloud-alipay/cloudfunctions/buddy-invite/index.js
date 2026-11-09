@@ -15,6 +15,7 @@
  *   action = 'reject'  { token, invite_id }
  *   action = 'cancel'  { token, invite_id }
  *   action = 'list'    { token, box: 'in' | 'out' }
+ *   action = 'repair'  { token }   一次性清理「邀请没被接受却已 active」的历史脏关系
  *
  * 出参：{ code, msg, data }
  *
@@ -36,6 +37,7 @@ const dbCmd = db.command
 
 const DB_USERS = 'uni-id-users'
 const DB_INVITES = 'buddy_invites'
+const DB_FRIENDS = 'friendships'
 const DB_RELATIONS = 'buddy_relations'
 const DB_CONVERSATIONS = 'conversations'
 const DB_MEMBERS = 'conversation_members'
@@ -181,18 +183,29 @@ async function ensureConversation(userA, userB, now) {
  * ★ 按 (user_a_id, user_b_id, category) 判重 —— 同一对人在**同一类型**下只能有一条，
  *   但不同类型可以有多条。这就是允许多搭子的地方。
  */
-async function ensureRelation(userA, userB, category, sourceId, now) {
+async function ensureRelation(userA, userB, category, sourceId, now, status) {
   const ua = userA < userB ? userA : userB
   const ub = userA < userB ? userB : userA
+  // ★ 默认 active；发邀请时传 'pending' —— 关系只有在对方同意后才生效。
+  const wantStatus = status === 'pending' ? 'pending' : 'active'
 
+  // ★ 判重必须把 pending 一起看：
+  //   发邀请时先建 pending，accept 时再拿同一个 (ua,ub,category) 找回来激活。
+  //   如果这里只查 active，accept 会找不到那条 pending 而另建一条 active，
+  //   于是同一个 category 下同时躺着 pending + active 两条，标签落在错的那条上。
   const exist = await db
     .collection(DB_RELATIONS)
-    .where({ user_a_id: ua, user_b_id: ub, category: category, status: 'active' })
+    .where({
+      user_a_id: ua,
+      user_b_id: ub,
+      category: category,
+      status: dbCmd.in(['active', 'pending'])
+    })
     .limit(1)
     .get()
 
   if (exist.data.length) {
-    return { relationId: exist.data[0]._id, created: false }
+    return { relationId: exist.data[0]._id, created: false, status: exist.data[0].status }
   }
 
   const relRes = await db.collection(DB_RELATIONS).add({
@@ -206,13 +219,59 @@ async function ensureRelation(userA, userB, category, sourceId, now) {
     label_b: '',
     label_a_color: '',
     label_b_color: '',
-    status: 'active',
+    status: wantStatus,
     ended_by: '',
     ended_at: 0,
     created_at: now
   })
 
-  return { relationId: relRes.id, created: true }
+  return { relationId: relRes.id, created: true, status: wantStatus }
+}
+
+/**
+ * 把「发邀请时预建的 pending 关系」收掉。
+ * ★ 只动 pending，绝不碰 active —— active 是已经成立的搭子关系，
+ *   可能来自别的邀请或卡片申请，跟这条邀请无关。
+ * ★ 用 source_invite_id 精确定位；老数据没有这个字段时退化成按
+ *   (ua, ub, category) 找 pending，两个条件都限定 pending，误伤面很小。
+ */
+async function dropPendingRelation(inv, now, reason) {
+  try {
+    const ua = inv.from_user_id < inv.to_user_id ? inv.from_user_id : inv.to_user_id
+    const ub = inv.from_user_id < inv.to_user_id ? inv.to_user_id : inv.from_user_id
+
+    let rels = (
+      await db
+        .collection(DB_RELATIONS)
+        .where({ source_invite_id: inv._id, status: 'pending' })
+        .limit(10)
+        .get()
+    ).data
+
+    if (!rels.length) {
+      rels = (
+        await db
+          .collection(DB_RELATIONS)
+          .where({
+            user_a_id: ua,
+            user_b_id: ub,
+            category: inv.category || 'other',
+            status: 'pending'
+          })
+          .limit(10)
+          .get()
+      ).data
+    }
+
+    for (let i = 0; i < rels.length; i++) {
+      await db
+        .collection(DB_RELATIONS)
+        .doc(rels[i]._id)
+        .update({ status: 'ended', ended_by: reason, ended_at: now })
+    }
+  } catch (e) {
+    /* 关系收不掉不影响邀请状态本身，下次邀请会被 pending 判重挡住而已 */
+  }
 }
 
 function normalizeCategory(raw) {
@@ -222,6 +281,104 @@ function normalizeCategory(raw) {
 
 exports.main = async (event) => {
   try {
+    // ============ 修复历史脏数据 ============
+    // ★ 老版本在「发邀请」时就建了 status:'active' 的关系，于是邀请还没被接受，
+    //   对方主页就显示了「你们之间的搭子」。代码已改成先建 pending，
+    //   但**已经写进库里的 active 脏关系不会自己消失**，需要跑一次这里。
+    // 两条收掉规则（任一命中即收）：
+    //   ① 两人已经是好友 —— 好友关系比搭子更强，不该再挂搭子（设计规则，见 03-database.md）
+    //   ② 它指向的邀请不是 accepted —— 这段关系从来没被对方同意过，是预建的脏数据
+    // ★ 这个分支必须在 getUserByToken 之前：运维修复时在 HBuilderX 里
+    //   「上传并运行」默认不带 token，带 token 就进不来了。
+    //   有 token 只修自己参与的，没 token 扫全表（一次性运维操作）。
+    // ★ 也接受「完全不带参数」的调用：HBuilderX 里「上传并运行」默认不带参数，
+    //   用户最容易做到的就是这个动作。无 action 无 token 的调用原本只会 401 失败，
+    //   这里改成跑一次清理，幂等、安全。
+    if (str(event.action) === 'repair' || (!str(event.action) && !str(event.token))) {
+      const now0 = Date.now()
+      const LIMIT = 200
+      const meForRepair = str(event.token)
+        ? (await db.collection(DB_USERS).where({ token: str(event.token) }).limit(1).get()).data[0]
+        : null
+
+      const baseWhere = { source_type: 'invite', status: 'active' }
+      const conds = []
+      if (meForRepair) {
+        conds.push(Object.assign({ user_a_id: meForRepair._id }, baseWhere))
+        conds.push(Object.assign({ user_b_id: meForRepair._id }, baseWhere))
+      } else {
+        conds.push(baseWhere)
+      }
+
+      const mine = []
+      for (let c = 0; c < conds.length; c++) {
+        const r = await db.collection(DB_RELATIONS).where(conds[c]).limit(LIMIT).get()
+        ;(r.data || []).forEach(function (x) { mine.push(x) })
+      }
+
+      const fixed = []
+      const skipped = []
+      for (let i = 0; i < mine.length; i++) {
+        const r = mine[i]
+
+        // ★ 规则一（优先）：两人已经是好友 → 这段搭子必须收掉。
+        //   这是 docs/03-database.md §2.3 早就定下的规则：「成为好友时把双方
+        //   active 的搭子置 ended」。friend-request 的 accept 分支执行了它，
+        //   但如果好友关系先建立、搭子是之后才冒出来的，就没人执行 ——
+        //   老代码允许好友之间点邀请，正好制造出这种顺序。
+        //   所以这里补一次：只要现在是好友，不管邀请状态如何，一律收掉。
+        const ra = str(r.user_a_id)
+        const rb = str(r.user_b_id)
+        let areFriends = false
+        if (ra && rb) {
+          try {
+            const fr = await db
+              .collection(DB_FRIENDS)
+              .where({ user_a_id: ra, user_b_id: rb })
+              .limit(1)
+              .get()
+            areFriends = !!(fr.data && fr.data.length)
+          } catch (e) {
+            /* friendships 表还没建：当作不是好友，走下面的规则二 */
+          }
+        }
+        if (areFriends) {
+          await db.collection(DB_RELATIONS).doc(r._id).update({
+            status: 'ended',
+            ended_by: 'friend',
+            ended_at: now0
+          })
+          fixed.push(r._id)
+          continue
+        }
+
+        // ★ 规则二：邀请从来没被同意过 → 这条关系是预建的脏数据，收掉。
+        const invId = str(r.source_invite_id)
+        if (!invId) { skipped.push({ id: r._id, why: 'no_source_invite' }); continue }
+        let st = ''
+        try {
+          const invRes = await db.collection(DB_INVITES).doc(invId).get()
+          st = invRes.data && invRes.data.length ? str(invRes.data[0].status) : ''
+        } catch (e) {
+          skipped.push({ id: r._id, why: 'invite_missing' })
+          continue
+        }
+        if (st === 'accepted') continue // 正常成立、两人也还不是好友的搭子，保留
+        await db.collection(DB_RELATIONS).doc(r._id).update({
+          status: 'ended',
+          ended_by: 'repair',
+          ended_at: now0
+        })
+        fixed.push(r._id)
+      }
+
+      return {
+        code: 0,
+        msg: 'ok',
+        data: { scanned: mine.length, fixed: fixed.length, ids: fixed, skipped: skipped }
+      }
+    }
+
     const action = str(event.action) || 'invite'
     const me = await getUserByToken(str(event.token))
     const now = Date.now()
@@ -243,6 +400,23 @@ exports.main = async (event) => {
       const hisCredit = readCredit(to)
       if (myCredit < 60) fail('你的信誉分低于 60，暂时不能邀请搭子', 403)
       if (hisCredit < 60) fail('对方信誉分过低，暂不支持邀请', 403)
+
+      // ★ 已经是好友就不再邀请搭子：好友关系比搭子更强，
+      //   允许再挂一条搭子只会在两个页面上重复显示同一个人。
+      const ua = me._id < toUserId ? me._id : toUserId
+      const ub = me._id < toUserId ? toUserId : me._id
+      try {
+        const fRes = await db
+          .collection(DB_FRIENDS)
+          .where({ user_a_id: ua, user_b_id: ub })
+          .limit(1)
+          .get()
+        if (fRes.data.length) fail('你们已经是好友了，不用再邀请搭子', 409)
+      } catch (e) {
+        // fail() 抛出的错误必须继续抛，不能被这里吞掉
+        if (e && e.bizCode) throw e
+        /* friendships 表还没建：当作不是好友 */
+      }
 
       const label = cleanLabel(event.label)
       if (!label) fail('请给对方起一个搭子标签', 400)
@@ -301,12 +475,17 @@ exports.main = async (event) => {
       //   两侧标签全空，于是「B 起的名」凭空消失：B 自己那一侧也看不到，
       //   A 更看不到（A 侧本来就该等 A 自己起名）。
       //   结果就是用户描述的「B 进 A 主页只有类别名、A 进 B 主页什么都没有」。
-      //   现在提前把关系建出来，并把 label 写进**我的**那一侧；A 那一侧留空。
-      //   幂等：同一 (ua,ub,category) 已存在时 ensureRelation 直接复用，不会重复建。
+      //
+      // ★★ 但关系必须是 **pending**，不能是 active。
+      //   原来这里建的是 active，于是「邀请刚发出」对方进我主页就看见
+      //   「你们之间的搭子」+ 类别名，仿佛邀请已经被接受了 —— 用户反馈的
+      //   「点邀请后对方直接出现搭子标签」就是这个。
+      //   pending 关系只有本文件 accept 时才激活；user-profile / buddy-list /
+      //   buddy-tag 全都只认 status:'active'，所以 pending 期间谁都看不见。
       try {
-        const pre = await ensureRelation(me._id, toUserId, category, invRes.id, now)
+        const pre = await ensureRelation(me._id, toUserId, category, invRes.id, now, 'pending')
         const preDoc = (await db.collection(DB_RELATIONS).doc(pre.relationId).get()).data[0]
-        if (preDoc && preDoc.status === 'active') {
+        if (preDoc && preDoc.status === 'pending') {
           const iAmA = preDoc.user_a_id === me._id
           const myPatch = {}
           if (iAmA) {
@@ -398,6 +577,9 @@ exports.main = async (event) => {
       }
 
       patch.conversation_id = convId
+      // ★ 关系在这里才真正生效。invite 时建的是 pending（对方主页看不见），
+      //   只有对方点了同意才切成 active。幂等：本来就是 active 的再写一次也无害。
+      patch.status = 'active'
       await db.collection(DB_RELATIONS).doc(rel.relationId).update(patch)
 
       await db.collection(DB_INVITES).doc(inviteId).update({
@@ -454,6 +636,10 @@ exports.main = async (event) => {
         decided_at: now
       })
 
+      // ★ 收掉发邀请时预建的 pending 关系。不收的话它会一直挂着，
+      //   下次同 category 的邀请会复用这条脏关系（标签还是上次那个人起的）。
+      await dropPendingRelation(inv, now, 'rejected')
+
       return { code: 0, msg: 'ok', data: { status: 'rejected' } }
     }
 
@@ -473,6 +659,9 @@ exports.main = async (event) => {
         status: 'cancelled',
         decided_at: now
       })
+
+      // ★ 同上：撤回邀请也要把预建的 pending 关系收掉
+      await dropPendingRelation(inv, now, 'cancelled')
 
       return { code: 0, msg: 'ok', data: { status: 'cancelled' } }
     }
