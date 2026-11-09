@@ -1,6 +1,14 @@
 {
   "pages": [
     {
+      "path": "pages/splash/splash",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "同频",
+        "disableSwipeBack": true
+      }
+    },
+    {
       "path": "pages/login/login",
       "style": {
         "navigationStyle": "custom",
@@ -10,26 +18,58 @@
     {
       "path": "pages/register/register",
       "style": {
-        "navigationBarTitleText": "注册"
+        "navigationBarTitleText": "注册",
+        "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/index/index",
       "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "同频"
       }
     },
     {
       "path": "pages/mine/mine",
       "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/avatar-crop/avatar-crop",
+      "style": {
+        "navigationBarTitleText": "裁剪头像"
+      }
+    },
+    {
+      "path": "pages/avatar-system/avatar-system",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "系统头像"
       }
     },
     {
       "path": "pages/hall/hall",
       "style": {
         "navigationBarTitleText": "搭子大厅",
+        "navigationStyle": "custom",
         "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/settings/settings",
+      "style": {
+        "navigationBarTitleText": "设置",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/moments/moments",
+      "style": {
+        "navigationBarTitleText": "我的动态",
+        "navigationStyle": "custom",
+        "enablePullDownRefresh": false
       }
     },
     {
@@ -40,27 +80,56 @@
       }
     },
     {
+      "path": "pages/my-cards/my-cards",
+      "style": {
+        "navigationBarTitleText": "我的需求",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
       "path": "pages/publish/publish",
       "style": {
         "navigationBarTitleText": "发布搭子需求"
       }
     },
     {
+      "path": "pages/post/post",
+      "style": {
+        "navigationBarTitleText": "发动态"
+      }
+    },
+    {
+      "path": "pages/post-detail/post-detail",
+      "style": {
+        "navigationBarTitleText": "动态",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/detail/detail",
       "style": {
-        "navigationBarTitleText": "搭子详情"
+        "navigationBarTitleText": "搭子详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/favorites/favorites",
+      "style": {
+        "navigationBarTitleText": "我的收藏"
       }
     },
     {
       "path": "pages/messages/messages",
       "style": {
         "navigationBarTitleText": "消息",
+        "navigationStyle": "custom",
         "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/feed/feed",
       "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "同频圈"
       }
     },
@@ -75,6 +144,7 @@
       "path": "pages/buddy/buddy",
       "style": {
         "navigationBarTitleText": "我的搭子",
+        "navigationStyle": "custom",
         "enablePullDownRefresh": true
       }
     },
@@ -88,7 +158,8 @@
     {
       "path": "pages/tags/tags",
       "style": {
-        "navigationBarTitleText": "我的标签"
+        "navigationBarTitleText": "我的标签",
+        "navigationStyle": "custom"
       }
     },
     {
@@ -111,42 +182,123 @@
       }
     },
     {
-      "path": "pages/fitness/fitness",
+      "path": "pages/friend/friend",
       "style": {
-        "navigationBarTitleText": "健身",
+        "navigationBarTitleText": "我的好友",
         "enablePullDownRefresh": true
       }
     },
     {
-      "path": "pages/exercise/exercise",
+      "path": "pages/report/report",
       "style": {
-        "navigationBarTitleText": "动作库",
+        "navigationBarTitleText": "举报"
+      }
+    },
+    {
+      "path": "pages/credit/credit",
+      "style": {
+        "navigationBarTitleText": "信誉分",
         "enablePullDownRefresh": true
       }
     },
     {
-      "path": "pages/workout/workout",
+      "path": "pages/title/title",
       "style": {
-        "navigationBarTitleText": "训练中"
+        "navigationBarTitleText": "称号墙",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin-reports/admin-reports",
+      "style": {
+        "navigationBarTitleText": "举报处理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin-users/admin-users",
+      "style": {
+        "navigationBarTitleText": "用户列表",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin-encyclopedia/admin-encyclopedia",
+      "style": {
+        "navigationBarTitleText": "百科与称号",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin-titles/admin-titles",
+      "style": {
+        "navigationBarTitleText": "称号配置",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/encyclopedia/encyclopedia",
+      "style": {
+        "navigationBarTitleText": "每日百科",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/encyclopedia/detail",
+      "style": {
+        "navigationBarTitleText": "百科详情"
+      }
+    },
+    {
+      "path": "pages/liked/liked",
+      "style": {
+        "navigationBarTitleText": "我喜欢的",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/recommend/recommend",
+      "style": {
+        "navigationBarTitleText": "为你推荐",
+        "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/history/history",
       "style": {
-        "navigationBarTitleText": "训练记录",
+        "navigationBarTitleText": "观看历史",
         "enablePullDownRefresh": true
       }
     },
     {
-      "path": "pages/study/study",
+      "path": "pages/privacy/privacy",
       "style": {
-        "navigationBarTitleText": "学习"
+        "navigationBarTitleText": "隐私设置"
+      }
+    },
+    {
+      "path": "pages/blocked/blocked",
+      "style": {
+        "navigationBarTitleText": "黑名单"
+      }
+    },
+    {
+      "path": "pages/doc/doc",
+      "style": {
+        "navigationBarTitleText": "条款与政策"
+      }
+    },
+    {
+      "path": "pages/security/security",
+      "style": {
+        "navigationBarTitleText": "账号与安全"
       }
     }
   ],
   "tabBar": {
-    "color": "#8F959E",
-    "selectedColor": "#FF6B4A",
+    "custom": true,
+    "color": "#68717A",
+    "selectedColor": "#1F5CAC",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "black",
     "fontSize": "11px",
@@ -184,8 +336,8 @@
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "同频",
     "navigationBarBackgroundColor": "#FFFFFF",
-    "backgroundColor": "#F5F6F8",
-    "backgroundColorTop": "#F5F6F8",
-    "backgroundColorBottom": "#F5F6F8"
+    "backgroundColor": "#fff8ef",
+    "backgroundColorTop": "#fff8ef",
+    "backgroundColorBottom": "#fff8ef"
   }
 }
