@@ -377,7 +377,7 @@ exports.main = async (event) => {
       })
 
       const verified = !!(other.is_verified || other.schoolVerified)
-      const credit = pickInt(other.credit_score, pickInt(other.credit, 80))
+      const credit = pickInt(other.credit_score, pickInt(other.credit, 90))
 
       const first = tags[0] || {}
 
