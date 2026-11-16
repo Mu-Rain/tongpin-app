@@ -9,7 +9,7 @@
  * 入参：
  *   action = 'toggle' { token, card_id, target_type? }  已收藏则取消，未收藏则收藏
  *   action = 'check'  { token, card_id, target_type? }  只读状态，给详情页回显
- *   action = 'list'   { token, page?, page_size? }      我的收藏列表
+ *   action = 'list'   { token, page?, page_size?, target_type? }  我的收藏列表（type 缺省只列搭子卡）
  *
  * target_type：'card'（搭子卡，也是缺省）/ 'post'（同频圈动态），白名单外直接 400。
  *   历史收藏行没有这个字段，读侧一律当 'card'，不做数据迁移。
@@ -313,13 +313,19 @@ function buildPostItem(base, p, ownerMap, me) {
  * 排序按「收藏时间」而不是卡片发布时间 —— 用户来这里是翻自己存过的东西，
  * 最近存的应该在最上面。
  */
-async function list(me, page, pageSize) {
-  const countRes = await db.collection(DB_FAVORITES).where({ user_id: me._id }).count()
+async function list(me, page, pageSize, targetType) {
+  // 两套收藏分开列：'post' 只给同频圈，「我的收藏」只要搭子卡（历史行没有
+  // target_type 字段，读侧一律当 card —— 与 favoriteWhere 的口径保持一致）。
+  const where = {
+    user_id: me._id,
+    target_type: targetType === TARGET_POST ? TARGET_POST : dbCmd.neq(TARGET_POST)
+  }
+  const countRes = await db.collection(DB_FAVORITES).where(where).count()
   const total = countRes.total || 0
 
   const favRes = await db
     .collection(DB_FAVORITES)
-    .where({ user_id: me._id })
+    .where(where)
     .orderBy('created_at', 'desc')
     .skip((page - 1) * pageSize)
     .limit(pageSize)
@@ -429,7 +435,7 @@ async function list(me, page, pageSize) {
         status: 'removed',
         created_at: 0,
         deleted: true,
-        owner: { _id: '', nickname: '同学', avatar_url: '', school: '', is_verified: false, credit_score: 80, user_no: '' },
+        owner: { _id: '', nickname: '同学', avatar_url: '', school: '', is_verified: false, credit_score: 90, user_no: '' },
         tags: [],
         common_tags: [],
         common_tag_count: 0,
@@ -523,7 +529,8 @@ exports.main = async (event) => {
     if (pageSize > MAX_PAGE_SIZE) pageSize = MAX_PAGE_SIZE
     if (pageSize < 1) pageSize = DEFAULT_PAGE_SIZE
 
-    const data = await list(me, page, pageSize)
+    // 两个收藏入口共用这一条 list：target_type 决定要卡还是帖（缺省 card，兼容旧调用）
+    const data = await list(me, page, pageSize, pickTargetType(event.target_type))
     return { code: 0, msg: 'ok', data }
   } catch (e) {
     return { code: e.bizCode || 500, msg: e.message || '服务端错误' }

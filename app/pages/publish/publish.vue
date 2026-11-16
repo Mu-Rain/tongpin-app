@@ -51,6 +51,12 @@
           {{ title.length }}/30
         </text>
       </view>
+      <view class="ai-row">
+        <text class="ai-hint">说不清怎么写？让 AI 起个头，你再改</text>
+        <view class="ai-btn" @tap="goAiWrite">
+          <text class="ai-btn-txt">✨ 帮我写</text>
+        </view>
+      </view>
       <input
         class="input"
         v-model="title"
@@ -289,6 +295,9 @@ export default {
     if (this.editId) this.loadCard(this.editId)
   },
   onShow() {
+    // 从同频助手回来时先把草稿填进去。放在认证判断之前：填表单和「能不能发」无关，
+    // 未认证时草稿也照样留着，认证完再发
+    this.applyAiDraft()
     // 认证态可能刚从认证页返回就变了：先刷认证态，未认证不查配额
     this.verified = readVerified()
     if (!this.verified) return
@@ -502,11 +511,11 @@ export default {
           item.uploading = false
         }
       }
-      // 上传前先压一道（长边 1280 / 质量 60），失败就用原图，不阻断发布
+      // 上传前先压一道（长边 1280 / 质量 72），失败就用原图，不阻断发布
       if (typeof uni.compressImage !== 'function') return doUpload(item.localPath)
       uni.compressImage({
         src: item.localPath,
-        quality: 60,
+        quality: 72,
         compressedWidth: 1280,
         success: (res) => doUpload(res.tempFilePath),
         fail: () => doUpload(item.localPath)
@@ -521,6 +530,36 @@ export default {
       const urls = this.images.map((x) => x.localPath)
       if (!urls.length) return
       uni.previewImage({ urls, current: urls[i] })
+    },
+
+    /* AI 帮我写：把已经写下的标题/说明带过去，那边按「润色」口径生成而不是另写一版 */
+    goAiWrite() {
+      const q = ['from=publish', 'tab=write']
+      const t = String(this.title || '').trim()
+      const d = String(this.description || '').trim()
+      if (t) q.push('title=' + encodeURIComponent(t))
+      if (d) q.push('desc=' + encodeURIComponent(d))
+      uni.navigateTo({ url: '/pages/ai/ai?' + q.join('&') })
+    },
+
+    /* 从同频助手回来时把草稿填进表单。
+       只在真有草稿时动表单 —— 否则每次 onShow 都重写一遍，会把用户正在改的字冲掉。
+       标签按 id 填：本地字典里没有的 id（旧标签下架了）直接丢，不硬塞进 tag_ids 造成提交失败 */
+    applyAiDraft() {
+      let d = null
+      try {
+        d = uni.getStorageSync('ai_card_draft')
+      } catch (e) {
+        d = null
+      }
+      if (!d || !d.title) return
+      uni.removeStorageSync('ai_card_draft')
+      if (d.type && TYPES.some((t) => t.key === d.type)) this.type = d.type
+      this.title = String(d.title).slice(0, 30)
+      this.description = String(d.description || '').slice(0, 200)
+      if (Array.isArray(d.tag_ids)) this.tagIds = d.tag_ids.slice(0, 10)
+      if (d.location) this.locationName = String(d.location).slice(0, 20)
+      uni.showToast({ title: 'AI 草稿已填入，看一眼再发', icon: 'none', duration: 2200 })
     },
 
     async onSubmit() {
@@ -793,6 +832,32 @@ export default {
   font-size: 28rpx;
   color: var(--tf-text);
   margin-top: 16rpx;
+}
+
+/* AI 入口：一行说明 + 一颗按钮。颜色用已有的 --tf-ai-soft，
+   和首页卡片上的「AI」标记是同一个色，不新造颜色 */
+.ai-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14rpx;
+}
+.ai-hint {
+  flex: 1;
+  font-size: 22rpx;
+  color: var(--tf-text-3);
+  margin-right: 16rpx;
+}
+.ai-btn {
+  padding: 10rpx 22rpx;
+  background: var(--tf-ai-soft);
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+.ai-btn-txt {
+  font-size: 23rpx;
+  color: var(--tf-text);
+  font-weight: 600;
 }
 .textarea {
   background-color: var(--tf-bg);

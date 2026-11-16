@@ -114,12 +114,12 @@ const action = str(event.action) || 'apply'
       const ownerRes = await db.collection(DB_USERS).where({ _id: card.owner_id }).limit(1).get()
       const owner = ownerRes.data[0]
       if (!owner) fail('发布者不存在')
-      const ownerCredit = typeof owner.credit_score === 'number' ? owner.credit_score : typeof owner.credit === 'number' ? owner.credit : 80
-      if (ownerCredit < 60) fail('对方信誉分过低，暂不支持申请')
+      const ownerCredit = typeof owner.credit_score === 'number' ? owner.credit_score : typeof owner.credit === 'number' ? owner.credit : 90
+      if (ownerCredit < 90) fail('对方信誉分过低，暂不支持申请')
 
       // 我的信誉分（低信誉也不能乱申请）
-      const myCredit = typeof me.credit_score === 'number' ? me.credit_score : typeof me.credit === 'number' ? me.credit : 80
-      if (myCredit < 60) fail('你的信誉分低于 60，暂时不能申请搭子', 403)
+      const myCredit = typeof me.credit_score === 'number' ? me.credit_score : typeof me.credit === 'number' ? me.credit : 90
+      if (myCredit < 90) fail('你的信誉分低于 90，暂时不能申请搭子', 403)
 
       // 同一 (card, applicant) 只能有一条 pending —— 文档型没有联合唯一索引，只能这里查
       const dup = await db

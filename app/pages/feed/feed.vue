@@ -38,7 +38,7 @@
          ------------------------------------------------------------------
          竖向一条一条看；只有「多图」那条能在卡片内部横滑。
          两个方向的滑动互不干扰：横滑容器滑到边界不带动竖向滚动。
-         数据里没图时用类型渐变 + 标题做封面，保证不会出现空白块。
+         没有图的动态走文字卡：正文直接排，不占图片画幅。
          ================================================================== -->
     <view class="list">
       <view class="post" v-for="c in list" :key="c._id" @tap="openDetail(c)">
@@ -71,23 +71,23 @@
           <text class="p-type">{{ mediaLabel(c) }}</text>
         </view>
 
-        <!-- 图片区：有图轮播 / 无图渐变封面 -->
-        <view class="p-media" @tap.stop="previewPost(c)">
-          <scroll-view
+        <!-- 图片区：只在有图时渲染（多图轮播 / 单图）；没图的走下面的文字卡 -->
+        <view class="p-media" v-if="imgsOf(c).length" @tap.stop="previewPost(c)">
+          <!-- 多图用 swiper 而不是 scroll-view：
+               分页交给原生组件，抬手自动对齐，没有「滚到一半停住」和 ±1px 的缝；
+               :current 绑的是存档的页码，切频道回来直接落在那一张，不会从第一张滑过去。 -->
+          <swiper
             v-if="imgsOf(c).length > 1"
             class="media-rail"
-            scroll-x
-            :show-scrollbar="false"
-            @scroll="onMediaScroll($event, c)"
+            :current="mediaIdx[c._id] || 0"
+            :duration="260"
+            :circular="false"
+            @change="onMediaChange($event, c)"
           >
-            <image
-              v-for="(img, ii) in imgsOf(c)"
-              :key="ii"
-              class="media-item"
-              :src="img"
-              mode="aspectFill" lazy-load="true"
-            />
-          </scroll-view>
+            <swiper-item v-for="(img, ii) in imgsOf(c)" :key="ii">
+              <image class="media-item" :src="img" mode="aspectFill" lazy-load="true" />
+            </swiper-item>
+          </swiper>
 
           <image
             v-else-if="imgsOf(c).length === 1"
@@ -96,14 +96,15 @@
             mode="aspectFill" lazy-load="true"
           />
 
-          <view v-else class="media-ph ph--text">
-            <text class="ph-title">{{ brief(c.content) }}</text>
-          </view>
-
           <!-- 张数指示：只有多图才显示 -->
           <view class="media-count" v-if="imgsOf(c).length > 1">
             {{ (mediaIdx[c._id] || 0) + 1 }}/{{ imgsOf(c).length }}
           </view>
+        </view>
+
+        <!-- 纯文字卡：正文直接当内容排，不占图片画幅 -->
+        <view class="p-text" v-if="!imgsOf(c).length">
+          <text class="p-text-body">{{ c.content || '分享了一条动态' }}</text>
         </view>
 
         <!-- 操作栏：同频圈是发日常/动态的地方，不放「同频一下」——
@@ -117,7 +118,11 @@
             <text class="act-ic">💬</text>
             <text class="act-n">{{ c.comment_count || 0 }}</text>
           </view>
-          <view class="act act--save" @tap.stop="openShare(c)">
+          <!-- 收藏：作用在「这条动态」上，与搭子卡收藏分账（target_type=post） -->
+          <view class="act act--fav" @tap.stop="togglePostFavorite(c)">
+            <text class="act-ic act-star" :class="{ 'act-star--on': c.favorited }">{{ c.favorited ? '★' : '☆' }}</text>
+          </view>
+          <view class="act" @tap.stop="openShare(c)">
             <text class="act-ic">↗</text>
             <text class="act-n">分享</text>
           </view>
@@ -126,7 +131,7 @@
         <!-- 文案 -->
         <view class="p-body">
           <text class="p-likes" v-if="c.like_count > 0">{{ c.like_count }} 人喜欢</text>
-          <text class="p-desc">
+          <text class="p-desc" v-if="imgsOf(c).length">
             <text class="p-desc-name">{{ c.owner.nickname }}</text>{{ c.content }}
           </text>
         </view>
@@ -280,6 +285,7 @@ export default {
       pendingLoad: false,
       // 多图横滑当前停在第几张，key 是动态 id
       mediaIdx: {},
+
       // 分享面板：on = 挂在 DOM 上，show = 已滑入（分两帧切才有过渡）
       // loaded = 本次会话已经拉过好友列表（懒加载缓存），别每次开面板都打一次云函数
       share: {
@@ -937,19 +943,45 @@ export default {
       return []
     },
 
-    /* 多图横滑：算出当前第几张，更新右上角指示。
-       用 scrollLeft / 单图宽度 取整 —— 不需要 scroll-snap 也能准，
-       因为每张图宽度严格等于容器宽。 */
-    onMediaScroll(e, c) {
-      const n = this.imgsOf(c).length
-      if (n < 2) return
-      const total = e.detail.scrollWidth || 1
-      const itemW = total / n
-      const idx = Math.round(e.detail.scrollLeft / itemW)
-      const cur = this.mediaIdx[c._id] || 0
-      if (idx === cur) return
+    /* 多图轮播：swiper 换页后记下当前第几张。右上角指示和「切频道回来落哪张」都吃它。 */
+    onMediaChange(e, c) {
+      const idx = (e.detail && e.detail.current) || 0
+      if (idx === (this.mediaIdx[c._id] || 0)) return
       // 整体替换而不是 $set：Vue2 对新增 key 不响应
       this.mediaIdx = Object.assign({}, this.mediaIdx, { [c._id]: idx })
+    },
+
+    /* 收藏这条动态。
+       和搭子卡的收藏共用 card-favorite，靠 target_type='post' 分开记账 ——
+       同一张表、两套口径，在这边取消不会把需求卡的收藏也抹掉。
+       图标以云函数回的 favorited 为准，不本地先翻：先翻再失败就是假成功。 */
+    async togglePostFavorite(c) {
+      if (this.favBusy) return
+      const token = uni.getStorageSync('token') || ''
+      if (!token) {
+        uni.showToast({ title: '登录后才能收藏', icon: 'none' })
+        return
+      }
+      this.favBusy = true
+      try {
+        const res = await uniCloud.callFunction({
+          name: 'card-favorite',
+          data: { action: 'toggle', token, card_id: c._id, target_type: 'post' }
+        })
+        const r = res.result || {}
+        if (r.code !== 0) {
+          uni.showToast({ title: r.msg || '收藏失败', icon: 'none' })
+          return
+        }
+        const d = r.data || {}
+        const on = typeof d.favorited === 'boolean' ? d.favorited : !c.favorited
+        c.favorited = on
+        uni.showToast({ title: on ? '已收藏' : '已取消收藏', icon: 'none' })
+      } catch (e) {
+        uni.showToast({ title: '收藏失败，稍后再试', icon: 'none' })
+      } finally {
+        this.favBusy = false
+      }
     },
 
     /* feed_click 只有一个出口：点卡片、点图片预览、点💬 三条路都走这里报一次，
@@ -963,7 +995,7 @@ export default {
       uni.navigateTo({ url: '/pages/post-detail/post-detail?id=' + c._id })
     },
     /* 点图片 → 原样全屏预览，不进详情页：只想看大图的人不该被多跳一层。
-       无图时这块是渐变封面，等同于点卡片空白处 —— 否则点了什么都不发生，像坏了。 */
+       无图时图片区不渲染，这里只作兜底：等同于点卡片空白处，别让人以为点了没反应。 */
     previewPost(c) {
       const imgs = this.imgsOf(c)
       if (!imgs.length) {
@@ -983,12 +1015,6 @@ export default {
       if (n > 1) return n + ' 图'
       if (n === 1) return '图文'
       return '文字'
-    },
-    /* 无图时用正文前几十字当封面标题；空正文给一句中性文案 */
-    brief(s) {
-      const tx = (s || '').trim()
-      if (!tx) return '分享了一条动态'
-      return tx.length > 42 ? tx.slice(0, 42) + '…' : tx
     },
     fmtTime(t) {
       if (!t) return ''
@@ -1252,8 +1278,7 @@ export default {
 }
 /* 绝对定位铺满，抵消 padding 撑出的高度 */
 .p-media > .media-rail,
-.p-media > .media-item,
-.p-media > .media-ph {
+.p-media > .media-item {
   position: absolute;
   left: 0;
   top: 0;
@@ -1261,45 +1286,37 @@ export default {
   height: 100%;
 }
 
-/* 横滑容器：white-space + inline-block 是最稳的写法，
-   flex 在 scroll-view 里部分安卓机不生效 */
+/* 轮播容器：分页交给 swiper 原生组件，这里只管铺满方形画幅。
+   单图那一路也复用 .media-item，所以它必须是 block —— inline-block 会在底部留基线缝。 */
 .media-rail {
   width: 100%;
   height: 100%;
-  white-space: nowrap;
 }
 .media-item {
   width: 100%;
   height: 100%;
-  display: inline-block;
-  vertical-align: top;
+  display: block;
 }
 
-/* 无图时的渐变封面：按类型分色 */
-.media-ph {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 0 30rpx 36rpx;
-  box-sizing: border-box;
+/* 纯文字卡：不做封面。
+   没有图就不该撑一个 1:1 画幅 —— 那是给图片占位的，
+   拿来装文字会变成一整块色卡，正文还会在下面再重复一遍。 */
+.p-text {
+  /* 左右跟 .p-head / .p-actions / .p-body 一样是 26rpx，正文和昵称同一条竖线。
+     上内距 14rpx：和 .p-head 的 24rpx 下内距叠起来 38rpx，正文紧贴头像行，不再飘在半空。 */
+  padding: 14rpx 26rpx 2rpx;
 }
-.ph--text    { background: linear-gradient(165deg, #D8F2E5 0%, #63B896 46%, #2C7A60 100%); }
-
-.ph-title {
-  font-size: 38rpx;
-  font-weight: 800;
-  color: #fff;
-  line-height: 1.32;
-  letter-spacing: -0.01em;
-  text-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.28);
-  /* 最多两行，超出省略 —— 否则长标题会顶掉标签 */
+.p-text-body {
+  font-size: 31rpx;
+  line-height: 1.66;
+  color: var(--tf-text);
+  /* 长文最多六行，再多就去详情页读 —— 否则一条长动态能把整屏吃掉 */
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
   overflow: hidden;
   white-space: normal;
+  word-break: break-word;
 }
 .media-count {
   position: absolute;
@@ -1352,7 +1369,17 @@ export default {
   transform: scale(1.12);
 }
 /* 分享推到最右，和点赞/评论分开 */
-.act--save { margin-left: auto; }
+/* 右侧这一组（收藏 + 分享）用 auto 顶到最右边 —— ins 的排法 */
+.act--fav { margin-left: auto; }
+/* 收藏星：实心＝已收藏，雾金是这一条里唯一的强调色，和详情页的收藏按钮同一套取值 */
+.act-star {
+  font-size: 30rpx;
+  line-height: 1;
+  color: var(--tf-text-3);
+}
+.act-star--on {
+  color: #B4862C;
+}
 
 /* 同频按钮：描边，不跟主 CTA 抢 */
 .p-join {

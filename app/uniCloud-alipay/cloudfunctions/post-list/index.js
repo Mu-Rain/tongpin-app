@@ -40,6 +40,8 @@ const MAX_IMAGE_DIM = 20000
 const DB_USERS = 'uni-id-users'
 const COLL_POSTS = 'posts'
 const COLL_LIKES = 'card_likes'
+// 收藏（动态与搭子卡同一张表，靠 target_type 分账，口径见 card-favorite）
+const COLL_FAVORITES = 'card_favorites'
 const COLL_FRIENDS = 'friendships'
 
 const MAX_PAGE_SIZE = 30
@@ -360,11 +362,32 @@ exports.main = async (event) => {
       }
     }
 
-    // ★ 作者资料 / 可见性（内含好友集合）/ 我的点赞状态三者互不依赖，一次并发发出。
+    // 我收藏过的动态：同样一次批量查，不做 N+1
+    const favMap = {}
+    const loadFavorites = async () => {
+      if (!me) return
+      const ids = rows.map((p) => p._id)
+      if (!ids.length) return
+      try {
+        const fRes = await db
+          .collection(COLL_FAVORITES)
+          .where({ user_id: me._id, target_type: 'post', card_id: dbCmd.in(ids) })
+          .field({ card_id: true })
+          .get()
+        ;(fRes.data || []).forEach((x) => {
+          favMap[x.card_id] = true
+        })
+      } catch (e) {
+        // 收藏状态查不出来只是星星不实心，不能连累整页
+        console.warn('[post-list] 收藏状态查询失败', e && e.message)
+      }
+    }
+
+    // ★ 作者资料 / 可见性（内含好友集合）/ 我的点赞状态 / 我的收藏状态互不依赖，一次并发发出。
     //   串行要付三次网络往返，并发只付一次。resolveImageUrls 仍然留在最后 ——
     //   它吃的是最终的 list，且必须等 likedMap/ownerMap 都填好。
     //   任一带 try/catch 的分支失败都只影响自己（内部已放行），不会变成整页 500。
-    await Promise.all([loadOwners(), loadVisibility(), loadLikes()])
+    await Promise.all([loadOwners(), loadVisibility(), loadLikes(), loadFavorites()])
 
     const list = visibleRows.map((p) => {
       const owner = ownerMap[p.owner_id] || {}
@@ -385,6 +408,8 @@ exports.main = async (event) => {
         media_type: p.media_type || (Array.isArray(p.images) && p.images.length ? 'image' : 'text'),
         like_count: typeof p.like_count === 'number' ? p.like_count : 0,
         liked: !!likedMap[p._id],
+        // 我收藏过这条没有。前端卡片上的星星直接吃这个字段
+        favorited: !!favMap[p._id],
         comment_count: typeof p.comment_count === 'number' ? p.comment_count : 0,
         created_at: p.created_at || 0,
         is_mine: !!(me && p.owner_id === me._id),

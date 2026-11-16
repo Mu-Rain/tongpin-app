@@ -120,11 +120,11 @@ export default {
           item.uploading = false
         }
       }
-      // 上传前先压一道（长边 1280 / 质量 60），失败就用原图，不阻断发布
+      // 上传前先压一道（长边 1280 / 质量 72），失败就用原图，不阻断发布
       if (typeof uni.compressImage !== 'function') return doUpload(item.localPath)
       uni.compressImage({
         src: item.localPath,
-        quality: 60,
+        quality: 72,
         compressedWidth: 1280,
         success: (r) => doUpload(r.tempFilePath || item.localPath),
         fail: () => doUpload(item.localPath)

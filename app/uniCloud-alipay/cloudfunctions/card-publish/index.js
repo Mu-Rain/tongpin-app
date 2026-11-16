@@ -39,7 +39,7 @@ const DB_USERS = 'uni-id-users'
 
 const TYPE_ENUM = ['study', 'fitness', 'photo', 'meal', 'sport', 'other']
 const DAILY_LIMIT = 5
-const MIN_CREDIT = 60
+const MIN_CREDIT = 90
 const MAX_TAGS = 10
 // 配图上限：同频圈的卡片是 3 图栅格（1 张大图 / 3 张九宫格），多了前端排不下
 const MAX_IMAGES = 3
@@ -87,7 +87,7 @@ exports.main = async (event) => {
     // 位置必须在「信誉分门槛 fail」和「入参校验」之前：门槛没过的人也要拿到
     // can_publish=false + reason，而不是一个 403 让人看不出为什么。
     if (str(event.action) === 'quota') {
-      const quotaCredit = typeof user.credit_score === 'number' ? user.credit_score : 80
+      const quotaCredit = typeof user.credit_score === 'number' ? user.credit_score : 90
       const quotaDayStart = new Date()
       quotaDayStart.setHours(0, 0, 0, 0)
       // 口径必须与下面「4. 每天 ≤5 条」完全一致，否则查询与发布会对不上
@@ -131,7 +131,7 @@ exports.main = async (event) => {
     }
 
     // —— 2. 信誉分门槛 ——
-    const credit = typeof user.credit_score === 'number' ? user.credit_score : 80
+    const credit = typeof user.credit_score === 'number' ? user.credit_score : 90
     if (credit < MIN_CREDIT) fail('信誉分低于 ' + MIN_CREDIT + '，暂时不能发布卡片', 403)
 
     // —— 3. 入参校验 ——

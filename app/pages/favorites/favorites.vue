@@ -3,15 +3,15 @@
 
     <!-- ===== 页头 ===== -->
     <view class="pagehead">
-      <text class="pagehead-kicker">FAVORITES</text>
-      <text class="pagehead-title">我的收藏</text>
+      <text class="pagehead-kicker">{{ headKicker }}</text>
+      <text class="pagehead-title">{{ headTitle }}</text>
       <text class="pagehead-sub" v-if="!needLogin">{{ headSub }}</text>
     </view>
 
     <!-- ===== 未登录：说清楚要登录，不给白屏 ===== -->
     <view class="state-box" v-if="needLogin">
       <text class="state-title">登录后查看收藏</text>
-      <text class="state-hint">收藏是跟着账号走的，登录后你在详情页存下的卡片都会回到这里</text>
+      <text class="state-hint">{{ loginHint }}</text>
       <button class="btn" @tap="goLogin">去登录</button>
     </view>
 
@@ -29,9 +29,9 @@
 
     <!-- ===== 空态 ===== -->
     <view class="empty-box" v-else-if="!loading && list.length === 0">
-      <text class="empty-title">还没有收藏</text>
-      <text class="empty-hint">还没有收藏。看到感兴趣的就去收藏一下</text>
-      <button class="btn" @tap="goHall">去搭子大厅逛逛</button>
+      <text class="empty-title">{{ emptyTitle }}</text>
+      <text class="empty-hint">{{ emptyHint }}</text>
+      <button class="btn" @tap="goFromEmpty">{{ emptyBtn }}</button>
     </view>
 
     <!-- ===== 卡片流：视觉语言与大厅一致 ===== -->
@@ -155,7 +155,10 @@ export default {
       loading: false,
       // 首屏/加载更多的错误文案；列表非空时只在「加载更多」那行显示，不顶掉已有卡片
       error: '',
-      needLogin: false
+      needLogin: false,
+      // card = 需求收藏（搭子卡），post = 同频圈收藏。一个页面两个口径，
+      // 靠路由参数 type 分开，省掉一份几乎一样的页面。
+      mode: 'card'
     }
   },
 
@@ -174,13 +177,40 @@ export default {
     }
   },
   computed: {
+    isPostMode() {
+      return this.mode === 'post'
+    },
+    headKicker() {
+      return this.isPostMode ? 'CIRCLES' : 'FAVORITES'
+    },
+    headTitle() {
+      return this.isPostMode ? '同频圈收藏' : '需求收藏'
+    },
+    loginHint() {
+      return this.isPostMode
+        ? '收藏是跟着账号走的，登录后你在同频圈收藏的动态都会回到这里'
+        : '收藏是跟着账号走的，登录后你在详情页存下的卡片都会回到这里'
+    },
+    emptyTitle() {
+      return this.isPostMode ? '还没有收藏动态' : '还没有收藏需求'
+    },
+    emptyHint() {
+      return this.isPostMode ? '在同频圈看到喜欢的动态，点卡片上的星星就存下了' : '看到感兴趣的搭子卡就去收藏一下'
+    },
+    emptyBtn() {
+      return this.isPostMode ? '去同频圈看看' : '去搭子大厅逛逛'
+    },
     headSub() {
       if (this.loading && this.total === 0) return '正在加载…'
       if (this.total === 0) return '存下来的卡片和动态会出现在这里'
       return '共 ' + this.total + ' 条收藏'
     }
   },
-  onLoad() {
+  onLoad(q) {
+    // 只认白名单里的 post；别的值（含空）一律当需求收藏
+    this.mode = q && q.type === 'post' ? 'post' : 'card'
+    // 一套页面两种口径：导航栏标题跟着改，否则进来看见「我的收藏」会以为是混着的
+    uni.setNavigationBarTitle({ title: this.isPostMode ? '同频圈收藏' : '需求收藏' })
     this.init()
   },
   // 从详情页返回时刷新：用户可能在那边取消了收藏，不刷新就会残留一张已取消的卡
@@ -264,7 +294,9 @@ export default {
             action: 'list',
             token: uni.getStorageSync('token') || '',
             page: this.page,
-            page_size: PAGE_SIZE
+            page_size: PAGE_SIZE,
+            // 云函数按 target_type 分账，不给就只回搭子卡
+            target_type: this.mode
           }
         })
         const r = res.result || {}
@@ -303,6 +335,15 @@ export default {
 
     goHall() {
       uni.navigateTo({ url: '/pages/hall/hall' })
+    },
+
+    // 空态按钮按口径分流：需求收藏去大厅，同频圈收藏去同频圈
+    goFromEmpty() {
+      if (this.isPostMode) {
+        uni.switchTab({ url: '/pages/feed/feed' })
+        return
+      }
+      this.goHall()
     },
 
     goLogin() {

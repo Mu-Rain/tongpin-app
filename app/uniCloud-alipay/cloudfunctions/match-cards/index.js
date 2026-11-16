@@ -35,7 +35,7 @@ const DEFAULT_LIMIT = 10
 const MAX_LIMIT = 10
 // 候选集每批条数：照 §5.3 第 2 步「同校 / 非本校各取前 N 条」
 const CANDIDATE_PER_BATCH = 50
-const MIN_CREDIT = 60
+const MIN_CREDIT = 90
 // exclude_ids 上限：一次最多展示 10 条，换几批就够，传太多只会拖慢查询
 const MAX_EXCLUDE = 200
 // in 查询一次最多塞多少个 id

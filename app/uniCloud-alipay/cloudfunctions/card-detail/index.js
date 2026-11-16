@@ -110,7 +110,7 @@ exports.main = async (event) => {
       school: o.school || '',
       // 兼容两套字段名：第 1 天注册写的是 schoolVerified/credit，03 文档设计的是 is_verified/credit_score
       is_verified: !!(o.is_verified || o.schoolVerified),
-      credit_score: typeof o.credit_score === 'number' ? o.credit_score : typeof o.credit === 'number' ? o.credit : 80,
+      credit_score: typeof o.credit_score === 'number' ? o.credit_score : typeof o.credit === 'number' ? o.credit : 90,
       user_no: o.user_no || '',
       bio: o.bio || '',
       grade: o.grade || ''
@@ -154,7 +154,7 @@ exports.main = async (event) => {
       canApply.reason = '这是你自己发布的卡片'
     } else if (card.status !== 'open') {
       canApply.reason = card.status === 'matched' ? '这张卡片已经找到搭子了' : '这张卡片已经关闭'
-    } else if (owner.credit_score < 60) {
+    } else if (owner.credit_score < 90) {
       canApply.reason = '对方信誉分过低，暂不支持申请'
     }
 
@@ -226,7 +226,7 @@ exports.main = async (event) => {
             avatar_url: pickAvatar(u),
             school: u.school || '',
             is_verified: !!(u.is_verified || u.schoolVerified),
-            credit_score: typeof u.credit_score === 'number' ? u.credit_score : typeof u.credit === 'number' ? u.credit : 80
+            credit_score: typeof u.credit_score === 'number' ? u.credit_score : typeof u.credit === 'number' ? u.credit : 90
           },
           message: a.message || '',
           created_at: a.created_at,
