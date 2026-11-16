@@ -25,8 +25,8 @@
       </view>
     </view>
 
-    <!-- ===== 补充说明：只有选「其他」才展开，契约 5.4 ===== -->
-    <view v-if="reason === 'other'" class="card">
+    <!-- ===== 补充说明：选「其他」或「不当行为」才展开 ===== -->
+    <view v-if="needDetail" class="card">
       <text class="card-title">补充说明（选填）</text>
       <view class="textarea-wrap">
         <textarea
@@ -53,10 +53,16 @@
 // 前端传错一个值就会被云函数 400「请选择举报原因」挡回来。
 const REASONS = [
   { key: 'harassment', label: '骚扰谩骂', desc: '辱骂、人身攻击、频繁骚扰' },
-  { key: 'fake', label: '虚假信息', desc: '冒充他人、伪造身份或经历' },
-  { key: 'ad', label: '广告推销', desc: '拉群、卖课、刷单等营销内容' },
+  { key: 'sexual', label: '色情或性骚扰', desc: '涉黄内容、约炮、不当性暗示' },
+  { key: 'gambling', label: '赌博或毒品', desc: '赌博、涉毒、诱导充值下注' },
+  { key: 'fraud', label: '诈骗或广告', desc: '刷单卖课拉群、冒充身份、虚假信息' },
+  { key: 'no_show', label: '放鸽子', desc: '约好时间地点却没来，让人白等（只对约过的对象成立）' },
+  { key: 'misconduct', label: '不当行为', desc: '不当肢体接触、威胁人身安全' },
   { key: 'other', label: '其他', desc: '以上都不符合，请在下方说明' }
 ]
+
+// 需要填补充说明的类别：说不清的、和涉及安全的两类，光选个标签不够用。
+const NEED_DETAIL = ['other', 'misconduct']
 
 // 补充说明上限。云函数按 Array.from().length 数码点，这里用同一个算法，
 // 否则 emoji 会被前端算成 2 个字、后端算成 1 个，两边长度提示对不上。
@@ -84,6 +90,7 @@ export default {
 
       // ★ 模块级常量必须在 data() 里注册，模板才访问得到（否则整页白屏）
       reasons: REASONS,
+      needDetail: false,
       DETAIL_MAX_LEN
     }
   },
@@ -120,6 +127,8 @@ export default {
   methods: {
     pickReason(key) {
       this.reason = key
+      // 分类里只有两类值得让对方多写两句，其余选了标签就够
+      this.needDetail = NEED_DETAIL.indexOf(key) >= 0
       // 从「其他」切走时把补充说明清掉，避免用户以为它还生效
       if (key !== 'other') this.detail = ''
     },
@@ -149,9 +158,9 @@ export default {
         target_id: this.targetId,
         reason: this.reason
       }
-      // detail 只有「其他」且非空才传，避免后端存一堆空串
+      // detail 只在需要说明的类别且非空时传，避免后端存一堆空串
       const d = String(this.detail || '').trim()
-      if (this.reason === 'other' && d) payload.detail = d
+      if (this.needDetail && d) payload.detail = d
 
       this.submitting = true
       try {

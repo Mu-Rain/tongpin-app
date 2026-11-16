@@ -1,0 +1,6 @@
+{
+  "name": "report-screen",
+  "version": "1.0.0",
+  "description": "举报内容筛查：敏感词表 + 模型判级",
+  "main": "index.js"
+}

@@ -34,27 +34,38 @@ const DB_CREDIT_RULES = 'credit_rules'
 // 契约 §1 的内置默认表：credit_rules 表不存在 / 查不到 / active=false 时用它。
 // 逐字照抄契约 —— 改这里等于改契约，前端「怎么算的」直接展示这些文案。
 const DEFAULT_RULES = [
-  { code: 'buddy_done', delta: 2, text: '完成一次搭子' },
-  { code: 'no_show', delta: -5, text: '放鸽子' },
-  { code: 'report_upheld', delta: -10, text: '举报被核实' },
-  { code: 'verify_pass', delta: 5, text: '通过学生认证' },
+  // 旧加分项已停用（2026-11-14）：分数只从新规则来，旧机制整体下线。
+  // 分数改成 0 而不是删掉这行 —— buddy-complete 还在按 code 调 applyCredit，
+  // 删了会让那条链路直接抛错；0 分只是不加分，链路照常走完。
+  { code: 'buddy_done', delta: 0, text: '完成一次搭子（已停用）' },
+  { code: 'buddy_like', delta: 0.1, text: '搭子互赞' },
+  { code: 'meetup_checkin', delta: 0.1, text: '搭子双方完成赴约' },
+  { code: 'quiz_pass', delta: 1.5, text: '学完《文明搭档守则》' },
+  { code: 'rule_first', delta: 5, text: '首次学习《文明搭档守则》' },
+  { code: 'no_show', delta: -1, text: '爽约被核实' },
+  { code: 'report_upheld', delta: -3, text: '被举报且核实' },
+  { code: 'misconduct', delta: -12, text: '不当行为被核实' },
+  { code: 'verify_pass', delta: 0, text: '通过学生认证（已停用）' },
   { code: 'admin_adjust', delta: 0, text: '管理员调整' }
 ]
 
-const CREDIT_INIT = 80
+const CREDIT_INIT = 90
 const CREDIT_MAX = 100
 const CREDIT_MIN = 0
 // admin_adjust 不是用户可见事件（契约 §3.1），规则列表里剔掉
-const RULE_HIDDEN = ['admin_adjust']
-// 契约 §4.4：低于 60 不能发卡片
-const CREDIT_PUBLISH_MIN = 60
+const RULE_HIDDEN = ['admin_adjust', 'buddy_done', 'verify_pass']
+// 90 分是「正常使用」的下限：低于它不能发需求卡、不能申请搭子，
+// 只能靠做《文明搭档守则》的题爬回来（见 docs/30 信誉系统一节）。
+const CREDIT_PUBLISH_MIN = 90
 
 function pickInt(v, dft) {
   return typeof v === 'number' ? v : dft
 }
 
 function clampScore(n) {
-  return Math.max(CREDIT_MIN, Math.min(CREDIT_MAX, n))
+  // 0.1 分一档（搭子互赞 +0.1）：不按十分位收口的话，
+  // 累加十次会得到 90.30000000000001 这种值，落到界面上就是脏数字。
+  return Math.round(Math.max(CREDIT_MIN, Math.min(CREDIT_MAX, n)) * 10) / 10
 }
 
 /** 双字段兼容：历史数据里 credit 和 credit_score 都有人写，读的时候两套都要认 */
@@ -138,22 +149,29 @@ async function resolveRule(code) {
  * 会出现"分变了但明细里没有这一条"，信誉页和真实分数就永久对不上。
  * 失败处理留给调用方 —— 给分失败不该把主业务（确认搭子 / 认证通过）一起回滚。
  */
-async function applyCredit(userId, reasonCode, refId) {
+async function applyCredit(userId, reasonCode, refId, deduct) {
   if (!userId) throw new Error('缺少 user_id')
   const rule = await resolveRule(reasonCode)
+  // 举报扣分是浮动的（1~20 按情节），规则表里只留一个默认值。
+  // 传了 deduct 就用它，符号统一取负；范围夹在 1~20，防止调用方传 999 把分扣穿。
+  const fixed = typeof deduct === 'number' && !isNaN(deduct) ? Math.round(Math.abs(deduct)) : 0
+  const delta = fixed > 0 ? -Math.max(1, Math.min(20, fixed)) : rule.delta
   const uRes = await db
     .collection(DB_USERS)
     .doc(userId)
     .field({ credit: true, credit_score: true })
     .get()
   const before = readScore((uRes.data && uRes.data[0]) || {})
-  const after = clampScore(before + rule.delta)
+  // 已停用的旧加分项 delta 为 0：不写 0 分流水（否则变动记录被一串「+0」刷屏），
+  // 但要把当前分数原样返回 —— verify-review 会把 applied.score 写回认证单。
+  if (!rule.delta) return { score: before, delta: 0 }
+  const after = clampScore(before + delta)
   const now = Date.now()
   await db.collection(DB_CREDIT_EVENTS).add({
     user_id: userId,
-    delta: rule.delta,
+    delta: delta,
     reason_code: rule.code,
-    reason_text: rule.text, // 文案快照：后台以后改文案不影响历史记录
+    reason_text: fixed > 0 ? rule.text + '（' + Math.abs(delta) + ' 分）' : rule.text, // 文案快照：后台以后改文案不影响历史记录
     score_after: after,
     ref_id: refId || '',
     created_at: now
@@ -162,9 +180,33 @@ async function applyCredit(userId, reasonCode, refId) {
     credit_score: after,
     credit: after
   })
-  return { score: after, delta: rule.delta }
+  return { score: after, delta: delta }
 }
 // ===================== credit 核心结束 =====================
+
+/**
+ * 这次扣多少分：管理员指定 > 筛查结论（severity 1~5）> 规则默认值。
+ * 返回 0 表示没指定，交给 applyCredit 用规则里的默认扣分。
+ */
+/**
+ * 举报原因决定扣分档：被鸽是 -1、不当行为是 -12（管理员可按情节改到 1~20），
+ * 其余违规统一走 report_upheld。放鸽子和辱骂不是一个量级，不能共用一个默认值。
+ */
+function reasonCodeOf(report) {
+  const r = str(report && report.reason)
+  if (r === 'no_show') return 'no_show'
+  if (r === 'misconduct') return 'misconduct'
+  return 'report_upheld'
+}
+
+function deductOf(report, event) {
+  const given = pickInt(event && event.deduct, 0)
+  if (given > 0) return given
+  const ai = report && report.ai
+  const sev = pickInt(ai && ai.severity, 0)
+  if (sev > 0) return sev
+  return 0
+}
 
 function str(v) {
   return typeof v === 'string' ? v.trim() : ''
@@ -220,9 +262,12 @@ exports.main = async (event) => {
     if (!changed) fail('这条举报已经处理过了，不能重复处置', 409)
 
     let creditDelta = 0
-    if (action === 'upheld' && str(report.target_type) === 'user' && str(report.target_id)) {
+    // 判责对象在提交举报时就记好了（offender_id）：消息/卡片被举报，扣的是发送者或卡片主人，
+    // 老数据没有这个字段就按旧口径只扣 user 类举报。
+    const offenderId = str(report.offender_id) || (str(report.target_type) === 'user' ? str(report.target_id) : '')
+    if (action === 'upheld' && offenderId) {
       try {
-        const applied = await applyCredit(str(report.target_id), 'report_upheld', reportId)
+        const applied = await applyCredit(offenderId, reasonCodeOf(report), reportId, deductOf(report, event))
         creditDelta = applied.delta
       } catch (e) {
         // 举报已经是 upheld 了，回滚会让 409 失效、还可能被重复扣分；
