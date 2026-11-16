@@ -91,8 +91,8 @@ export default {
       errMsg: '',
       form: null,
       acting: false,
-      rarityCodes: ['common', 'rare', 'epic'],
-      rarityLabels: ['普通 (common)', '稀有 (rare)', '史诗 (epic)']
+      rarityCodes: ['common', 'rare', 'epic', 'legend'],
+      rarityLabels: ['普通 (common)', '稀有 (rare)', '史诗 (epic)', '传说 (legend)']
     };
   },
 

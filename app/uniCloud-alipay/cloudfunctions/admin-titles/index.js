@@ -33,7 +33,7 @@ const db = uniCloud.database()
 const DB_TITLES = 'titles'
 
 // 契约 §2.4 稀有度白名单
-const RARITIES = ['common', 'rare', 'epic']
+const RARITIES = ['common', 'rare', 'epic', 'legend']
 
 // 内置 3 条：逐字照抄 title-list:30-58（契约 §1）。
 // 这里是「打底 + 兜底」的副本 —— 改这里必须同步 title-list，否则后台看到的文案

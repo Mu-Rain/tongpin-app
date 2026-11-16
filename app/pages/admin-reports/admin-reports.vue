@@ -74,15 +74,46 @@
 
           <text class="sec-title">补充说明</text>
           <text class="para">{{ detail.detail || '（举报人没有写补充说明）' }}</text>
-          <!-- 处置成 upheld 会真扣分，先把后果写在按钮上方，别让人点到才知道 -->
-          <text class="proof-tip" v-if="detail.status === 'pending' && detail.target_type === 'user'"
-            >成立后该用户信誉分 -10，且处置不可撤销；驳回则不做任何扣分。</text
-          >
+          <!-- 被鸽的判据：约局记录里谁到了、离约定点多远。没约局记录就不显示 -->
+          <block v-if="detail.meetup">
+            <text class="sec-title">约局签到</text>
+            <text class="para">{{ meetupText(detail.meetup) }}</text>
+          </block>
+          <!-- 处置成 upheld 会真扣分，先把「扣谁、扣多少」写在按钮上方，别让人点到才知道 -->
+          <view class="deduct" v-if="detail.status === 'pending'">
+            <text class="deduct-title">扣几分</text>
+            <text class="deduct-tip">{{ aiText(detail) }}</text>
+            <text class="deduct-label">违规扣分（1~5）</text>
+            <view class="deduct-row">
+              <view
+                v-for="n in DEDUCT_LIST"
+                :key="n"
+                class="deduct-chip"
+                :class="{ 'deduct-chip--on': deduct === n }"
+                @tap="pickDeduct(n)"
+              >
+                <text class="deduct-chip-txt">{{ n === 0 ? '默认' : n }}</text>
+              </view>
+            </view>
+            <text class="deduct-label">情节轻重（不当行为用这档）</text>
+            <view class="deduct-row">
+              <view
+                v-for="t in SEVERITY_LIST"
+                :key="'sev' + t.n"
+                class="deduct-chip"
+                :class="{ 'deduct-chip--on': deduct === t.n }"
+                @tap="pickDeduct(t.n)"
+              >
+                <text class="deduct-chip-txt">{{ t.label }}</text>
+              </view>
+            </view>
+            <text class="deduct-note">默认档按筛查结论走（没有结论就按规则默认值）。</text>
+          </view>
         </scroll-view>
 
         <view class="sheet-foot" v-if="detail.status === 'pending'">
           <button class="btn btn--reject" :disabled="acting" @tap="decide('dismissed')">驳回</button>
-          <button class="btn" :disabled="acting" @tap="decide('upheld')">成立（扣 10 分）</button>
+          <button class="btn" :disabled="acting" @tap="decide('upheld')">{{ upheldLabel }}</button>
         </view>
         <view class="sheet-foot" v-else>
           <text class="done-text">这条已处理：{{ detail.status === 'upheld' ? '已成立' : '已驳回' }}</text>
@@ -103,6 +134,16 @@ export default {
       errMsg: '',
       detail: null,
       acting: false,
+      // 0 = 按筛查结论/规则默认，其余是管理员手动指定的扣分
+      deduct: 0,
+      DEDUCT_LIST: [0, 1, 2, 3, 4, 5],
+      // 情节档：同一件事「推了一把」和「打人」不是一个量级，
+      // 给三档固定值，比让管理员自己拍一个数字更容易一致
+      SEVERITY_LIST: [
+        { n: 5, label: '轻微 5' },
+        { n: 10, label: '一般 10' },
+        { n: 20, label: '严重 20' }
+      ],
       tabs: [
         { key: 'pending', label: '待处理' },
         { key: 'upheld', label: '已成立' },
@@ -115,6 +156,9 @@ export default {
     statusText() {
       const map = { pending: '待处理', upheld: '已成立', dismissed: '已驳回' };
       return map[this.status] || '待处理';
+    },
+    upheldLabel() {
+      return this.deduct > 0 ? '成立（扣 ' + this.deduct + ' 分）' : '成立（按情节扣分）';
     }
   },
 
@@ -184,6 +228,40 @@ export default {
 
     openDetail(r) {
       this.detail = r;
+      // 每开一条都从「默认档」开始，避免上一条选的分数被带到这一条
+      this.deduct = 0;
+    },
+
+    pickDeduct(n) {
+      this.deduct = n;
+    },
+
+    /* 约局签到 → 一句人话：谁到了、离约定点多远 */
+    meetupText(mt) {
+      if (!mt) return '';
+      const head = mt.time
+        ? '约的 ' + mt.time + ' · ' + (mt.place || '地点未填')
+        : mt.place || '约局记录';
+      const a = mt.inviter_checkin && mt.inviter_checkin.arrived ? '发起方已签到' : '发起方没签到';
+      const b = mt.invitee_checkin && mt.invitee_checkin.arrived ? '被约方已签到' : '被约方没签到';
+      let dist = '';
+      if (
+        mt.invitee_checkin &&
+        typeof mt.invitee_checkin.dist === 'number' &&
+        mt.invitee_checkin.dist >= 0
+      ) {
+        dist = '（距约定点 ' + mt.invitee_checkin.dist + ' 米）';
+      }
+      return head + '　' + a + '、' + b + dist;
+    },
+
+    aiText(r) {
+      // 云函数 report-screen 写回的是 report.ai 对象，没有 ai 就是还没跑过
+      const ai = r && r.ai;
+      if (!ai) return '还没做内容筛查，可以自己定分数。';
+      if (!ai.hit) return '筛查没发现明显违规，建议驳回或选低档。';
+      const cat = ai.category ? '「' + ai.category + '」' : '';
+      return '筛查命中' + cat + '，建议扣 ' + (ai.severity || 1) + ' 分。';
     },
 
     closeDetail() {
@@ -202,11 +280,10 @@ export default {
       if (this.acting || !this.detail) return;
       const r = this.detail;
       const isUser = r.target_type === 'user';
+      const scoreText = this.deduct > 0 ? '扣 ' + this.deduct + ' 分' : '按情节扣分';
       const content =
         decision === 'upheld'
-          ? isUser
-            ? '确认这条举报成立？将扣除对方 10 信誉分，处置后不可撤销。'
-            : '确认这条举报成立？处置后不可撤销。'
+          ? '确认这条举报成立？将' + scoreText + '，处置后不可撤销。'
           : '确认驳回这条举报？驳回后不做任何扣分。';
       const ok = await new Promise((resolve) => {
         uni.showModal({
@@ -219,7 +296,9 @@ export default {
 
       this.acting = true;
       try {
-        const d = await this.call({ action: 'decide', report_id: r._id, decision });
+        const payload = { action: 'decide', report_id: r._id, decision };
+        if (decision === 'upheld' && this.deduct > 0) payload.deduct = this.deduct;
+        const d = await this.call(payload);
         // 原地更新：把这条的状态改掉，待处理 tab 里直接移除，不整页重拉
         const target = this.list.find((x) => x._id === r._id);
         if (this.status === 'pending') {
@@ -557,5 +636,71 @@ export default {
 .done-text {
   font-size: 26rpx;
   color: var(--tf-text-2);
+}
+
+/* ===== 扣分档位 ===== */
+.deduct {
+  margin-top: 4rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid var(--tf-line-soft);
+}
+
+.deduct-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--tf-text);
+}
+
+.deduct-tip {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--tf-text-2);
+}
+
+.deduct-label {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--tf-text-2);
+}
+
+.deduct-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 12rpx;
+}
+
+.deduct-chip {
+  margin: 0 12rpx 12rpx 0;
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  background: var(--tf-card);
+  border: 1rpx solid var(--tf-line);
+}
+
+.deduct-chip--on {
+  background: var(--tf-primary-soft);
+  border-color: var(--tf-primary);
+}
+
+.deduct-chip-txt {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: var(--tf-text-2);
+}
+
+.deduct-chip--on .deduct-chip-txt {
+  color: var(--tf-primary-deep);
+}
+
+.deduct-note {
+  display: block;
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: var(--tf-text-3);
 }
 </style>

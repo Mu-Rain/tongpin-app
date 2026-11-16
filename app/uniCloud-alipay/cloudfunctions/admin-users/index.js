@@ -83,7 +83,7 @@ function isAdminUser(u) {
  */
 function readScore(u) {
   const d = u || {}
-  return typeof d.credit_score === 'number' ? d.credit_score : typeof d.credit === 'number' ? d.credit : 80
+  return typeof d.credit_score === 'number' ? d.credit_score : typeof d.credit === 'number' ? d.credit : 90
 }
 
 /** 学校三字段任一写入即算（历史数据里 school / school_name / school_id 都有人写，见 title-list:183） */
@@ -113,7 +113,7 @@ function readBanned(u) {
  * ★ 两个字段都要覆盖：注册写 credit、信用核心写 credit_score，
  *   只按其中一个筛会把另一半老账号整批漏掉。
  * ★ 每个条件是「单字段一元比较」：uniCloud 也支持把 and 组合挂在单个字段上
- *   （{ credit_score: and([gte(60), lt(80)]) }），但那种写法串在 or 里可读性差、
+ *   （{ credit_score: and([gte(60), lt(90)]) }），但那种写法串在 or 里可读性差、
  *   也不便逐个分支核对。这里改成「先按字段 or、再按上下界 and」的外层组合，
  *   语义等价而每一层都能单独读通。
  */

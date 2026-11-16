@@ -1,0 +1,6 @@
+{
+  "name": "admin-overview",
+  "version": "1.0.0",
+  "description": "后台首页数字看板（仅管理员）",
+  "main": "index.js"
+}
