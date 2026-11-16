@@ -7,8 +7,8 @@
  * 出参：{ code, msg, data: { score, level, level_text, can_publish,
  *                            rules[], list[], total, page, page_size } }
  *
- * ★ 分数只读不算：users.credit_score（缺失回落 credit，再缺失回落 80），
- *   与全项目 pickInt(u.credit_score, pickInt(u.credit, 80)) 口径一致。
+ * ★ 分数只读不算：users.credit_score（缺失回落 credit，再缺失回落 90），
+ *   与全项目 pickInt(u.credit_score, pickInt(u.credit, 90)) 口径一致。
  *   前端不自己算分、不自己定等级，等级文案只在服务端一处，改口径不用发版前端。
  *
  * ★ rules 是"当前生效规则"而不是内置默认表：credit_rules 有数据就用表里的，
@@ -31,27 +31,38 @@ const DB_CREDIT_RULES = 'credit_rules'
 // 契约 §1 的内置默认表：credit_rules 表不存在 / 查不到 / active=false 时用它。
 // 逐字照抄契约 —— 改这里等于改契约，前端「怎么算的」直接展示这些文案。
 const DEFAULT_RULES = [
-  { code: 'buddy_done', delta: 2, text: '完成一次搭子' },
-  { code: 'no_show', delta: -5, text: '放鸽子' },
-  { code: 'report_upheld', delta: -10, text: '举报被核实' },
-  { code: 'verify_pass', delta: 5, text: '通过学生认证' },
+  // 旧加分项已停用（2026-11-14）：分数只从新规则来，旧机制整体下线。
+  // 分数改成 0 而不是删掉这行 —— buddy-complete 还在按 code 调 applyCredit，
+  // 删了会让那条链路直接抛错；0 分只是不加分，链路照常走完。
+  { code: 'buddy_done', delta: 0, text: '完成一次搭子（已停用）' },
+  { code: 'buddy_like', delta: 0.1, text: '搭子互赞' },
+  { code: 'meetup_checkin', delta: 0.1, text: '搭子双方完成赴约' },
+  { code: 'quiz_pass', delta: 1.5, text: '学完《文明搭档守则》' },
+  { code: 'rule_first', delta: 5, text: '首次学习《文明搭档守则》' },
+  { code: 'no_show', delta: -1, text: '爽约被核实' },
+  { code: 'report_upheld', delta: -3, text: '被举报且核实' },
+  { code: 'misconduct', delta: -12, text: '不当行为被核实' },
+  { code: 'verify_pass', delta: 0, text: '通过学生认证（已停用）' },
   { code: 'admin_adjust', delta: 0, text: '管理员调整' }
 ]
 
-const CREDIT_INIT = 80
+const CREDIT_INIT = 90
 const CREDIT_MAX = 100
 const CREDIT_MIN = 0
 // admin_adjust 不是用户可见事件（契约 §3.1），规则列表里剔掉
-const RULE_HIDDEN = ['admin_adjust']
-// 契约 §4.4：低于 60 不能发卡片
-const CREDIT_PUBLISH_MIN = 60
+const RULE_HIDDEN = ['admin_adjust', 'buddy_done', 'verify_pass']
+// 90 分是「正常使用」的下限：低于它不能发需求卡、不能申请搭子，
+// 只能靠做《文明搭档守则》的题爬回来（见 docs/30 信誉系统一节）。
+const CREDIT_PUBLISH_MIN = 90
 
 function pickInt(v, dft) {
   return typeof v === 'number' ? v : dft
 }
 
 function clampScore(n) {
-  return Math.max(CREDIT_MIN, Math.min(CREDIT_MAX, n))
+  // 0.1 分一档（搭子互赞 +0.1）：不按十分位收口的话，
+  // 累加十次会得到 90.30000000000001 这种值，落到界面上就是脏数字。
+  return Math.round(Math.max(CREDIT_MIN, Math.min(CREDIT_MAX, n)) * 10) / 10
 }
 
 /** 双字段兼容：历史数据里 credit 和 credit_score 都有人写，读的时候两套都要认 */
@@ -144,6 +155,9 @@ async function applyCredit(userId, reasonCode, refId) {
     .field({ credit: true, credit_score: true })
     .get()
   const before = readScore((uRes.data && uRes.data[0]) || {})
+  // 已停用的旧加分项 delta 为 0：不写 0 分流水（否则变动记录被一串「+0」刷屏），
+  // 但要把当前分数原样返回 —— verify-review 会把 applied.score 写回认证单。
+  if (!rule.delta) return { score: before, delta: 0 }
   const after = clampScore(before + rule.delta)
   const now = Date.now()
   await db.collection(DB_CREDIT_EVENTS).add({
@@ -182,8 +196,8 @@ async function getUserByToken(token) {
 
 function levelOf(score) {
   if (score < CREDIT_PUBLISH_MIN) return { key: 'limited', text: '受限' }
-  if (score < 80) return { key: 'normal', text: '正常' }
-  if (score < 90) return { key: 'good', text: '良好' }
+  if (score < 95) return { key: 'normal', text: '正常' }
+  if (score < 100) return { key: 'good', text: '良好' }
   return { key: 'excellent', text: '优秀' }
 }
 

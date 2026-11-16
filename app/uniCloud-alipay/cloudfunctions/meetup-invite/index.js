@@ -3,7 +3,9 @@
 /**
  * 约局邀请 —— 发一张约局卡片（type='structured'）并建一条约局状态机记录
  *
- * 入参：{ token, conversation_id, time, place, note?, card_id? }
+ * 入参：{ token, conversation_id, time, place, note?, card_id?, place_lat?, place_lng?, time_at? }
+ *   time_at —— 约定的机器可读时间（毫秒时间戳）。time 是给人看的一句话（「周六 19:00」），
+ *              没法比较大小，所以签到窗口要靠这个字段判。前端用日期/时间选择器生成。
  * 出参：{ code, msg, data: { message_id, meetup_id } }
  *
  * 为什么单独一个云函数而不是让前端直接 message-send：
@@ -36,6 +38,12 @@ function str(v) {
   return typeof v === 'string' ? v.trim() : ''
 }
 
+/** 只认能用的数字；NaN / 空串一律回 dft */
+function numOr(v, dft) {
+  const n = Number(v)
+  return isFinite(n) ? n : dft
+}
+
 async function getUserByToken(token) {
   if (!token) fail('未登录', 401)
   const r = await db.collection(DB_USERS).where({ token }).limit(1).get()
@@ -58,6 +66,24 @@ exports.main = async (event) => {
     if (!time || !place) fail('约局卡片要有时间和地点')
     const note = str(event.note)
     const cardId = str(event.card_id) || str(event.cardId)
+
+    // 见面的定位点（可选）：地图选点后带上来，两个人签到时就按它算距离。
+    // 不填也能用 —— 退化成「跟对方签到位置比」，见 meetup-confirm 的 checkin。
+    const placeLat = numOr(event.place_lat, NaN)
+    const placeLng = numOr(event.place_lng, NaN)
+    const hasPoint = isFinite(placeLat) && isFinite(placeLng)
+
+    // 约定的时间点（可选，但前端一定会带）：签到只在它前后 2 小时内有效。
+    // 不带的只有老客户端 / 老卡片，这时签到不卡时间窗 —— 老数据不该被新规则拦死。
+    let timeAt = 0
+    const rawTimeAt = numOr(event.time_at, 0)
+    if (rawTimeAt > 0) {
+      // 这里的 nowMs 是就地取的：文件后面的 const now 还没执行到，不能提前用
+      const nowMs = Date.now()
+      if (rawTimeAt < nowMs - 3600000) fail('约定的时间已经过去了，换个时间再约', 400)
+      if (rawTimeAt > nowMs + 30 * 24 * 3600000) fail('约得太远了，30 天内才能约', 400)
+      timeAt = Math.round(rawTimeAt)
+    }
 
     // —— 必须是会话成员 ——
     const memberRes = await db
@@ -103,6 +129,11 @@ exports.main = async (event) => {
     const meta = { time, place }
     if (note) meta.note = note
     if (cardId) meta.card_id = cardId
+    if (hasPoint) {
+      meta.place_lat = placeLat
+      meta.place_lng = placeLng
+    }
+    if (timeAt > 0) meta.time_at = timeAt
     const metaStr = JSON.stringify(meta)
 
     const addRes = await db.collection(DB_MESSAGES).add({
@@ -165,6 +196,9 @@ exports.main = async (event) => {
         time,
         place,
         note,
+        place_lat: hasPoint ? placeLat : 0,
+        place_lng: hasPoint ? placeLng : 0,
+        time_at: timeAt,
         status: 'pending',
         inviter_confirmed: false,
         invitee_confirmed: false,

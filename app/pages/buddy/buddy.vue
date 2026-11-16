@@ -89,6 +89,14 @@
                加好友前要能先看清这人是谁，在列表里一键发申请太容易误点。 -->
           <view class="card-foot">
             <button class="btn btn--sm btn--grow" @tap="goChat(b)">去聊聊 →</button>
+            <!-- 互赞：一人一次，给对方 +0.1 信誉分。只加不扣，所以点了就没有反悔按钮 -->
+            <button
+              class="btn btn--sm like-btn"
+              :class="{ 'btn--off': likedOf(b) }"
+              :disabled="likedOf(b) || likingId === b.other_user_id"
+              @tap="onLike(b)"
+              >{{ likedOf(b) ? '已赞 ✓' : '赞 TA' }}</button
+            >
           </view>
 
           <!-- 第四行：这次搭完了。
@@ -250,6 +258,11 @@ export default {
       unlinking: false,
       // 正在提交「搭完了」的那一段关系 id，用来防重复点（只挡住那一段，不挡别人）
       completingId: '',
+      // 已赞过的人 { userId: true }。按人去重：一个人名下可能挂好几段关系，
+      // 按关系去重就能对同一个人点两次，那就成了刷分。
+      likedMap: {},
+      // 正在点赞的那个人，防连点
+      likingId: '',
       COLORS,
       SUGGESTIONS,
       MAX_LABEL_LEN,
@@ -297,6 +310,71 @@ export default {
   },
 
   methods: {
+    /** 拉「我给谁点过赞」，只用于把按钮变灰 */
+    async loadLiked() {
+      const token = uni.getStorageSync('token')
+      if (!token) return
+      try {
+        const res = await uniCloud.callFunction({
+          name: 'buddy-like',
+          data: { token: token, action: 'status' }
+        })
+        const r = res.result || {}
+        if (r.code !== 0) return
+        const ids = (r.data && r.data.liked_to) || []
+        const map = {}
+        for (let i = 0; i < ids.length; i++) {
+          if (ids[i]) map[ids[i]] = true
+        }
+        this.likedMap = map
+      } catch (e) {
+        // 查不到就当没赞过：点下去会由云函数拦「已经赞过了」，不会重复加分
+      }
+    },
+
+    likedOf(b) {
+      return !!(b && this.likedMap[b.other_user_id])
+    },
+
+    async onLike(b) {
+      if (!b || this.likedOf(b) || this.likingId) return
+      const toId = b.other_user_id
+      if (!toId) return
+      const token = uni.getStorageSync('token')
+      if (!token) {
+        uni.showToast({ title: '请先登录', icon: 'none' })
+        return
+      }
+      this.likingId = toId
+      try {
+        const res = await uniCloud.callFunction({
+          name: 'buddy-like',
+          data: { token: token, to_user_id: toId, action: 'like' }
+        })
+        const r = res.result || {}
+        if (r.code !== 0) {
+          uni.showToast({ title: r.msg || '点赞失败', icon: 'none' })
+          this.likingId = ''
+          return
+        }
+        // 以云函数返回为准写本地状态，别在这里自己猜加没加上
+        const map = {}
+        const keys = Object.keys(this.likedMap)
+        for (let i = 0; i < keys.length; i++) map[keys[i]] = true
+        map[toId] = true
+        this.likedMap = map
+        const d = r.data || {}
+        uni.showToast({
+          title: d.delta ? '已赞，TA 信誉 +' + d.delta : '已赞',
+          icon: 'none'
+        })
+      } catch (e) {
+        uni.showToast({ title: '网络不太好', icon: 'none' })
+      } finally {
+        this.likingId = ''
+      }
+    },
+
     async loadList() {
       const token = uni.getStorageSync('token')
       if (!token) {
@@ -317,6 +395,8 @@ export default {
         this.buddies = (r.data && r.data.list) || []
         this.normalizeDone()
         this.applyPendingHighlight()
+        // 点赞状态单独拉：它是展示用的点缀，失败也不该让整页报错
+        this.loadLiked()
       } catch (e) {
         uni.showToast({ title: '网络不太好', icon: 'none' })
       } finally {
@@ -1008,6 +1088,11 @@ export default {
 }
 
 /* 卡片底部按钮区（现在只剩「去聊聊」） */
+.like-btn {
+  /* card-foot 已经有 gap: 12rpx，这里只锁住宽度不被压缩 */
+  flex: none;
+}
+
 .card-foot {
   display: flex;
   gap: 12rpx;

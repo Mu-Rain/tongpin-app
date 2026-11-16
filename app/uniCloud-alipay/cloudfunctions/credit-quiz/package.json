@@ -1,0 +1,6 @@
+{
+  "name": "credit-quiz",
+  "version": "1.0.0",
+  "description": "Civilized buddy code quiz: draw paper, grade, grant credit",
+  "main": "index.js"
+}

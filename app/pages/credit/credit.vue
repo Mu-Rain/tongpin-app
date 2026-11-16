@@ -7,9 +7,9 @@
       <text class="hero-desc">{{ levelDesc }}</text>
     </view>
 
-    <!-- 低于 60 时先说清原因：不给发布入口又不解释，用户只会以为坏了 -->
+    <!-- 低于 90 时先说清原因：不给发布入口又不解释，用户只会以为坏了 -->
     <view class="tip" v-if="canPublish === false">
-      <text class="tip-text">信誉分低于 60，暂时不能发布卡片，完成搭子或通过认证可以加分</text>
+      <text class="tip-text">信誉分低于 90，暂时不能发布需求和申请搭子；做《文明搭档守则》的题可以涨回来</text>
     </view>
 
     <!-- 加载中 -->
@@ -24,6 +24,17 @@
     </view>
 
     <block v-else>
+      <!-- 做题加信誉分：新用户首次 +5；低于 90 分时每天 +1.5。都是 10 题全对才拿满额，
+         答对 9 题按 80%、8 题按 60% 折算，7 题及以下不给分。口径在 credit-quiz，这里只负责带路 -->
+      <view class="quiz-card" @tap="goQuiz">
+        <view class="quiz-top">
+          <text class="quiz-title">学《文明搭档守则》</text>
+          <text class="quiz-badge">10 题</text>
+        </view>
+        <text class="quiz-desc">新用户首次完成加 5 分，没拿满可以重考、只补差额；信誉分低于 90 时每天可做一次，加 1.5 分。都要 10 题全对才拿满，答对 8 题起才有分。</text>
+        <view class="quiz-go"><text class="quiz-go-txt">去答题</text></view>
+      </view>
+
       <!-- 怎么算的 -->
       <view class="card" v-if="rules.length > 0">
         <text class="card-title">怎么算的</text>
@@ -89,10 +100,10 @@ export default {
     // 等级四个值由云函数定，说明文案放前端（要改口吻不用动后端）
     levelDesc() {
       const map = {
-        limited: '低于 60 分，暂时不能发布卡片',
-        normal: '60–79 分，正常使用',
-        good: '80–89 分，良好，发布和匹配都不受限',
-        excellent: '90–100 分，优秀，同校同学更容易看到你'
+        limited: '低于 90 分，暂时不能发布需求、不能申请搭子',
+        normal: '90–94 分，正常使用',
+        good: '95–99 分，良好，同校同学更容易看到你',
+        excellent: '100 分，优秀，同校同学更容易看到你'
       }
       return map[this.level] || '完成搭子、通过学生认证都会加分'
     }
@@ -100,10 +111,26 @@ export default {
   onLoad() {
     this.loadFirst()
   },
+  onShow() {
+    // 从题库页回来要看得到新分数；用开关而不是无条件 onShow，避免首次进入多拉一次
+    if (!this.needReload) return
+    this.needReload = false
+    this.loadFirst()
+  },
   onPullDownRefresh() {
     this.loadFirst(true)
   },
   methods: {
+    goQuiz() {
+      this.needReload = true
+      uni.navigateTo({
+        url: '/pages/credit/quiz',
+        fail() {
+          uni.showToast({ title: '打不开题库，稍后再试', icon: 'none' })
+        }
+      })
+    },
+
     loadFirst(fromPull) {
       this.page = 1
       this.hasMore = false
@@ -195,7 +222,7 @@ export default {
 
     goPublish() {
       if (this.canPublish === false) {
-        uni.showToast({ title: '信誉分低于 60，暂时不能发布卡片', icon: 'none' })
+        uni.showToast({ title: '信誉分低于 90，暂时不能发布需求', icon: 'none' })
         return
       }
       uni.navigateTo({ url: '/pages/publish/publish' })
@@ -417,5 +444,51 @@ export default {
   border: 2rpx solid var(--tf-primary);
   border-radius: 38rpx;
   padding: 0 48rpx;
+}
+
+.quiz-card {
+  background: var(--tf-card);
+  border-radius: 28rpx;
+  padding: 28rpx 26rpx;
+  margin-bottom: 24rpx;
+  box-shadow: var(--tf-lift-sm);
+}
+.quiz-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.quiz-title {
+  font-size: 29rpx;
+  font-weight: 700;
+  color: var(--tf-text);
+}
+.quiz-badge {
+  font-size: 22rpx;
+  color: var(--tf-primary-deep);
+  background: var(--tf-primary-soft);
+  border-radius: 20rpx;
+  padding: 4rpx 16rpx;
+}
+.quiz-desc {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: var(--tf-text-2);
+}
+.quiz-go {
+  margin-top: 20rpx;
+  height: 68rpx;
+  border-radius: 34rpx;
+  background: var(--tf-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.quiz-go-txt {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--tf-primary-deep);
 }
 </style>

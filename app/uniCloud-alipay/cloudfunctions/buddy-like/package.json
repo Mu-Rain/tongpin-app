@@ -1,0 +1,6 @@
+{
+  "name": "buddy-like",
+  "version": "1.0.0",
+  "description": "搭子互赞：给对方信誉分 +0.1，双方各限一次",
+  "main": "index.js"
+}

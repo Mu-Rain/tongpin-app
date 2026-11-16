@@ -83,7 +83,7 @@ async function getUserByToken(token) {
 
 /** 读用户信誉分，兼容两套字段名 */
 function readCredit(u) {
-  return pickInt(u.credit_score, pickInt(u.credit, 80))
+  return pickInt(u.credit_score, pickInt(u.credit, 90))
 }
 
 /**
@@ -398,8 +398,8 @@ exports.main = async (event) => {
       // 信誉门槛：两条都要过
       const myCredit = readCredit(me)
       const hisCredit = readCredit(to)
-      if (myCredit < 60) fail('你的信誉分低于 60，暂时不能邀请搭子', 403)
-      if (hisCredit < 60) fail('对方信誉分过低，暂不支持邀请', 403)
+      if (myCredit < 90) fail('你的信誉分低于 90，暂时不能邀请搭子', 403)
+      if (hisCredit < 90) fail('对方信誉分过低，暂不支持邀请', 403)
 
       // ★ 已经是好友就不再邀请搭子：好友关系比搭子更强，
       //   允许再挂一条搭子只会在两个页面上重复显示同一个人。
