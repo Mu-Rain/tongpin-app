@@ -55,7 +55,7 @@
 | 数据库 | uniCloud **云数据库**（文档型，基于 MongoDB） | 集合 = 原来的"表"；结构见 [03-database.md](./03-database.md) |
 | 文件存储 | uniCloud **云存储** | 分目录：`avatar/` 公开、`verify/` 私有、`chat/` 私有、`material/` 待审 |
 | 推送 | uniCloud **uni-push** | 离线时提醒"有新消息"；不保证实时，只保证"会提醒" |
-| AI | DeepSeek API（`deepseek-chat`） | **只在云函数里调用**；Key 放云函数的环境变量 |
+| AI | OpenAI 兼容的大模型接口（本项目实测阿里云百炼 `qwen-plus`；DeepSeek / 智谱 / Kimi / OpenAI 都是同一套协议，换一家只改配置） | **只在云函数里调用**；地址、模型名、Key 都放云函数的环境变量 |
 | 管理后台 | MVP：**uniCloud web 控制台**（0 开发）；有余力再写 1 个单页审核页 | 控制台能看集合、改状态、看云存储里的图片；审核学生证够用 |
 | 版本控制 | Git + GitHub 私有仓库 | 每天至少 1 次提交；`.gitignore` 排除 uniCloud 私有配置与密钥 |
 | 部署 | HBuilderX 云打包出 APK，直接发给评委 / 同学 | 不上架、不备案、零成本 |
@@ -72,7 +72,7 @@ sequenceDiagram
   C->>C: 校验 token / 校验参数 / 校验信誉分
   C->>D: 读写集合
   Note over C,A: 只有 AI 相关云函数才走这一步
-  C->>A: 带 Key 调用 deepseek-chat
+  C->>A: 带 Key 调用 OpenAI 兼容接口
   A-->>C: 回复
   C-->>P: 返回 { code, data, msg }
   P->>P: 根据 code 显示成功 / 错误提示
