@@ -260,9 +260,13 @@ export default {
   /* 底色 0.62 而不是设计稿的 0.11：滑块是「选中态」的实体表达，
      太淡会和底槽糊成一片、只剩一道白边。0.62 才读得出是一颗独立的胶囊。
      saturate 同样压到 1.2，理由同底槽。 */
-  background: rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(22px) saturate(1.2) brightness(1.06);
-  -webkit-backdrop-filter: blur(22px) saturate(1.2) brightness(1.06);
+  background: rgba(255, 255, 255, 0.72);
+  /* ★ 这里不做 backdrop-filter，也不要有 will-change 之外的合成技巧。
+     滑块是唯一每帧都在动的元素，给它加模糊等于让 Android WebView 每一帧
+     重新栅格化「滑块下方那一片」—— 冷启动后头几次切换会明显掉帧，
+     多点几次（GPU 着色器缓存热了）才顺，正是「要先把四个 tab 点一遍」那个症状。
+     视觉上也不亏：底槽本身已经糊过了，滑块压在底槽上再糊一次几乎没有增量，
+     0.72 的白底 + 下方已有的模糊，读出来是同一颗玻璃胶囊。 */
   border: 2rpx solid rgba(255, 255, 255, 0.92);
   box-shadow:
     0 19rpx 46rpx rgba(31, 92, 172, 0.20),

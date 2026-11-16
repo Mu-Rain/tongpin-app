@@ -106,8 +106,8 @@ exports.main = async (event) => {
       role: user.role || '',
       is_admin: user.is_admin === true,
       // 信誉分：两套字段名
-      credit: typeof user.credit === 'number' ? user.credit : typeof user.credit_score === 'number' ? user.credit_score : 80,
-      credit_score: typeof user.credit_score === 'number' ? user.credit_score : typeof user.credit === 'number' ? user.credit : 80,
+      credit: typeof user.credit === 'number' ? user.credit : typeof user.credit_score === 'number' ? user.credit_score : 90,
+      credit_score: typeof user.credit_score === 'number' ? user.credit_score : typeof user.credit === 'number' ? user.credit : 90,
       titles: user.titles || [],
       tags: user.tags || [],
       createTime: user.createTime

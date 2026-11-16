@@ -96,19 +96,35 @@ const TITLE_NAMES = {
   verify_pass: '学生已认证',
   first_buddy: '第一次搭成',
   tag_3: '标签新手',
-  tag_8: 'コレクター',
-  tag_10: 'DECATHLON',
   card_1: '首发选手',
-  card_5: '大厅常客',
-  card_10: 'HEADLINER',
   friend_1: 'はじまり',
-  friend_5: 'SQUAD',
   post_1: '第一次冒泡',
+  comment_10: '嘴替',
+  like_50: '点赞狂魔',
+  post_6: '常驻圈友',
+  tag_8: 'コレクター',
+  card_5: '大厅常客',
+  friend_5: 'SQUAD',
   post_10: 'CHATTERBOX',
-  credit_110: '信誉良好',
-  credit_130: 'GOLD STANDARD',
   buddy_3: '搭子收割机',
-  buddy_10: 'LEGEND'
+  veteran_30: '老兵',
+  comment_50: '话疗师',
+  like_200: 'LIKE MACHINE',
+  tag_10: 'DECATHLON',
+  card_10: 'HEADLINER',
+  card_30: '大厅霸主',
+  post_40: '专栏作家',
+  friend_20: 'CONNECTOR',
+  buddy_10: 'LEGEND',
+  buddy_30: 'パートナー',
+  like_500: '点赞之神',
+  veteran_100: '骨灰級',
+  comment_200: '评论家',
+  buddy_50: '伝説の相棒',
+  post_100: '百篇',
+  friend_50: '人脉顶点',
+  veteran_200: '元老院',
+  like_1000: '千赞之神'
 }
 
 function fail(msg, code) {
@@ -195,7 +211,7 @@ exports.main = async (event) => {
     if (!uRes.data || !uRes.data.length) fail('这个人不存在或已注销', 404)
     const u = uRes.data[0]
 
-    const credit = pickInt(u.credit_score, pickInt(u.credit, 80))
+    const credit = pickInt(u.credit_score, pickInt(u.credit, 90))
     const verified = !!(u.is_verified || u.schoolVerified || u.verify_status === 'approved')
 
     // 库里存 fileID，<image> 只认 http 链接，这里换一次
@@ -404,7 +420,7 @@ exports.main = async (event) => {
       }
 
       // ============ 还能不能再建一段 ============
-      const myCredit = pickInt(me.credit_score, pickInt(me.credit, 80))
+      const myCredit = pickInt(me.credit_score, pickInt(me.credit, 90))
       const hisCredit = credit
 
       const pendingInv = await db
@@ -432,9 +448,9 @@ exports.main = async (event) => {
         applyState.reason = '对方不接收你的邀请'
       } else if (isFriend) {
         applyState.reason = '你们已经是好友了，不用再邀请搭子'
-      } else if (myCredit < 60) {
+      } else if (myCredit < 90) {
         applyState.reason = '你的信誉分低于 60，暂时不能邀请搭子'
-      } else if (hisCredit < 60) {
+      } else if (hisCredit < 90) {
         applyState.reason = '对方信誉分过低，暂不支持邀请'
       } else if (pendingInv.data.length) {
         applyState.pending_invite_id = pendingInv.data[0]._id

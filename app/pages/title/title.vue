@@ -51,9 +51,12 @@
             :class="{ 'badge--off': !t.obtained }"
             @tap="openDetail(t, 0)"
           >
-            <!-- 每个称号用自己的皮肤：轮廓都是胶囊，内部配色/字体/图标各不相同 -->
-            <view class="tt" :class="skinOf(t.code).cls">
-              <text class="tt-ico">{{ skinOf(t.code).icon }}</text>
+            <!-- 每个称号用自己的皮肤；传说档是纯字标（无图标），和其他档区分开 -->
+            <view
+              class="tt tt--wall"
+              :class="[t.skin.cls, { 'tt--wm': t.skin.form === 'wordmark' }]"
+            >
+              <text v-if="t.skin.form !== 'wordmark'" class="tt-ico">{{ t.skin.icon }}</text>
               <text class="tt-name">{{ t.name }}</text>
             </view>
             <text class="badge-label" :class="{ 'badge-label--on': t.is_equipped }">
@@ -68,8 +71,13 @@
     <view class="mask" v-if="detail" @tap="closeDetail">
       <view class="sheet" @tap.stop>
         <view class="sheet-badge">
-          <view class="tt" :class="skinOf(detail.t.code).cls">
-            <text class="tt-ico">{{ skinOf(detail.t.code).icon }}</text>
+          <view
+            class="tt tt--sheet"
+            :class="[skinOf(detail.t.code).cls, { 'tt--wm': skinOf(detail.t.code).form === 'wordmark' }]"
+          >
+            <text v-if="skinOf(detail.t.code).form !== 'wordmark'" class="tt-ico">
+              {{ skinOf(detail.t.code).icon }}
+            </text>
             <text class="tt-name">{{ detail.t.name }}</text>
           </view>
         </view>
@@ -144,7 +152,8 @@ export default {
       const meta = [
         { key: 'common', label: '普通' },
         { key: 'rare', label: '稀有' },
-        { key: 'epic', label: '史诗' }
+        { key: 'epic', label: '史诗' },
+        { key: 'legend', label: '传说' }
       ]
       const out = []
       for (let i = 0; i < meta.length; i++) {
@@ -155,7 +164,10 @@ export default {
         out.push({
           key: meta[i].key,
           label: meta[i].label,
-          items: items,
+          // 皮肤在这里算好挂上去：模板里每枚少调 2~3 次 skinOf
+          items: items.map(function (t) {
+            return Object.assign({}, t, { skin: skinOf(t.code) })
+          }),
           got: items.filter(function (t) {
             return t.obtained
           }).length
@@ -290,7 +302,7 @@ export default {
     },
 
     rarityText(r) {
-      const map = { common: '普通', rare: '稀有', epic: '史诗' }
+      const map = { common: '普通', rare: '稀有', epic: '史诗', legend: '传说' }
       return map[r] || ''
     },
 
@@ -458,6 +470,12 @@ export default {
   box-shadow: 0 0 0 4rpx rgba(201, 164, 74, 0.16);
 }
 
+/* 传说：唯一一个自己会发光的档位圆点 */
+.gh-dot--legend {
+  background: #E8623C;
+  box-shadow: 0 0 0 4rpx rgba(232, 98, 60, 0.18), 0 0 14rpx rgba(232, 98, 60, 0.6);
+}
+
 .gh-name {
   font-size: 24rpx;
   font-weight: 800;
@@ -476,15 +494,15 @@ export default {
   background: rgba(18, 49, 61, 0.07);
 }
 
-/* ---- 两列胶囊 ---- */
+/* ---- 三列胶囊 ---- */
 .wall {
   display: flex;
   flex-wrap: wrap;
-  gap: 20rpx 18rpx;
+  gap: 16rpx 12rpx;
 }
 
 .badge {
-  width: calc((100% - 18rpx) / 2);
+  width: calc((100% - 24rpx) / 3);
   display: flex;
   flex-direction: column;
   gap: 8rpx;

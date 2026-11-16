@@ -75,11 +75,7 @@
         <text class="stat-n">{{ myOpenCount }}</text>
         <text class="stat-l">我的需求</text>
       </view>
-      <view class="stat" @tap.stop="goBuddies">
-        <text class="stat-n">{{ myBuddyCount }}</text>
-        <text class="stat-l">我的搭子</text>
-      </view>
-      <view class="stats-go" @tap.stop="goHall"><text class="stats-go-arw">→</text></view>
+      <view class="stats-go" @tap.stop="goHall"><text class="stats-go-txt">前往搭子大厅</text><text class="stats-go-arw">→</text></view>
     </view>
 
     <!-- [5] 分类贴纸：横滑，只露 3.5 个 -->
@@ -614,15 +610,53 @@ export default {
     }
   },
   onReady() {
-    // 首页已经画好，这时才关原生启动图：启动图 → 首页之间不会有一帧白屏
-    // （manifest 里 splashscreen.autoclose 设成了 false）
+    // 首页已经画好。启动图（manifest 里 splashscreen.autoclose = false）在这里交出去。
+    const closeSplash = () => {
+      try {
+        // 走 App 的统一入口：它顺手记下「图已关」，别处再切 tab 就不会闪
+        const app0 = getApp()
+        if (app0 && typeof app0.closeSplash === 'function') {
+          app0.closeSplash()
+          return
+        }
+        if (typeof plus !== 'undefined' && plus.navigator && plus.navigator.closeSplashscreen) {
+          plus.navigator.closeSplashscreen()
+        }
+      } catch (e) {
+        // 关不掉不影响业务，App.vue 里还有 4 秒兜底
+      }
+    }
+    // 见下面 onReady 里的注释：预热会把加载过程露给用户，故默认关闭
+    const WARM_ON_READY = false
+    let closed = false
+    const closeOnce = () => {
+      if (closed) return
+      closed = true
+      closeSplash()
+    }
+    // ★ 预热开关，默认关。
+    //   开：借启动图把四个 tab 各切一遍、把 webview 建好，第一次点就不顿了；
+    //       但真机上这层遮罩留不住 —— 用户能清楚看见四个页面依次加载，所以默认不用。
+    //   关：启动最快，完全看不到加载过程；代价是第一次点各 tab 仍会顿一下。
+    //   真要再试，把这里改 true 即可，下面的逻辑都是现成的。
+    if (!WARM_ON_READY) {
+      closeOnce()
+      return
+    }
+    // 兜底：预热最多占住启动图 1200ms。四个页面都是新建 webview，
+    // 正常 300~600ms 就回来了；超时就先放开用户，剩下的预热随它去。
+    setTimeout(closeOnce, 1200)
+    const app = getApp()
     try {
-      if (typeof plus !== 'undefined' && plus.navigator && plus.navigator.closeSplashscreen) {
-        plus.navigator.closeSplashscreen()
+      if (app && typeof app.warmTabs === 'function') {
+        // 传 closeOnce 当回调：四个 tab 切完并回到首页之后才关图
+        app.warmTabs(closeOnce)
+        return
       }
     } catch (e) {
-      // 关不掉不影响业务，App.vue 里还有 4 秒兜底
+      // 拿不到 App 实例就当没这回事，直接关图
     }
+    closeOnce()
   },
 
   methods: {
@@ -891,11 +925,6 @@ export default {
     // 必须用 navigateTo（本文件进 hall 的其它入口也是这么写的）
     goHall() {
       uni.navigateTo({ url: '/pages/hall/hall' })
-    },
-
-    // buddy 不在 tabBar 里，只能 navigateTo；父容器 .stats 有 @tap="tapPaw"（摸猫动画），所以必须 .stop
-    goBuddies() {
-      uni.navigateTo({ url: '/pages/buddy/buddy' })
     },
 
     /* 数字卡「我的需求」→ 我的需求页。
@@ -1212,7 +1241,7 @@ export default {
 /* ==========================================================================
    [0.5] 数字卡
    --------------------------------------------------------------------------
-   白色胶囊 + 三格数字 + 右侧深色圆形箭头。
+   白色胶囊 + 两格数字 + 右侧深色胶囊按钮（前往搭子大厅）。
    压住头图下沿用 transform（sticky 元素上的负 margin 不产生位移）。
    ========================================================================== */
 .stats {
@@ -1275,23 +1304,36 @@ export default {
   opacity: 0.55;
 }
 
-/* 右侧深色圆形箭头：整张卡最醒目的一笔 */
+/* 右侧深色胶囊按钮：整张卡最醒目的一笔，文字横排在按钮里 */
 .stats-go {
-  flex: none;
-  width: 92rpx;
+  flex: 2;
   height: 92rpx;
   margin-left: 12rpx;
-  border-radius: 50%;
+  border-radius: 46rpx;
   background: var(--tf-text);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 8rpx 24rpx rgba(45, 42, 38, 0.26);
 }
+.stats-go-txt {
+  color: #fff;
+  /* 25rpx → 22rpx：右边要放一个箭头，字号不降按钮就被字撑满。
+     6 个字 6×22 + 字距 6 = 138rpx，加箭头与间距约 157rpx，
+     按钮实际可画宽度约 203rpx（.stats 58% 宽、三格按 1:1:2 分、扣掉按钮左外边距），
+     留 45rpx 余量，长一点的机型也不会挤到贴边。 */
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  line-height: 1;
+}
+/* 箭头：只做「往那边走」的指示，不抢文字的重量，所以比文字大 2rpx 而没有额外加粗以外的装饰 */
 .stats-go-arw {
   color: #fff;
-  font-size: 34rpx;
+  font-size: 24rpx;
+  font-weight: 700;
   line-height: 1;
+  margin-left: 6rpx;
 }
 
 /* ==========================================================================

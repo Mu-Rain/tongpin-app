@@ -61,6 +61,10 @@
              才冒出来。判断逻辑在 statusText 计算属性里。 -->
       <text v-if="statusText" class="conn" :class="'conn--' + status">{{ statusText }}</text>
       <!-- 更多菜单（文档 §5）：危险操作收进这里，不在顶栏大声展示 -->
+      <!-- 约时间地点：只有搭子关系才显示。
+           好友关系下云端返回的 relations 是空数组（成为好友那一刻搭子关系就被置为 ended），
+           所以 buddyRel > 0 同时等价于「是搭子」且「不是好友」。 -->
+      <text v-if="!isAi && buddyRel > 0" class="bar-meetup" @tap="openMeetupSheet">📅</text>
       <text v-if="!isAi" class="bar-more" @tap="showMore = true">⋯</text>
       <!-- 搜索入口已移到「对方主页」（user.vue 的「查找聊天记录」）。
            顶栏这一行已经排了名字、学校、搭子标签、连接状态，
@@ -258,6 +262,17 @@
                   </template>
                   <text v-else class="sc-status">{{ meetupStatusText(m) }}</text>
                 </view>
+                <!-- 到达签到：两边都能点，所以不受上面「只给对方的按钮」限制。
+                     约成之后才出现；签到结果只显示「到没到」和距离，不显示对方坐标 -->
+                <view class="sc-ck" v-if="m._ck_show">
+                  <text
+                    class="sc-btn sc-btn--ck"
+                    :class="{ 'sc-btn--off': m._ck_busy || m._ck_done }"
+                    @tap.stop="checkinMeetup(m)"
+                    >{{ m._ck_busy ? '定位中…' : m._ck_done ? '已签到' : '我已到达' }}</text
+                  >
+                  <text class="sc-ck-hint" v-if="m._ck_text">{{ m._ck_text }}</text>
+                </view>
               </view>
               <!-- ===== 同频圈动态分享卡（m.type === 'share'）=====
                    一条 share 消息不该显示成裸文字：它代表"别人的一条动态"，
@@ -307,15 +322,8 @@
     <!-- ===== 输入区 ===== -->
     <view class="chat-input">
       <text class="pic-btn" @tap="pickImage">🖼</text>
-      <!-- 语音：按住说话。用 touchstart/touchend 而不是 longpress ——
-           longpress 只是"按久了"，松手后还得再判断一次，反而绕。 -->
-      <text
-        class="pic-btn mic-btn"
-        :class="{ 'mic-btn--on': recording }"
-        @touchstart.stop="onMicStart"
-        @touchend.stop="onMicEnd"
-        @touchcancel.stop="onMicCancel"
-        >🎤</text>
+      <!-- 语音发送暂时收掉：录音链路还没在真机跑通，留一个点不动的麦克风只会让人反复试。
+           播放侧保留 —— 历史语音消息还要能听（见 playVoiceMsg）。约时间地点已挪到顶栏。 -->
       <input
         class="input input--flat"
         v-model="draft"
@@ -325,6 +333,54 @@
         @input="onTyping"
       />
       <button class="btn btn--orange btn--sm" :disabled="sending" @tap="sendText">发送</button>
+    </view>
+
+    <!-- ===== 发起约局 =====
+         复用搜索弹层的遮罩与面板样式（.search-mask / .search-panel），
+         免得为一个表单再写一套弹层与安全区处理。 -->
+    <view v-if="meetupOpen" class="search-mask" @tap="closeMeetupSheet">
+      <view class="search-panel meetup-panel" @tap.stop>
+        <view class="search-head">
+          <text class="meetup-title">约个时间地点</text>
+          <text class="search-cancel" @tap="closeMeetupSheet">取消</text>
+        </view>
+        <view class="meetup-form">
+          <!-- 时间必须用选择器：签到要在约定时间前后 2 小时内才算数，
+               「周六 19:00」这种手写文本没法拿来比大小 -->
+          <view class="me-pick">
+            <picker mode="date" :value="meetupDate" :start="meetupStart" @change="onMeetupDate">
+              <view class="me-pick-box" :class="{ 'me-pick-box--on': meetupDate }">{{
+                meetupDate || '选日期'
+              }}</view>
+            </picker>
+            <picker mode="time" :value="meetupClock" @change="onMeetupClock">
+              <view class="me-pick-box" :class="{ 'me-pick-box--on': meetupClock }">{{
+                meetupClock || '选时间'
+              }}</view>
+            </picker>
+          </view>
+          <input
+            class="input input--flat me-input"
+            v-model="meetupPlace"
+            placeholder="地点，例：南湖操场"
+          />
+          <input
+            class="input input--flat me-input"
+            v-model="meetupNote"
+            placeholder="备注（可不填）"
+          />
+          <view class="me-point" @tap="pickMeetupPoint">
+            <text class="me-point-k">见面定位</text>
+            <text class="me-point-v">{{ meetupPoint || '未选（只填时间地点也行）' }}</text>
+          </view>
+          <text class="me-hint"
+            >签到只在约定时间前后 2 小时内有效。选了定位点，两个人到场各自签到，系统就能判断谁到了、谁没到；被鸽子时这也是凭据。双方都签到，各加 0.1 分。</text
+          >
+          <button class="btn btn--orange btn--sm" :disabled="meetupSending" @tap="sendMeetup">
+            {{ meetupSending ? '发送中…' : '发约局' }}
+          </button>
+        </view>
+      </view>
     </view>
 
     <!-- ===== 消息搜索弹层（契约 §5.1）=====
@@ -377,7 +433,7 @@
 import { createChatTransport } from '@/common/chat/transport.js'
 import { getImageUrl, putImageUrls, invalidateImageUrl } from '@/common/chat/imageCache.js'
 import { getLocalImage, ensureLocalImage, forgetLocalImage } from '@/common/chat/imageFile.js'
-import { MAX_VOICE_SEC, isRecordSupported, startRecord, stopRecord, abortRecord, playVoice, stopVoice, destroyVoice } from '@/common/chat/voice.js'
+import { playVoice, stopVoice, destroyVoice } from '@/common/chat/voice.js'
 import track from '@/utils/track.js'
 import { avatarFadeMixin } from '@/common/avatar/avatarCache.js'
 
@@ -469,6 +525,19 @@ export default {
       showMore: false,
       // 对方 user id，用来点头像进主页
       peerId: '',
+      // 发起约局：时间 / 地点 / 备注 / 可选定位点
+      meetupOpen: false,
+      // 约定日期 / 时刻（选择器给值），meetupTime 只用来显示「11月15日 19:00」
+      meetupDate: '',
+      meetupClock: '',
+      meetupStart: '',
+      meetupTime: '',
+      meetupPlace: '',
+      meetupNote: '',
+      meetupLat: 0,
+      meetupLng: 0,
+      meetupPoint: '',
+      meetupSending: false,
       // 对方头像（http 链接，由消息列表换链后经 query 传来；空则顶栏留空心位，不落默认头像图，也不用昵称首字）
       peerAvatar: '',
       // 本机账号自己的头像（已换成可访问链接），用于自己那条气泡
@@ -575,6 +644,8 @@ export default {
       // ★ 为什么不用 is_friend：friendships 没有 status 字段，解除好友是把关系行删掉，
       //   光看 is_friend:false 分不清"从来不是好友"和"当过好友又解除" —— 三态只能云函数给。
       peerRelation: '',
+      // 我和对方之间还有几条 active 搭子关系：>0 才显示顶栏「约时间地点」
+      buddyRel: 0,
       // 对方的已读游标（message-list 返回的 peer_last_read_message_id）
       peerLastReadId: '',
       // 搜索弹层
@@ -587,10 +658,6 @@ export default {
       highlightTimer: null,
       // 正在播放的语音气泡 key（同时只播一条）
       playingKey: '',
-      // 是否正在录音（按住麦克风）
-      recording: false,
-      // 录音开始时间戳：松手时算时长，用于 1 秒以内的误触判断
-      recordStartAt: 0,
       // 已读回执的节流时间戳（见 refreshPeerRead）
       peerReadAt: 0
     }
@@ -773,11 +840,6 @@ export default {
     if (this.chat) this.chat.stop()
     // 切走时语音必须停：否则微信都退到后台了还在念聊天记录
     this.stopPlayVoice()
-    // 录音同理：切走后松手事件收不到，录音会一直开着
-    if (this.recording) {
-      this.recording = false
-      abortRecord()
-    }
   },
 
   onUnload() {
@@ -799,10 +861,9 @@ export default {
       clearTimeout(this.highlightTimer)
       this.highlightTimer = null
     }
-    // 播放器与录音器都是全局单例，页面销毁必须一起收掉，
-    // 否则下次进聊天页会拿到绑着旧回调的实例（按住麦克风没反应）。
+    // 播放器是全局单例，页面销毁必须收掉，
+    // 否则下次进聊天页会拿到绑着旧回调的实例。
     destroyVoice()
-    this.recording = false
   },
 
   methods: {
@@ -1146,6 +1207,282 @@ export default {
       return '已确认，等对方'
     },
 
+    /* ==================== 约局：发起 / 签到 ====================
+       服务端在 meetup-invite（发卡）与 meetup-confirm（确认/签到）两个云函数里。
+       签到判定：约定点优先，其次跟对方签到位置比，半径 50 米 + 手机自报精度。 */
+
+    openMeetupSheet() {
+      if (this.isAi) {
+        uni.showToast({ title: 'AI 助手这里不约局', icon: 'none' })
+        return
+      }
+      if (!this.conversationId) return
+      this.meetupTime = ''
+      this.meetupDate = ''
+      this.meetupClock = ''
+      this.meetupStart = this.dateStr(new Date())
+      this.meetupPlace = ''
+      this.meetupNote = ''
+      this.meetupLat = 0
+      this.meetupLng = 0
+      this.meetupPoint = ''
+      this.meetupOpen = true
+    },
+
+    closeMeetupSheet() {
+      this.meetupOpen = false
+    },
+
+    /* 取一次当前定位当见面点。失败就让它空着 —— 没有定位点这局照样能约，
+       只是签到退化成「跟对方的位置比」 */
+    pickMeetupPoint() {
+      const self = this
+      uni.getLocation({
+        type: 'gcj02',
+        isHighAccuracy: true,
+        highAccuracyExpireTime: 4000,
+        success(res) {
+          self.meetupLat = res.latitude
+          self.meetupLng = res.longitude
+          self.meetupPoint = '已取到当前位置'
+          uni.showToast({ title: '已取到当前位置', icon: 'none' })
+        },
+        fail() {
+          uni.showToast({ title: '没拿到定位，请允许定位权限', icon: 'none' })
+        }
+      })
+    },
+
+    /* YYYY-MM-DD，选择器的下限用 */
+    dateStr(d) {
+      const p = function (n) {
+        return n < 10 ? '0' + n : '' + n
+      }
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+    },
+
+    onMeetupDate(e) {
+      this.meetupDate = String((e.detail && e.detail.value) || '')
+      this.syncMeetupTimeText()
+    },
+
+    onMeetupClock(e) {
+      this.meetupClock = String((e.detail && e.detail.value) || '')
+      this.syncMeetupTimeText()
+    },
+
+    /* 选好的日期时间 → 毫秒时间戳。缺一个就回 0（没选完） */
+    meetupAt() {
+      const d = String(this.meetupDate || '')
+      const c = String(this.meetupClock || '')
+      if (!d || !c) return 0
+      const dp = d.split('-')
+      const cp = c.split(':')
+      if (dp.length !== 3 || cp.length !== 2) return 0
+      const t = new Date(
+        Number(dp[0]),
+        Number(dp[1]) - 1,
+        Number(dp[2]),
+        Number(cp[0]),
+        Number(cp[1]),
+        0,
+        0
+      ).getTime()
+      return isFinite(t) ? t : 0
+    },
+
+    /* 卡片上给人看的那句话：11月15日 19:00 */
+    syncMeetupTimeText() {
+      const d = String(this.meetupDate || '')
+      const c = String(this.meetupClock || '')
+      if (!d || !c) {
+        this.meetupTime = ''
+        return
+      }
+      const dp = d.split('-')
+      this.meetupTime = Number(dp[1]) + '月' + Number(dp[2]) + '日 ' + c
+    },
+
+    async sendMeetup() {
+      if (this.meetupSending) return
+      const at = this.meetupAt()
+      const place = String(this.meetupPlace || '').trim()
+      if (!at) {
+        uni.showToast({ title: '先把日期和时间选上', icon: 'none' })
+        return
+      }
+      if (at < Date.now() - 3600000) {
+        uni.showToast({ title: '这个时间已经过去了', icon: 'none' })
+        return
+      }
+      if (!place) {
+        uni.showToast({ title: '地点要填', icon: 'none' })
+        return
+      }
+      const time = String(this.meetupTime || '').trim()
+      const token = uni.getStorageSync('token') || ''
+      if (!token) {
+        uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' })
+        return
+      }
+      this.meetupSending = true
+      try {
+        const data = {
+          token: token,
+          conversation_id: this.conversationId,
+          time: time,
+          place: place,
+          time_at: at
+        }
+        const note = String(this.meetupNote || '').trim()
+        if (note) data.note = note
+        if (this.meetupLat && this.meetupLng) {
+          data.place_lat = this.meetupLat
+          data.place_lng = this.meetupLng
+        }
+        const res = await uniCloud.callFunction({ name: 'meetup-invite', data: data })
+        const r = res.result || {}
+        if (r.code !== 0) {
+          uni.showToast({ title: r.msg || '发不出去，稍后再试', icon: 'none', duration: 2500 })
+          return
+        }
+        this.meetupOpen = false
+        uni.showToast({ title: '约局卡片已发出', icon: 'none' })
+      } catch (e) {
+        uni.showToast({ title: '发不出去，稍后再试', icon: 'none' })
+      } finally {
+        this.meetupSending = false
+      }
+    },
+
+    /* 拿一次定位，成功给坐标，失败给 null（不 reject：调用方只关心有没有） */
+    locate() {
+      return new Promise(function (resolve) {
+        uni.getLocation({
+          type: 'gcj02',
+          isHighAccuracy: true,
+          highAccuracyExpireTime: 4000,
+          success(res) {
+            resolve({
+              lat: res.latitude,
+              lng: res.longitude,
+              acc: Number(res.accuracy) || 0
+            })
+          },
+          fail() {
+            resolve(null)
+          }
+        })
+      })
+    },
+
+    /* 把服务端视图贴到这条卡上：状态、我到没到、对方到没到 */
+    applyMeetupView(m, d) {
+      if (!d) return
+      if (typeof d.status === 'string' && d.status) m._meetup_status = d.status
+      // 只有「约成了」才谈得上到达 —— pending 阶段显示签到按钮等于催人先来后到
+      m._ck_show = d.status === 'one_confirmed' || d.status === 'both_confirmed'
+      if (!m._ck_show) return
+      if (d.arrived) {
+        m._ck_done = true
+        m._ck_text = d.peer_arrived ? '双方都已签到' : '你已签到，等对方'
+      } else if (d.peer_arrived) {
+        m._ck_text = '对方已签到，你还没'
+      }
+      m._ck_synced = Date.now()
+    },
+
+    async checkinMeetup(m) {
+      if (m._ck_busy || m._ck_done) return
+      if (!m._id) {
+        uni.showToast({ title: '这张卡还没同步好，稍后再试', icon: 'none' })
+        return
+      }
+      const token = uni.getStorageSync('token') || ''
+      if (!token) {
+        uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' })
+        return
+      }
+      m._ck_busy = true
+      try {
+        const loc = await this.locate()
+        if (!loc) {
+          uni.showToast({ title: '没拿到定位，请允许定位权限', icon: 'none', duration: 2500 })
+          return
+        }
+        const res = await uniCloud.callFunction({
+          name: 'meetup-confirm',
+          data: {
+            token: token,
+            message_id: m._id,
+            action: 'checkin',
+            lat: loc.lat,
+            lng: loc.lng,
+            acc: loc.acc
+          }
+        })
+        const r = res.result || {}
+        if (r.code !== 0) {
+          uni.showToast({ title: r.msg || '签到失败，稍后再试', icon: 'none', duration: 2500 })
+          return
+        }
+        const d = r.data || {}
+        this.applyMeetupView(m, d)
+        if (d.arrived) {
+          uni.showToast({
+            title: d.peer_arrived ? '你们都到了，开始吧' : '已签到，等对方到',
+            icon: 'none',
+            duration: 2500
+          })
+        } else if (d.my_dist >= 0) {
+          uni.showToast({
+            title: '离约定点还有 ' + d.my_dist + ' 米，走进 ' + d.limit + ' 米内再试',
+            icon: 'none',
+            duration: 3000
+          })
+        } else {
+          uni.showToast({ title: '已记下你的位置，等对方也签到', icon: 'none', duration: 2500 })
+        }
+      } catch (e) {
+        uni.showToast({ title: '签到失败，稍后再试', icon: 'none' })
+      } finally {
+        m._ck_busy = false
+      }
+    },
+
+    /* 从服务端同步约局状态：只查最近两条结构化卡，卡片自身 30 秒内不重复查，
+       避免把轮询变成「每条卡每轮一次云函数调用」 */
+    syncMeetupStatus() {
+      const token = uni.getStorageSync('token') || ''
+      if (!token) return
+      const now = Date.now()
+      const picks = []
+      for (let i = this.messages.length - 1; i >= 0 && picks.length < 2; i--) {
+        const m = this.messages[i]
+        if (!m || m.type !== 'structured' || !m._id) continue
+        if (m._ck_done) continue
+        if (m._ck_synced && now - m._ck_synced < 30000) continue
+        picks.push(m)
+      }
+      if (!picks.length) return
+      const self = this
+      picks.forEach(function (m) {
+        m._ck_synced = now
+        uniCloud
+          .callFunction({
+            name: 'meetup-confirm',
+            data: { token: token, message_id: m._id, action: 'status' }
+          })
+          .then(function (res) {
+            const r = (res && res.result) || {}
+            if (r.code === 0 && r.data) self.applyMeetupView(m, r.data)
+          })
+          .catch(function () {
+            /* 查不到就保持原样：这张卡下次轮询还会再试 */
+          })
+      })
+    },
+
     /* 确认约局：走 meetup-confirm 把状态落到服务端。
        原来是发一条普通文本回执 —— 字发出去了，约局状态却没落地，
        两边都说不清到底算不算约成，所以换成接口。 */
@@ -1176,6 +1513,8 @@ export default {
         const d = r.data || {}
         // both 是接口的快捷标记，用它兜住 status 没给全的情况
         m._meetup_status = d.both ? 'both_confirmed' : (d.status || 'one_confirmed')
+        // 顺手把签到按钮放出来：约成了才谈得上「我已到达」
+        this.applyMeetupView(m, d)
         // 埋点：约局确认成功才算数（失败在上面已经 return）。
         // card_id 来自结构化卡片的 meta（契约 §5.1 里 card_id 是可选字段，没带就报空串），
         // message_id 就是这条卡消息自己的 _id —— meetup-confirm 用的也是它。
@@ -1393,6 +1732,7 @@ export default {
           // 再开一个 setInterval 会让请求翻倍。
           self.refreshFriendRequestStates()
           self.refreshPeerRead()
+          self.syncMeetupStatus()
         },
         // ★ 首轮就算一条消息都没有也要放开 loading。
         // transport 只在 list.length > 0 时才回调 onMessages，
@@ -1406,6 +1746,7 @@ export default {
           //   发申请的人会永远停在「等待对方同意」。
           self.refreshFriendRequestStates()
           self.refreshPeerRead()
+          self.syncMeetupStatus()
         },
         onStatus(s) {
           self.status = s
@@ -1977,8 +2318,8 @@ export default {
     },
 
     /**
-     * 上传前把长边压到 1280、质量 60。
-     * 3 MB 的原图大约落到 150 KB，同一份 CDN 流量能多发二三十倍。
+     * 上传前把长边压到 1280、质量 72。
+     * 3 MB 的原图大约落到 200 KB，同一份 CDN 流量能多发二十倍。
      * compressImage 在个别端没有/失败时直接发原图，不阻断聊天。
      */
     prepareImage(filePath) {
@@ -1989,7 +2330,7 @@ export default {
       if (typeof uni.compressImage !== 'function') return send(filePath)
       uni.compressImage({
         src: filePath,
-        quality: 60,
+        quality: 72,
         compressedWidth: 1280,
         success(res) {
           send(res.tempFilePath)
@@ -2089,7 +2430,7 @@ export default {
       if (typeof uni.compressImage !== 'function') return
       uni.compressImage({
         src: filePath,
-        quality: 62,
+        quality: 72,
         compressedWidth: 540,
         success(res) {
           const p = res && res.tempFilePath
@@ -2967,6 +3308,10 @@ export default {
         //   peerRelation 保持空串，提示条不显示、标签留在导航参数那份快照上。
         const st = d.relation_state
         if (st !== 'friend' && st !== 'unfriended' && st !== 'none') return
+        // 搭子关系数：user-profile 在好友关系下会把 relations 清空，
+        // 所以这个数字 >0 就等于「是搭子、且不是好友」，顶栏「约时间地点」靠它决定。
+        const relsNow = Array.isArray(d.relations) ? d.relations : []
+        this.buddyRel = relsNow.length
         this.peerRelation = st
         // 搭子标签：只有"从来不是好友"这一态才显示，与消息列表口径一致 ——
         // 成为好友、或者当过好友又解除，一律收掉，否则解除好友后标签还挂在那儿。
@@ -3367,85 +3712,6 @@ export default {
       })
     },
 
-    /* ---------- 语音 ---------- */
-
-    onMicStart() {
-      if (this.sending) return
-      if (!isRecordSupported()) {
-        uni.showToast({ title: '当前环境不支持录音', icon: 'none' })
-        return
-      }
-      const self = this
-      const ok = startRecord({
-        onStop(res) {
-          self.onRecordDone(res || {})
-        },
-        onError() {
-          self.recording = false
-          uni.showToast({ title: '录音失败，请检查麦克风权限', icon: 'none' })
-        }
-      })
-      if (!ok) {
-        uni.showToast({ title: '录音启动失败', icon: 'none' })
-        return
-      }
-      this.recording = true
-      this.recordStartAt = Date.now()
-    },
-
-    onMicEnd() {
-      if (!this.recording) return
-      this.recording = false
-      // 时长以本地计时为准：onStop 返回的 duration 在个别端是 0
-      this.recordStartAt = this.recordStartAt || Date.now()
-      stopRecord()
-    },
-
-    /** 手指划走 / 来电打断：取消，不发送 */
-    onMicCancel() {
-      if (!this.recording) return
-      this.recording = false
-      this.recordStartAt = 0
-      abortRecord()
-    },
-
-    /** 录音结束 → 上传 → 发一条 type='voice' 的消息 */
-    async onRecordDone(res) {
-      const tempPath = res.tempFilePath || ''
-      const startedAt = this.recordStartAt || 0
-      this.recordStartAt = 0
-      if (!tempPath) return
-      // 秒数取本地计时，夹在 1..MAX_VOICE_SEC 之间（message-send 会校验）
-      let sec = Math.round((Date.now() - (startedAt || Date.now())) / 1000)
-      if (!sec || sec < 1) {
-        uni.showToast({ title: '说话时间太短', icon: 'none' })
-        return
-      }
-      if (sec > MAX_VOICE_SEC) sec = MAX_VOICE_SEC
-      if (this.sending) return
-      this.sending = true
-      uni.showLoading({ title: '上传中…' })
-      try {
-        const rand = Math.random().toString(36).slice(2, 10)
-        const up = await uniCloud.uploadFile({
-          filePath: tempPath,
-          cloudPath: 'chat/' + this.conversationId + '/' + Date.now() + '-' + rand + '.mp3',
-          fileType: 'audio'
-        })
-        uni.hideLoading()
-        if (!up || !up.fileID) {
-          uni.showToast({ title: '语音上传失败', icon: 'none' })
-          return
-        }
-        await this.doSend({ type: 'voice', content: toCloudFileID(up.fileID), duration: sec })
-      } catch (e) {
-        uni.hideLoading()
-        uni.showToast({ title: '语音上传失败', icon: 'none' })
-      } finally {
-        this.sending = false
-      }
-    },
-
     voiceDurText(m) {
       const d = parseInt(m.duration, 10)
       return (d > 0 ? d : 1) + '"'
@@ -3632,6 +3898,13 @@ export default {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* 顶栏「约时间地点」：和「…」同一行，字重比「…」轻一点，避免抢走名字的注意力 */
+.bar-meetup {
+  flex: none;
+  font-size: 32rpx;
+  line-height: 1;
+  padding: 0 6rpx;
 }
 .chat-buddy-tag {
   border: 2rpx solid var(--tf-line-soft);
@@ -4037,10 +4310,6 @@ export default {
   flex: none;
   padding: 0 6rpx;
 }
-/* 录音中：麦克风变成橙色，让「正在录」这件事有可见反馈 */
-.mic-btn--on {
-  color: var(--tf-primary);
-}
 
 /* —— 消息搜索弹层 —— */
 /* 顶栏「…」更多菜单：底部弹出的操作表。
@@ -4287,6 +4556,103 @@ export default {
   font-size: 24rpx;
   color: var(--tf-text-2);
   padding: 20rpx 0;
+}
+
+/* 到达签到：状态行下面单独一排，和「确认 / 再说」同高同宽，点起来不别扭 */
+.sc-ck {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14rpx;
+  padding-top: 12rpx;
+}
+.sc-btn--ck {
+  min-height: 76rpx;
+  padding: 0 28rpx;
+  background: var(--tf-mint);
+  font-size: 24rpx;
+}
+.sc-ck-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  line-height: 1.4;
+  color: var(--tf-text-3);
+}
+
+/* —— 发起约局表单 ——
+   图标用 emoji 不引资源；这里只补表单排版，外壳借搜索弹层那套。 */
+.meetup-panel {
+  padding-bottom: 28rpx;
+}
+.meetup-title {
+  flex: 1;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--tf-text);
+}
+.meetup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  padding-top: 18rpx;
+}
+.me-pick {
+  display: flex;
+  flex-direction: row;
+  gap: 14rpx;
+}
+.me-pick-box {
+  flex: 1;
+  height: 84rpx;
+  line-height: 84rpx;
+  text-align: center;
+  border: 2rpx solid var(--tf-line-soft);
+  border-radius: var(--tf-r-sm);
+  background: rgba(255, 255, 255, 0.96);
+  font-size: 26rpx;
+  color: var(--tf-text-3);
+}
+/* 选过值之后要变深：空着是提示，填好是内容 */
+.me-pick-box--on {
+  color: var(--tf-text);
+  border-color: var(--tf-primary);
+}
+.me-input {
+  width: 100%;
+  height: 84rpx;
+  border: 2rpx solid var(--tf-line-soft);
+  border-radius: var(--tf-r-sm);
+  background: rgba(255, 255, 255, 0.96);
+  padding: 0 18rpx;
+  font-size: 26rpx;
+}
+.me-point {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14rpx;
+  min-height: 76rpx;
+  padding: 0 18rpx;
+  border: 2rpx dashed var(--tf-line);
+  border-radius: var(--tf-r-sm);
+}
+.me-point-k {
+  flex: none;
+  font-size: 24rpx;
+  color: var(--tf-text-3);
+}
+.me-point-v {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  color: var(--tf-text-2);
+  word-break: break-all;
+}
+.me-hint {
+  font-size: 21rpx;
+  line-height: 1.5;
+  color: var(--tf-text-3);
 }
 
 /* —— 同频圈动态分享卡 ——

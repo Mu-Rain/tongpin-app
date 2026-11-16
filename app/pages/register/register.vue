@@ -427,8 +427,9 @@ export default {
 
 /* ===== 主按钮：和登录页同一条渐变 ===== */
 .btn {
-  width: 100%;
-  height: 142rpx;
+  /* 和登录页对齐：宽度收到 60%，高度按单行文字收到 96rpx */
+  width: 60%;
+  height: 96rpx;
   margin-top: 38rpx;
   border-radius: 999rpx;
   display: flex;

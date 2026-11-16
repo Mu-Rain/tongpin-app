@@ -148,8 +148,9 @@ export default {
     }
   },
   onShow() {
-    // 本页有启动图遮罩时，原生启动图可以关了 —— 两者是同一张图，视觉连续
-    if (this.bootMask) this.closeNativeSplash()
+    // 启动图这次留给首页关：预热要在图后面切 tab，这里先关就等于把切换过程亮给用户。
+    // 本页自己的 bootMask 是同一张图，图还盖着时它只是垫在下面，看不出来。
+    // 确定要停在登录页的分支会自己关图，见 readAutoLogin 与下面的 1.2 秒兜底。
     this.readAutoLogin()
     this.loadQuickAccount()
     // App.vue 的自动登录是异步的，可能比本页渲染慢，300ms 后再读一次
@@ -161,6 +162,9 @@ export default {
     if (this.bootMask && !this.bootTimer) {
       this.bootTimer = setTimeout(() => {
         this.bootTimer = null
+        // 超时只揭开遮罩，不动原生启动图：自动登录常常比 1.2 秒慢，
+        // 这时候关图就等于把后面的加载过程（首页 onReady、预热切 tab）亮给用户。
+        // 图由首页预热完关，最差由 App.vue 的 3 秒兜底关。
         this.bootMask = false
         // 揭开后再给云函数 800ms：它要是在这之后才回来，也得让人进去
         this.resumeTimer = setTimeout(() => {
@@ -233,6 +237,12 @@ export default {
      * 两次都是纯读本地缓存，不会多发请求。
      */
     closeNativeSplash() {
+      // 统一走 App 的入口：它顺手记下「图已关」，首页的预热据此决定还切不切 tab
+      const app = getApp()
+      if (app && typeof app.closeSplash === 'function') {
+        app.closeSplash()
+        return
+      }
       try {
         if (typeof plus !== 'undefined' && plus.navigator && plus.navigator.closeSplashscreen) {
           plus.navigator.closeSplashscreen()
@@ -261,6 +271,8 @@ export default {
       // 本次启动的判定已经有结论（没登录过 / token 失效）：立刻揭开遮罩显示表单。
       // 旧记录不算数（见上面 fresh）；云函数还在飞就继续盖着，等它回来或等 1.2 秒兜底。
       if (fresh && (auto.state === 'none' || auto.state === 'fail')) {
+        // 确定停在登录页了：启动图必须自己揭掉，首页不会再替我们关
+        this.closeNativeSplash()
         this.bootMask = false
         if (this.bootTimer) {
           clearTimeout(this.bootTimer)
@@ -560,7 +572,8 @@ export default {
 
 /* 主按钮：参考图逐像素采样的扁平三段渐变（绿 → 青 → 奶黄），无高光带 */
 .btn-main {
-  height: 142rpx;
+  /* 高度 142 → 100（-30%）。宽度保持 100%，这枚不该被缩窄 */
+  height: 100rpx;
   background: linear-gradient(90deg,
     #95FF92 0%,
     #A0FDAC 13%,
@@ -571,6 +584,9 @@ export default {
 }
 .btn-main--single {
   margin-top: 44rpx;
+  /* 只有「登录」这枚需要缩短长度（用户明确指的是登录/注册按钮） */
+  width: 60%;
+  height: 96rpx;
 }
 .btn-main .t1 {
   font-size: 35rpx;
@@ -598,7 +614,7 @@ export default {
 
 /* 次按钮：纯白实心 */
 .btn-sub {
-  height: 131rpx;
+  height: 92rpx;
   margin-top: 31rpx;
   background: #FFFFFF;
 }

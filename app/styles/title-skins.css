@@ -36,6 +36,8 @@
   padding: 0 18rpx;
   border-radius: 28rpx;
   gap: 6rpx;
+  /* 最小宽度：不然两个字的称号会缩成圆角方块，看着像个球 */
+  min-width: 120rpx;
 }
 
 .tt-name {
@@ -65,16 +67,95 @@
   opacity: 0.5;
 }
 
+/* 详情弹窗里的展示尺寸：比默认大一档，并且强制最小宽度。
+   弹窗是「看这枚称号长什么样」的地方，两字称号缩成一个球最难看。 */
+.tt--sheet {
+  height: 96rpx;
+  padding: 0 34rpx;
+  border-radius: 48rpx;
+  gap: 10rpx;
+  min-width: 260rpx;
+}
+.tt--sheet .tt-name {
+  font-size: 28rpx;
+}
+.tt--sheet .tt-ico {
+  font-size: 28rpx;
+}
+
 /* 称号墙里要占满一格 */
 .badge .tt {
   width: 100%;
 }
 
+/* ---- 字标形态：不用图标，靠排版和一圈内嵌细环撑住 ----
+   传说档专用。别的档都是「符号 + 文字」，这一档只有字，
+   扫一眼就能看出"这枚不一样"。 */
+.tt--wm {
+  position: relative;
+  padding: 0 20rpx;
+}
+.tt--wm::after {
+  content: '';
+  position: absolute;
+  left: 5rpx;
+  right: 5rpx;
+  top: 5rpx;
+  bottom: 5rpx;
+  border-radius: inherit;
+  /* 双环：白线压深色底，暗线压浅色底 —— 传说的皮肤有深有浅，
+     只画一种颜色必然在其中一半上看不见 */
+  border: 1rpx solid rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 0 0 1rpx rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+.tt--wm .tt-name {
+  letter-spacing: 0.26em;
+  /* 字距拉开后末尾会多出一格空白，左移半格让视觉居中 */
+  margin-right: -0.26em;
+  font-weight: 900;
+}
+
+/* 墙上的胶囊再缩一档：3 列时每格只有约 200rpx，84rpx 高的胶囊塞不下 */
+.tt--wall {
+  width: 100%;
+  height: 62rpx;
+  padding: 0 12rpx;
+  border-radius: 31rpx;
+  gap: 4rpx;
+}
+.tt--wall .tt-name {
+  font-size: 19rpx;
+}
+.tt--wall .tt-ico {
+  font-size: 17rpx;
+}
+
 /* —— 未获得：整枚灰度 + 半透明，但轮廓不变 —— */
+/* 未获得：统一换成「虚线空壳」，不再把各自的皮肤灰掉。
+   原因：浅色皮肤（樱、玻璃、纸、冰）灰掉之后在米色底上几乎看不见，
+   深色皮肤（霓虹、紫金）又灰成一坨 —— 两种都读不出名字。
+   统一成虚线胶囊后：名字清楚、整墙整齐，点开弹窗仍能看到它的真实皮肤。
+   ★ 顺带把动画停掉，否则满屏灰块还在闪，像页面出故障。 */
 .badge--off .tt {
-  filter: grayscale(1);
-  /* 0.34 太淡了：深色皮肤（霓虹、紫金）灰掉之后几乎读不出名字，抬到 0.46 */
-  opacity: 0.46;
+  background: transparent !important;
+  background-image: none !important;
+  border: 2rpx dashed rgba(90, 107, 115, 0.3) !important;
+  box-shadow: none !important;
+  opacity: 1;
+  animation: none !important;
+}
+.badge--off .tt::after {
+  animation: none !important;
+  opacity: 0;
+}
+.badge--off .tt .tt-name {
+  color: rgba(90, 107, 115, 0.55) !important;
+  letter-spacing: 0.04em;
+}
+.badge--off .tt .tt-ico {
+  color: rgba(90, 107, 115, 0.42) !important;
+  opacity: 1;
 }
 
 /* ==========================================================================
@@ -329,4 +410,351 @@
 }
 .tt--ghost .tt-ico {
   color: #8A8AB0;
+}
+
+/* ==========================================================================
+   动态皮肤（CSS 动画）与另外四枚静态皮肤
+   --------------------------------------------------------------------------
+   动画只碰 background-position / box-shadow / transform / filter，
+   不触发重排；未获得时由 .badge--off 统一关掉。
+   ========================================================================== */
+
+/* 16. 晨曦 */
+.tt--dawn {
+  background: linear-gradient(140deg, #FFF3D6 0%, #FFD9B8 55%, #FFC0A0 100%);
+  border-color: #F3B58C;
+}
+.tt--dawn .tt-name {
+  font-family: "Songti SC", "SimSun", serif;
+  font-weight: 600;
+  color: #8A4A28;
+  letter-spacing: 0.08em;
+}
+.tt--dawn .tt-ico {
+  color: #C0703C;
+}
+
+/* 17. 呼吸（动态） */
+.tt--pulse {
+  background: #1B2A3A;
+  border-color: #7FE3C0;
+  animation: ttBreath 2.6s ease-in-out infinite;
+}
+.tt--pulse .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 800;
+  color: #9FF5D6;
+  letter-spacing: 0.1em;
+}
+.tt--pulse .tt-ico {
+  color: #7FE3C0;
+}
+@keyframes ttBreath {
+  0%, 100% { box-shadow: 0 0 0 rgba(127, 227, 192, 0); }
+  50% { box-shadow: 0 0 26rpx rgba(127, 227, 192, 0.55); }
+}
+
+/* 18. 玻璃 */
+.tt--glass {
+  background: rgba(255, 255, 255, 0.58);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 2rpx 10rpx rgba(255, 255, 255, 0.9), 0 6rpx 18rpx rgba(120, 140, 160, 0.18);
+}
+.tt--glass .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 700;
+  color: #4A6B7A;
+  letter-spacing: 0.14em;
+}
+.tt--glass .tt-ico {
+  color: #6A8B9A;
+}
+
+/* 19. 极光（动态） */
+.tt--aurora {
+  background-image: linear-gradient(100deg, #0E2A3A 0%, #1B5E5A 25%, #2F7D8C 50%, #5A3F8C 75%, #0E2A3A 100%);
+  background-size: 300% 100%;
+  border-color: rgba(140, 240, 220, 0.55);
+  animation: ttFlow 6s linear infinite;
+}
+.tt--aurora .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 800;
+  color: #DFFFF6;
+  letter-spacing: 0.16em;
+}
+.tt--aurora .tt-ico {
+  color: #8CF0DC;
+}
+@keyframes ttFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* 20. 全息（动态） */
+.tt--hologram {
+  /* 老安卓 WebView 不支持 conic-gradient，先给个纯色兜底 */
+  background-color: #B9A8FF;
+  background-image: conic-gradient(from 0deg, #B9A8FF, #8CF0FF, #FFB9E8, #B9A8FF);
+  border-color: #FFFFFF;
+  animation: ttHue 5s linear infinite;
+}
+.tt--hologram .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  color: #2A1A4A;
+  letter-spacing: 0.12em;
+}
+.tt--hologram .tt-ico {
+  color: #2A1A4A;
+}
+@keyframes ttHue {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* 21. 余烬（动态） */
+.tt--ember {
+  background: linear-gradient(140deg, #2A1210 0%, #5A1E12 55%, #8A2E12 100%);
+  border-color: #F2762E;
+  animation: ttEmber 3s ease-in-out infinite;
+}
+.tt--ember .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  color: #FFD9A8;
+  letter-spacing: 0.08em;
+}
+.tt--ember .tt-ico {
+  color: #F2762E;
+}
+@keyframes ttEmber {
+  0%, 100% { box-shadow: 0 0 0 rgba(242, 118, 46, 0.15); }
+  50% { box-shadow: 0 0 24rpx rgba(242, 118, 46, 0.65); }
+}
+
+/* 22. 扫光（动态） */
+.tt--shimmer {
+  position: relative;
+  background: linear-gradient(140deg, #3A3F52 0%, #5A627A 100%);
+  border-color: #C9D2E8;
+}
+.tt--shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  animation: ttShine 3.4s ease-in-out infinite;
+}
+.tt--shimmer .tt-name {
+  position: relative;
+  z-index: 1;
+  font-family: "Songti SC", "SimSun", serif;
+  font-weight: 700;
+  color: #F2F5FF;
+  letter-spacing: 0.1em;
+}
+.tt--shimmer .tt-ico {
+  position: relative;
+  z-index: 1;
+  color: #C9D2E8;
+}
+@keyframes ttShine {
+  0% { left: -60%; }
+  55%, 100% { left: 120%; }
+}
+
+/* 23. 潮汐（动态） */
+.tt--tide {
+  background-image: linear-gradient(120deg, #0B3B4A 0%, #1E7A8C 35%, #4FB3C4 60%, #0B3B4A 100%);
+  background-size: 280% 100%;
+  border-color: #7FD8E8;
+  animation: ttFlow 7s linear infinite;
+}
+.tt--tide .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 800;
+  color: #E8FBFF;
+  letter-spacing: 0.14em;
+}
+.tt--tide .tt-ico {
+  color: #A8ECF7;
+}
+
+/* 24. 碳纤维 */
+.tt--carbon {
+  background: repeating-linear-gradient(45deg, #2B2F36 0 6rpx, #23272D 6rpx 12rpx);
+  border-color: #6B7480;
+}
+.tt--carbon .tt-name {
+  font-family: "SF Mono", Menlo, "Courier New", monospace;
+  font-weight: 900;
+  color: #D8DEE8;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.tt--carbon .tt-ico {
+  color: #8A94A4;
+}
+
+/* 25. 星云（动态） */
+.tt--nebula {
+  background: radial-gradient(circle at 20% 20%, #6A3FA0 0%, #2A1A4A 45%, #120A24 100%);
+  border-color: #B98CFF;
+  animation: ttNebula 4.5s ease-in-out infinite;
+}
+.tt--nebula .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  color: #EDE0FF;
+  letter-spacing: 0.12em;
+}
+.tt--nebula .tt-ico {
+  color: #B98CFF;
+}
+@keyframes ttNebula {
+  0%, 100% { box-shadow: 0 0 0 rgba(185, 140, 255, 0.15); }
+  50% { box-shadow: 0 0 28rpx rgba(185, 140, 255, 0.6); }
+}
+
+/* 26. 丝绒 */
+.tt--velvet {
+  background: linear-gradient(140deg, #4A1024 0%, #7A1B3A 60%, #A62A52 100%);
+  border-color: #D98CA8;
+}
+.tt--velvet .tt-name {
+  font-family: "Songti SC", "SimSun", serif;
+  font-weight: 700;
+  color: #FFE3EC;
+  letter-spacing: 0.14em;
+}
+.tt--velvet .tt-ico {
+  color: #E8A8BE;
+}
+
+/* ==========================================================================
+   传说品质：比史诗更难，全部是动态皮肤
+   --------------------------------------------------------------------------
+   规则：这一档的每一枚都必须有动画 —— 静态皮肤不许进传说。
+   ========================================================================== */
+
+/* 27. 鎏金（动态：渐变流动 + 金光呼吸） */
+.tt--legend {
+  background-image: linear-gradient(100deg, #1A1206 0%, #5A3E12 30%, #C9A44A 50%, #5A3E12 70%, #1A1206 100%);
+  background-size: 300% 100%;
+  border-color: #E8C86A;
+  animation: ttFlow 5s linear infinite, ttLegendGlow 3.2s ease-in-out infinite;
+}
+.tt--legend .tt-name {
+  font-family: "Songti SC", "SimSun", serif;
+  font-weight: 700;
+  color: #FFE9A8;
+  letter-spacing: 0.14em;
+}
+.tt--legend .tt-ico {
+  color: #E8C86A;
+}
+@keyframes ttLegendGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(232, 200, 106, 0.2); }
+  50% { box-shadow: 0 0 30rpx rgba(232, 200, 106, 0.75); }
+}
+
+/* 28. 涅槃（动态：火光流动 + 余烬呼吸） */
+.tt--phoenix {
+  background-image: linear-gradient(100deg, #2A0806 0%, #8A1E0E 35%, #F2762E 55%, #8A1E0E 75%, #2A0806 100%);
+  background-size: 300% 100%;
+  border-color: #FFB07A;
+  animation: ttFlow 4.5s linear infinite, ttEmber 2.8s ease-in-out infinite;
+}
+.tt--phoenix .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  color: #FFE6D2;
+  letter-spacing: 0.1em;
+}
+.tt--phoenix .tt-ico {
+  color: #FFB07A;
+}
+
+/* 29. 星河（动态：星点漂移 + 光晕呼吸） */
+.tt--galaxy {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(140deg, #0B0620 0%, #2A1052 60%, #0B0620 100%);
+  border-color: #B98CFF;
+  animation: ttNebula 4.5s ease-in-out infinite;
+}
+.tt--galaxy::before {
+  content: '';
+  position: absolute;
+  left: -40%;
+  top: -40%;
+  width: 180%;
+  height: 180%;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 1rpx, transparent 2rpx);
+  background-size: 26rpx 26rpx;
+  opacity: 0.5;
+  animation: ttDrift 12s linear infinite;
+}
+.tt--galaxy .tt-name,
+.tt--galaxy .tt-ico {
+  position: relative;
+  z-index: 1;
+}
+.tt--galaxy .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  color: #F0E6FF;
+  letter-spacing: 0.14em;
+}
+.tt--galaxy .tt-ico {
+  color: #C9A8FF;
+}
+@keyframes ttDrift {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-26rpx, -26rpx, 0); }
+}
+
+/* 30. 棱镜（动态：色相旋转 + 斜纹位移） */
+.tt--prism {
+  background-color: #E8E0FF;
+  background-image: repeating-linear-gradient(100deg, #FFD9E8 0 12rpx, #D9E8FF 12rpx 24rpx, #D9FFE8 24rpx 36rpx, #FFF3D9 36rpx 48rpx);
+  background-size: 200% 100%;
+  border-color: #FFFFFF;
+  animation: ttFlow 8s linear infinite, ttHue 6s linear infinite;
+}
+.tt--prism .tt-name {
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-weight: 900;
+  color: #2A1A4A;
+  letter-spacing: 0.12em;
+}
+.tt--prism .tt-ico {
+  color: #2A1A4A;
+}
+
+/* 31. 雷霆（动态：高频闪动） */
+.tt--thunder {
+  background: linear-gradient(140deg, #05070F 0%, #101A33 100%);
+  border-color: #6EE7FF;
+  animation: ttThunder 1.8s steps(1, end) infinite;
+}
+.tt--thunder .tt-name {
+  font-family: "SF Mono", Menlo, "Courier New", monospace;
+  font-weight: 900;
+  color: #B8F2FF;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.tt--thunder .tt-ico {
+  color: #6EE7FF;
+}
+@keyframes ttThunder {
+  0%, 92%, 100% { box-shadow: 0 0 6rpx rgba(110, 231, 255, 0.35); border-color: #6EE7FF; }
+  94% { box-shadow: 0 0 30rpx rgba(110, 231, 255, 0.95); border-color: #FFFFFF; }
+  96% { box-shadow: 0 0 4rpx rgba(110, 231, 255, 0.2); border-color: #6EE7FF; }
+  98% { box-shadow: 0 0 26rpx rgba(110, 231, 255, 0.85); border-color: #FFFFFF; }
 }

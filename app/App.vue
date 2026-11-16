@@ -1,7 +1,23 @@
 <script>
 /* 关闭原生启动图。App 端用 plus.navigator；其它端没有这个对象，直接跳过。
    只在启动链路调用，重复调用是安全的（内部状态机自己会忽略）。 */
+let splashClosed = false
+
+// 诊断用：从本次启动（App.onLaunch 写的 bootId）到现在过了多少毫秒。
+// 启动链路上的三个时间点全靠它对齐，用户贴一行日志就能判断是不是图关早了。
+function sinceBoot() {
+  try {
+    return Date.now() - Number(uni.getStorageSync('bootId') || 0)
+  } catch (e) {
+    return -1
+  }
+}
+
 function closeNativeSplash() {
+  // ★ 这个标志位是「预热还能不能做」的唯一判据：启动图一旦关了，
+  //   再切 tab 就是当着用户的面闪，宁可少预热也不能闪。
+  splashClosed = true
+  console.log('[同频] splash closed @' + sinceBoot() + 'ms')
   try {
     if (typeof plus !== 'undefined' && plus.navigator && plus.navigator.closeSplashscreen) {
       plus.navigator.closeSplashscreen()
@@ -33,17 +49,13 @@ export default {
     // 原生启动图设成了「不自动关闭」（manifest app-plus.splashscreen.autoclose=false），
     // 由落地页渲染完再关，这样启动图 → 首页之间不会出现一帧白屏。
     // 这里再加一道 4 秒兜底：任何异常导致页面没关成功，也不会把用户永久卡在启动图上。
-    setTimeout(closeNativeSplash, 4000)
-    /* tab 预热：趁启动这段没人催的空档，把另外三个 tab 的页面实例提前建好，
-       用户第一次点 tab 时省掉一次页面初始化（模板产物解析 + 首帧布局）。
-       三条纪律：
-       1) 延后 800ms：启动这一刻 CPU/IO 全在首屏上，这时的 preload 会和首屏抢资源 ——
-          那就把「启动变慢」换成了「切 tab 变快」，不划算。800ms 落在首屏基本稳定、
-          启动图也已经关掉（首页 onReady 关 / 这里 4 秒兜底）之后。
-       2) typeof 判断 + try/catch：preloadPage 只有较新基础库/部分端才有，
-          不支持就静默跳过；抛错也只吞掉，绝不弹提示、绝不进业务分支。
-       3) 不 await、不挂业务回调：预热失败等于没预热，启动流程不能被它拖住或带崩。 */
-    setTimeout(() => this.preloadOtherTabs(), 800)
+    // 3 秒是「宁可让用户多看一眼启动图，也不让他看加载过程」的上限：
+    // 正常的自动登录 + 预热加起来 1~1.5 秒就关图了，这条只在断网时才派上用场。
+    setTimeout(closeNativeSplash, 3000)
+    /* tab 预热已移到首页 onReady（见 pages/index/index.vue）：预热要靠启动图遮着做，
+       而启动图是首页 onReady 才允许关的 —— 在 onLaunch 里切 tab，用户会看到界面在闪。
+       原来这里那行 preloadPage 的 setTimeout 已删：它在 App 端只对 nvue 页生效，
+       四个 tab 全是 vue，真机上是空转。 */
   },
   onShow() {
     // 番茄钟兜底结算：不在学习页时学习页的 onShow 不会触发，靠这里补记
@@ -111,36 +123,75 @@ export default {
     },
 
     /**
-     * 预热其余三个 tab 页（首页已经在用，再 preload 没有意义）
+     * 预热其余三个 tab 页：趁启动图还盖着，把四个 tab 依次切一遍再回首页。
      * ============================================================
-     * 为什么值得做：uni-app 的 tab 页是首次 switchTab 时才真正初始化（解析模板产物、
-     * 建页面实例、跑 onLoad/首次布局）。用户点 tab 时的「卡一下」里有相当一部分
-     * 就是这段初始化，提前在启动空闲里做掉，点击那条路径上就只剩切场动画。
+     * 为什么不用 uni.preloadPage：它在 App 端只对 nvue 页面生效，vue 页面的预加载
+     * 只在 H5 有效（官方 preload-page 文档写明）。本项目四个 tab 全是 vue，
+     * 原来那句预热在真机上是空转 —— 这就是「加了预热还是卡」的原因。
      *
-     * 为什么这么写：
-     *   1. 先 typeof 判断再逐个 try/catch：不支持的端（含大多数 App 上的旧基础库）
-     *      静默跳过 —— 这是纯优化，失败必须完全等于没写这几行。
-     *   2. 传 success/fail 而不只传 url：给了回调，uni 就不会返回 promise，
-     *      也就不会产生没人接的 unhandled rejection（低端机上那是真会冒红字的）。
-     *   3. 单个页面预热失败不中断其余页面，更不影响启动。
+     * 为什么能在启动图后面切：首页 onReady 时启动图还开着（manifest 里
+     * splashscreen.autoclose = false，由页面主动关）。此刻切 tab 用户看不见，
+     * 切完回首页再关图，等于把「建三个 webview + 跑三遍 onLoad」藏进启动图。
+     *
+     * 每条写法都对应一个具体的坑：
+     *   1) 只在 plus 环境跑：H5/小程序没有启动图可遮，切 tab 会直接闪给用户看。
+     *   2) 每一步都传 success/fail 回调：只传 url 时 uni 返回 promise，
+     *      失败就成了没人接的 unhandled rejection —— 低端机上真会冒红字。
+     *   3) fail 也继续下一步：少建一个页面只是少预热一个，不能让链条断在这里。
+     *   4) 每步留 90ms：给 webview 创建和首帧喘一口气，连着切会互相踩。
+     *   5) done 只调一次：调用方靠它关启动图。
      */
-    preloadOtherTabs() {
-      if (typeof uni.preloadPage !== 'function') return
-      const urls = ['/pages/feed/feed', '/pages/messages/messages', '/pages/mine/mine']
-      urls.forEach((url) => {
+    /**
+     * 关启动图的唯一入口：页面也走这里，好让 warmTabs 知道图还盖不盖着。
+     */
+    closeSplash() {
+      closeNativeSplash()
+    },
+
+    warmTabs(done) {
+      let finished = false
+      const finish = () => {
+        if (finished) return
+        finished = true
+        console.log('[同频] warm done @' + sinceBoot() + 'ms')
+        if (typeof done === 'function') done()
+      }
+      if (splashClosed) {
+        // 启动图已经关了（例如这次是手动登录进来的）：这时候切 tab 会被看得一清二楚
+        console.log('[同频] warm skipped @' + sinceBoot() + 'ms（图已关）')
+        finish()
+        return
+      }
+      console.log('[同频] warm start @' + sinceBoot() + 'ms')
+      if (typeof plus === 'undefined' || typeof uni.switchTab !== 'function') {
+        finish()
+        return
+      }
+      const urls = ['/pages/feed/feed', '/pages/messages/messages', '/pages/mine/mine', '/pages/index/index']
+      let i = 0
+      const next = () => {
+        if (i >= urls.length) {
+          finish()
+          return
+        }
+        const url = urls[i]
+        i++
         try {
-          uni.preloadPage({
+          uni.switchTab({
             url: url,
-            success() {},
+            success() {
+              setTimeout(next, 90)
+            },
             fail() {
-              // 预热失败等于没预热，静默
+              setTimeout(next, 90)
             }
           })
         } catch (e) {
-          // 该端不支持或参数被拒：静默跳过
+          // 该端不支持或参数被拒：跳过这一页，继续下一个
+          setTimeout(next, 90)
         }
-      })
-      console.log('[同频] tab 预热已排入：' + urls.length + ' 页（不支持则自动跳过）')
+      }
+      next()
     },
 
     /**

@@ -53,8 +53,12 @@
         <!-- 佩戴中的称号排第一，其余称号跟在后面 -->
         <view v-if="currentTitle || (user.titles && user.titles.length)" class="uphead-titles">
           <!-- 佩戴中的称号：和称号墙、我的页共用同一套皮肤 -->
-          <view v-if="currentTitle" class="tt tt--sm" :class="skinOf(currentTitle.code).cls">
-            <text class="tt-ico">{{ skinOf(currentTitle.code).icon }}</text>
+          <view
+            v-if="currentTitle"
+            class="tt tt--sm"
+            :class="[currentSkin.cls, { 'tt--wm': currentSkin.form === 'wordmark' }]"
+          >
+            <text v-if="currentSkin.form !== 'wordmark'" class="tt-ico">{{ currentSkin.icon }}</text>
             <text class="tt-name">{{ currentTitle.name }}</text>
           </view>
           <text v-for="(t, i) in (user.titles || [])" :key="i" class="titlechip">{{ t }}</text>
@@ -387,6 +391,9 @@ export default {
   },
 
   computed: {
+    currentSkin() {
+      return skinOf(this.currentTitle && this.currentTitle.code)
+    },
     creditLevel() {
       const c = this.user.credit || 0
       if (c >= 85) return 'high'

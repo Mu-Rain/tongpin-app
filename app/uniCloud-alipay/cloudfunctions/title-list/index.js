@@ -27,6 +27,8 @@ const DB_RELATIONS = 'buddy_relations'
 const DB_CARDS = 'cards'
 const DB_POSTS = 'posts'
 const DB_FRIENDS = 'friendships'
+const DB_COMMENTS = 'comments'
+const DB_LIKES = 'card_likes'
 
 // 内置称号表：titles 集合为空 / 缺某条 / active=false 时都回落这里。
 // 每条 = { code, name, condition_type, condition_value, condition_text, rarity, sort }
@@ -42,6 +44,7 @@ const DEFAULT_TITLES = [
     condition_text: '填了昵称、头像、学校，并选了至少 1 个标签',
     sort: 10
   },
+
   {
     code: 'verify_pass',
     name: '学生已认证',
@@ -51,6 +54,7 @@ const DEFAULT_TITLES = [
     condition_text: '通过一次学生认证',
     sort: 20
   },
+
   {
     code: 'first_buddy',
     name: '第一次搭成',
@@ -61,27 +65,171 @@ const DEFAULT_TITLES = [
     sort: 30
   },
 
-  // —— 标签 ——
   {
     code: 'tag_3',
     name: '标签新手',
     desc: '',
     rarity: 'common',
     condition_type: 'tags',
-    condition_value: 3,
-    condition_text: '选满 3 个标签',
+    condition_value: 6,
+    condition_text: '选满 6 个标签',
     sort: 40
   },
+
+  {
+    code: 'card_1',
+    name: '首发选手',
+    desc: '',
+    rarity: 'common',
+    condition_type: 'cards',
+    condition_value: 2,
+    condition_text: '累计发布 2 条搭子需求',
+    sort: 50
+  },
+
+  {
+    code: 'friend_1',
+    name: 'はじまり',
+    desc: '',
+    rarity: 'common',
+    condition_type: 'friends',
+    condition_value: 2,
+    condition_text: '加上 2 个好友',
+    sort: 60
+  },
+
+  {
+    code: 'post_1',
+    name: '第一次冒泡',
+    desc: '',
+    rarity: 'common',
+    condition_type: 'posts',
+    condition_value: 2,
+    condition_text: '在同频圈发过 2 条动态',
+    sort: 70
+  },
+
+  {
+    code: 'comment_10',
+    name: '嘴替',
+    desc: '',
+    rarity: 'common',
+    condition_type: 'comments',
+    condition_value: 10,
+    condition_text: '在别人的动态下评论 10 条',
+    sort: 80
+  },
+
+  {
+    code: 'like_50',
+    name: '点赞狂魔',
+    desc: '',
+    rarity: 'common',
+    condition_type: 'likes',
+    condition_value: 50,
+    condition_text: '给别人的内容点 50 个赞',
+    sort: 90
+  },
+
+  {
+    code: 'post_6',
+    name: '常驻圈友',
+    desc: '',
+    rarity: 'common',
+    condition_type: 'posts',
+    condition_value: 6,
+    condition_text: '累计发 6 条动态',
+    sort: 100
+  },
+
   {
     code: 'tag_8',
     name: 'コレクター',
     desc: '',
     rarity: 'rare',
     condition_type: 'tags',
-    condition_value: 8,
-    condition_text: '选满 8 个标签（收集癖认证）',
-    sort: 90
+    condition_value: 9,
+    condition_text: '选满 9 个标签（收集癖认证）',
+    sort: 110
   },
+
+  {
+    code: 'card_5',
+    name: '大厅常客',
+    desc: '',
+    rarity: 'rare',
+    condition_type: 'cards',
+    condition_value: 9,
+    condition_text: '累计发布 9 条搭子需求',
+    sort: 120
+  },
+
+  {
+    code: 'friend_5',
+    name: 'SQUAD',
+    desc: '',
+    rarity: 'rare',
+    condition_type: 'friends',
+    condition_value: 9,
+    condition_text: '好友满 9 个人',
+    sort: 130
+  },
+
+  {
+    code: 'post_10',
+    name: 'CHATTERBOX',
+    desc: '',
+    rarity: 'rare',
+    condition_type: 'posts',
+    condition_value: 18,
+    condition_text: '累计发 18 条动态',
+    sort: 140
+  },
+
+  {
+    code: 'buddy_3',
+    name: '搭子收割机',
+    desc: '',
+    rarity: 'rare',
+    condition_type: 'buddy_count',
+    condition_value: 6,
+    condition_text: '完整搭成 6 次',
+    sort: 150
+  },
+
+  {
+    code: 'veteran_30',
+    name: '老兵',
+    desc: '',
+    rarity: 'rare',
+    condition_type: 'days',
+    condition_value: 30,
+    condition_text: '注册满 30 天',
+    sort: 160
+  },
+
+  {
+    code: 'comment_50',
+    name: '话疗师',
+    desc: '',
+    rarity: 'rare',
+    condition_type: 'comments',
+    condition_value: 50,
+    condition_text: '累计评论 50 条',
+    sort: 170
+  },
+
+  {
+    code: 'like_200',
+    name: 'LIKE MACHINE',
+    desc: '',
+    rarity: 'rare',
+    condition_type: 'likes',
+    condition_value: 200,
+    condition_text: '累计点赞 200 次',
+    sort: 180
+  },
+
   {
     code: 'tag_10',
     name: 'DECATHLON',
@@ -89,134 +237,165 @@ const DEFAULT_TITLES = [
     rarity: 'epic',
     condition_type: 'tags',
     condition_value: 10,
-    condition_text: '标签选满 10 个（十项全能）',
-    sort: 150
+    condition_text: '标签选满 10 个（已达可选上限）',
+    sort: 190
   },
 
-  // —— 发布需求 ——
-  {
-    code: 'card_1',
-    name: '首发选手',
-    desc: '',
-    rarity: 'common',
-    condition_type: 'cards',
-    condition_value: 1,
-    condition_text: '发布过 1 条搭子需求',
-    sort: 50
-  },
-  {
-    code: 'card_5',
-    name: '大厅常客',
-    desc: '',
-    rarity: 'rare',
-    condition_type: 'cards',
-    condition_value: 5,
-    condition_text: '累计发布 5 条搭子需求',
-    sort: 100
-  },
   {
     code: 'card_10',
     name: 'HEADLINER',
     desc: '',
     rarity: 'epic',
     condition_type: 'cards',
-    condition_value: 10,
-    condition_text: '累计发布 10 条搭子需求（大厅霸屏）',
-    sort: 160
+    condition_value: 18,
+    condition_text: '累计发布 18 条搭子需求',
+    sort: 200
   },
 
-  // —— 好友 ——
   {
-    code: 'friend_1',
-    name: 'はじまり',
-    desc: '',
-    rarity: 'common',
-    condition_type: 'friends',
-    condition_value: 1,
-    condition_text: '加上第 1 个好友',
-    sort: 60
-  },
-  {
-    code: 'friend_5',
-    name: 'SQUAD',
-    desc: '',
-    rarity: 'rare',
-    condition_type: 'friends',
-    condition_value: 5,
-    condition_text: '好友满 5 个人',
-    sort: 110
-  },
-
-  // —— 动态 ——
-  {
-    code: 'post_1',
-    name: '第一次冒泡',
-    desc: '',
-    rarity: 'common',
-    condition_type: 'posts',
-    condition_value: 1,
-    condition_text: '在同频圈发过 1 条动态',
-    sort: 70
-  },
-  {
-    code: 'post_10',
-    name: 'CHATTERBOX',
-    desc: '',
-    rarity: 'rare',
-    condition_type: 'posts',
-    condition_value: 10,
-    condition_text: '累计发 10 条动态',
-    sort: 120
-  },
-
-  // —— 信誉 ——
-  {
-    code: 'credit_110',
-    name: '信誉良好',
-    desc: '',
-    rarity: 'rare',
-    condition_type: 'credit',
-    condition_value: 110,
-    condition_text: '信誉分达到 110',
-    sort: 80
-  },
-  {
-    code: 'credit_130',
-    name: 'GOLD STANDARD',
+    code: 'card_30',
+    name: '大厅霸主',
     desc: '',
     rarity: 'epic',
-    condition_type: 'credit',
-    condition_value: 130,
-    condition_text: '信誉分达到 130',
-    sort: 140
+    condition_type: 'cards',
+    condition_value: 30,
+    condition_text: '累计发布 30 条搭子需求',
+    sort: 210
   },
 
-  // —— 搭子 ——
   {
-    code: 'buddy_3',
-    name: '搭子收割机',
+    code: 'post_40',
+    name: '专栏作家',
     desc: '',
-    rarity: 'rare',
-    condition_type: 'buddy_count',
-    condition_value: 3,
-    condition_text: '完整搭成 3 次',
-    sort: 130
+    rarity: 'epic',
+    condition_type: 'posts',
+    condition_value: 40,
+    condition_text: '累计发 40 条动态',
+    sort: 220
   },
+
+  {
+    code: 'friend_20',
+    name: 'CONNECTOR',
+    desc: '',
+    rarity: 'epic',
+    condition_type: 'friends',
+    condition_value: 20,
+    condition_text: '好友满 20 个人',
+    sort: 230
+  },
+
   {
     code: 'buddy_10',
     name: 'LEGEND',
     desc: '',
     rarity: 'epic',
     condition_type: 'buddy_count',
-    condition_value: 10,
-    condition_text: '完整搭成 10 次',
-    sort: 170
+    condition_value: 18,
+    condition_text: '完整搭成 18 次',
+    sort: 240
+  },
+
+  {
+    code: 'buddy_30',
+    name: 'パートナー',
+    desc: '',
+    rarity: 'epic',
+    condition_type: 'buddy_count',
+    condition_value: 30,
+    condition_text: '完整搭成 30 次',
+    sort: 250
+  },
+
+  {
+    code: 'like_500',
+    name: '点赞之神',
+    desc: '',
+    rarity: 'epic',
+    condition_type: 'likes',
+    condition_value: 500,
+    condition_text: '累计点赞 500 次',
+    sort: 260
+  },
+
+  {
+    code: 'veteran_100',
+    name: '骨灰級',
+    desc: '',
+    rarity: 'epic',
+    condition_type: 'days',
+    condition_value: 100,
+    condition_text: '注册满 100 天',
+    sort: 270
+  },
+
+  {
+    code: 'comment_200',
+    name: '评论家',
+    desc: '',
+    rarity: 'epic',
+    condition_type: 'comments',
+    condition_value: 200,
+    condition_text: '累计评论 200 条',
+    sort: 280
+  },
+
+  // —— 传说：比史诗再难一档，且全部使用动态皮肤 ——
+  {
+    code: 'buddy_50',
+    name: '伝説の相棒',
+    desc: '',
+    rarity: 'legend',
+    condition_type: 'buddy_count',
+    condition_value: 50,
+    condition_text: '完整搭成 50 次',
+    sort: 290
+  },
+  {
+    code: 'post_100',
+    name: '百篇',
+    desc: '',
+    rarity: 'legend',
+    condition_type: 'posts',
+    condition_value: 100,
+    condition_text: '累计发 100 条动态',
+    sort: 300
+  },
+  {
+    code: 'friend_50',
+    name: '人脉顶点',
+    desc: '',
+    rarity: 'legend',
+    condition_type: 'friends',
+    condition_value: 50,
+    condition_text: '好友满 50 个人',
+    sort: 310
+  },
+  {
+    code: 'veteran_200',
+    name: '元老院',
+    desc: '',
+    rarity: 'legend',
+    condition_type: 'days',
+    condition_value: 200,
+    condition_text: '注册满 200 天',
+    sort: 320
+  },
+  {
+    code: 'like_1000',
+    name: '千赞之神',
+    desc: '',
+    rarity: 'legend',
+    condition_type: 'likes',
+    condition_value: 1000,
+    condition_text: '累计点赞 1000 次',
+    sort: 330
   }
 ]
 
 // 能判定的条件类型。表里写了别的类型一律当「不满足」，绝不误发成已获得。
 // 布尔类：profile / verify / buddy；计数类：tags / cards / friends / posts / credit / buddy_count
-const JUDGEABLE = ['profile', 'verify', 'buddy', 'tags', 'cards', 'friends', 'posts', 'credit', 'buddy_count']
+const JUDGEABLE = ['profile', 'verify', 'buddy', 'tags', 'cards', 'friends', 'posts', 'credit', 'buddy_count', 'days', 'comments', 'likes']
 
 // 计数类条件 → facts 里的字段
 const COUNT_FACTS = {
@@ -225,7 +404,10 @@ const COUNT_FACTS = {
   friends: 'friends',
   posts: 'posts',
   credit: 'credit',
-  buddy_count: 'buddy_count'
+  buddy_count: 'buddy_count',
+  days: 'days',
+  comments: 'comments',
+  likes: 'likes'
 }
 
 
@@ -359,7 +541,10 @@ async function loadFacts(user) {
     friends: 0,
     posts: 0,
     credit: 0,
-    buddy_count: 0
+    buddy_count: 0,
+    days: 0,
+    comments: 0,
+    likes: 0
   }
 
   // profile：昵称、头像、学校、至少 1 个标签，四项缺一不给
@@ -422,22 +607,30 @@ async function loadFacts(user) {
   // —— 计数类：7 个 count 并发跑 ——
   // 串行 await 的话，每进一次「我的」页要连打 7 次库，切 tab 会明显发顿。
   // 好友与搭子都是两个方向，约定 a<b 但历史数据不一定守规矩，所以两侧都数。
-  const [tags, cards, posts, fa, fb, ra, rb] = await Promise.all([
+  const [tags, cards, posts, fa, fb, ra, rb, comments, likes] = await Promise.all([
     countOf(DB_USER_TAGS, { user_id: user._id }),
     countOf(DB_CARDS, { owner_id: user._id }),
     countOf(DB_POSTS, { owner_id: user._id }),
     countOf(DB_FRIENDS, { user_a_id: user._id }),
     countOf(DB_FRIENDS, { user_b_id: user._id }),
     countOf(DB_RELATIONS, { user_a_id: user._id, done_count: dbCmd.gte(1) }),
-    countOf(DB_RELATIONS, { user_b_id: user._id, done_count: dbCmd.gte(1) })
+    countOf(DB_RELATIONS, { user_b_id: user._id, done_count: dbCmd.gte(1) }),
+    countOf(DB_COMMENTS, { user_id: user._id }),
+    countOf(DB_LIKES, { user_id: user._id })
   ])
   facts.tags = tags
   facts.cards = cards
   facts.posts = posts
   facts.friends = fa + fb
   facts.buddy_count = ra + rb
+  facts.comments = comments
+  facts.likes = likes
   // 信誉分：两套字段名都认（credit 是第 1 天写法，credit_score 是 03 文档写法）
-  facts.credit = pickInt(user.credit_score, pickInt(user.credit, 80))
+  facts.credit = pickInt(user.credit_score, pickInt(user.credit, 90))
+  // 注册天数：createTime 是第 1 天写法，created_at 是 03 文档写法，两套都认。
+  // 时间戳缺失/为 0 时给 0 天（等价于「今天注册」，不会误发老兵）。
+  const born = pickInt(user.createTime, pickInt(user.created_at, 0))
+  facts.days = born > 0 ? Math.max(0, Math.floor((Date.now() - born) / 86400000)) : 0
 
   return facts
 }

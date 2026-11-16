@@ -11,6 +11,11 @@
 
     <!-- ===== 账号 ===== -->
     <view class="group">
+      <view class="cell" @tap="goAi">
+        <text class="cell-label">智能助手</text>
+        <text class="cell-value">接入自己的模型</text>
+        <text class="cell-arrow">›</text>
+      </view>
       <view class="cell" @tap="goAccount">
         <text class="cell-label">账号与安全</text>
         <text class="cell-value" v-if="verified">已认证</text>
@@ -188,6 +193,10 @@ export default {
 
     goAccount() {
       uni.navigateTo({ url: '/pages/security/security' })
+    },
+    /* 智能助手：文案叫「接入自己的模型」，因为这一页能配的就是模型，不是开关 */
+    goAi() {
+      uni.navigateTo({ url: '/pages/ai/ai' })
     },
     goPrivacy() {
       uni.navigateTo({ url: '/pages/privacy/privacy' })

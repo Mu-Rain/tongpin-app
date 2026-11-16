@@ -29,6 +29,13 @@
       </view>
     </view>
 
+    <!-- ===== AI 找搭子入口：说不清要什么的时候用。单独一条，不掺进列表 ===== -->
+    <view class="ai-entry" @tap="goAiMatch">
+      <text class="ai-entry-ico">✨</text>
+      <text class="ai-entry-txt">说不清要什么？让 AI 帮你找</text>
+      <text class="ai-entry-arw">›</text>
+    </view>
+
     <!-- ===== 定位入口：显示当前定位名（geo_name），点开换一个 / 重新定位 =====
          只认本地缓存 userGeo，定位一次就一直用 —— 进页面不自动定位。 -->
     <view class="geo-row">
@@ -587,6 +594,13 @@ export default {
       })
     },
 
+    /* AI 找搭子：不把结果塞进本页列表，而是另开一页 ——
+       本页的列表状态（分页游标、滚动位置、scope）一旦被 AI 结果覆盖，
+       用户关掉结果就没法退回原来的浏览位置了 */
+    goAiMatch() {
+      uni.navigateTo({ url: '/pages/ai/ai?tab=match' })
+    },
+
     // 一键匹配：带上当前选中的类型（空字符串 = 不限类型）
     goMatch() {
       uni.navigateTo({ url: '/pages/match_result/match_result?type=' + this.type })
@@ -755,6 +769,39 @@ export default {
 
 .seg-text--lock {
   color: var(--tf-text-3);
+}
+
+/* ==========================================================================
+   AI 找搭子入口：和定位胶囊同一行的视觉重量，但用 --tf-ai-soft 拉开
+   ========================================================================== */
+.ai-entry {
+  margin-top: 16rpx;
+  height: 76rpx;
+  padding: 0 24rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 999rpx;
+  background: var(--tf-ai-soft);
+  border: 2rpx solid var(--tf-ai);
+}
+
+.ai-entry-ico {
+  font-size: 26rpx;
+  line-height: 1;
+  margin-right: 12rpx;
+}
+
+.ai-entry-txt {
+  flex: 1;
+  font-size: 25rpx;
+  color: var(--tf-text);
+}
+
+.ai-entry-arw {
+  font-size: 30rpx;
+  color: var(--tf-text-3);
+  line-height: 1;
 }
 
 /* ==========================================================================

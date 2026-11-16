@@ -50,10 +50,12 @@
           <!-- 佩戴中的称号：走全局 .tt 皮肤，和称号墙里是同一套外观 -->
           <view
             class="tt tt--sm title-slot"
-            :class="equippedCode ? skinOf(equippedCode).cls : 'tt--ghost'"
+            :class="[equippedCode ? equippedSkin.cls : 'tt--ghost', { 'tt--wm': equippedCode && equippedSkin.form === 'wordmark' }]"
             @tap="goTitle"
           >
-            <text class="tt-ico" v-if="equippedCode">{{ skinOf(equippedCode).icon }}</text>
+            <text class="tt-ico" v-if="equippedCode && equippedSkin.form !== 'wordmark'">
+              {{ equippedSkin.icon }}
+            </text>
             <text class="tt-name">{{ equippedTitle || '挑个称号' }}</text>
             <text class="tt-arrow">›</text>
           </view>
@@ -107,7 +109,7 @@
         </view>
         <view class="note-item" @tap="goFavorites">
           <image class="note-ico" src="/static/icons/star.png" mode="aspectFit" />
-          <text class="note-label">我的收藏</text>
+          <text class="note-label">需求收藏</text>
         </view>
         <view class="note-item" @tap="goTitle">
           <image class="note-ico" src="/static/icons/leaf.png" mode="aspectFit" />
@@ -124,6 +126,12 @@
         <view class="note-item" @tap="goLiked">
           <image class="note-ico" src="/static/icons/heart.png" mode="aspectFit" />
           <text class="note-label">喜欢</text>
+        </view>
+        <!-- 同频圈收藏：和需求收藏是两套账（card-favorite 的 target_type），
+             所以分成两个入口，不能合成一个「我的收藏」 -->
+        <view class="note-item" @tap="goFavPosts">
+          <image class="note-ico" src="/static/icons/star.png" mode="aspectFit" />
+          <text class="note-label">同频圈收藏</text>
         </view>
       </view>
 
@@ -144,7 +152,7 @@
 
     </view>
 
-    <!-- 管理员专用：四个入口一列。普通用户看不到这一块。 -->
+    <!-- 管理员专用：五个入口一列。普通用户看不到这一块。 -->
     <view class="admincard" v-if="isAdmin">
       <view class="admincard-head">
         <text class="admincard-title">🔧 管理员</text>
@@ -152,6 +160,10 @@
       </view>
       <text class="admincard-sub">这里能看到别人上传的学生证照片，属于敏感数据，只有管理员可见。</text>
       <view class="admin-list">
+        <view class="admin-item" @tap="goOverview">
+          <text class="admin-item-text">数据总览</text>
+          <text class="mod-arrow">›</text>
+        </view>
         <view class="admin-item" @tap="goAdmin">
           <text class="admin-item-text">认证审核{{ pendingCount > 0 ? '（' + pendingCount + '）' : '' }}</text>
           <text class="mod-arrow">›</text>
@@ -284,6 +296,10 @@ export default {
     }
   },
   computed: {
+    /* 当前佩戴称号的皮肤（模板里要用到 cls / icon / form 三个字段） */
+    equippedSkin() {
+      return skinOf(this.equippedCode)
+    },
     /* 头像的「稳定键」：优先 fileID。
        临时链接每次换一次签名（?Expires=...），拿它当缓存键等于永远不命中；
        fileID 和包内静态路径（/static/...）永远不变。 */
@@ -630,6 +646,10 @@ export default {
       } catch (e) {
         // 静默：拉不到就保持上一次的值
       }
+    },
+
+    goOverview() {
+      uni.navigateTo({ url: '/pages/admin-overview/admin-overview' })
     },
 
     goAdmin() {
@@ -1074,7 +1094,10 @@ export default {
     },
 
     goFavorites() {
-      uni.navigateTo({ url: '/pages/favorites/favorites' })
+      uni.navigateTo({ url: '/pages/favorites/favorites?type=card' })
+    },
+    goFavPosts() {
+      uni.navigateTo({ url: '/pages/favorites/favorites?type=post' })
     },
 
     goVerify() {

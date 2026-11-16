@@ -50,6 +50,20 @@
       }
     },
     {
+      "path": "pages/ai/ai",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "同频助手"
+      }
+    },
+    {
+      "path": "pages/ai-config/ai-config",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "接入模型"
+      }
+    },
+    {
       "path": "pages/hall/hall",
       "style": {
         "navigationBarTitleText": "搭子大厅",
@@ -202,6 +216,12 @@
       }
     },
     {
+      "path": "pages/credit/quiz",
+      "style": {
+        "navigationBarTitleText": "文明搭档守则"
+      }
+    },
+    {
       "path": "pages/title/title",
       "style": {
         "navigationBarTitleText": "称号墙",
@@ -212,6 +232,13 @@
       "path": "pages/admin-reports/admin-reports",
       "style": {
         "navigationBarTitleText": "举报处理",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/admin-overview/admin-overview",
+      "style": {
+        "navigationBarTitleText": "后台总览",
         "enablePullDownRefresh": true
       }
     },
